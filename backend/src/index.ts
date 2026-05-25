@@ -6,6 +6,9 @@ import morgan from 'morgan';
 import { createServer } from 'http';
 import { Server as SocketIO } from 'socket.io';
 import dotenv from 'dotenv';
+import { AppDataSource } from './config/database';
+import { seedDefaultAdmin } from './seeds/seed';
+import authRoutes from './routes/auth.routes';
 
 dotenv.config();
 
@@ -21,18 +24,22 @@ app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173', cred
 app.use(express.json({ limit: '10mb' }));
 app.use(morgan('short'));
 
-// Health check
+// Health check (no auth)
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), version: '1.0.0' });
 });
 
-// API routes placeholder
+// API routes
+app.use('/api/auth', authRoutes);
+
+// Status (no auth - used by frontend to check API)
 app.get('/api/status', (_req, res) => {
   res.json({ 
     data: { 
       service: 'DBA Analyser API',
       version: '1.0.0',
       uptime: process.uptime(),
+      database: AppDataSource.isInitialized,
       vpn: { connected: false, configUploaded: false }
     } 
   });
@@ -46,9 +53,20 @@ io.on('connection', (socket) => {
 
 // Start
 const PORT = parseInt(process.env.PORT || '3030');
-httpServer.listen(PORT, '0.0.0.0', () => {
-  console.log(`[DBA Analyser] Backend running on port ${PORT}`);
-  console.log(`[DBA Analyser] Health: http://localhost:${PORT}/health`);
-});
+
+AppDataSource.initialize()
+  .then(async () => {
+    console.log('[DB] Connected to PostgreSQL');
+    await seedDefaultAdmin();
+    
+    httpServer.listen(PORT, '0.0.0.0', () => {
+      console.log(`[DBA Analyser] Backend running on port ${PORT}`);
+      console.log(`[DBA Analyser] Health: http://localhost:${PORT}/health`);
+    });
+  })
+  .catch((err) => {
+    console.error('[DB] Connection failed:', err.message);
+    process.exit(1);
+  });
 
 export { app, io };
