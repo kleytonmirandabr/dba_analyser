@@ -492,7 +492,17 @@ dba_analyser/
 └── README.md
 ```
 
-### Próxima versão: v0.2.0 — Explorer (Semana 2)
-- Tree view de objetos
-- DDL viewer
+### v0.2.0 — Explorer + Monitor (2026-05-25)
+**Commits:** `da98db3` → `7ac18d8` (3 commits)
+
+| Versão | Commit | Descrição |
+|--------|--------|-----------|
+| 0.2.0 | 7ac18d8 | Explorer (tree view) + Monitor (queries, locks, kill, stats) |
+| 0.1.4 | da98db3 | Fix TypeORM entity column types |
+| 0.1.3a | 6848d80 | Docs: demandas/ + changelog |
+
+### Próxima versão: v0.3.0 — Comparador + SQL Editor (Semana 3)
+- Diff visual entre dois bancos (schema diff)
+- SQL Editor com syntax highlight
+- Workflow de execução (submeter → aprovar → executar)
 - Adapters MSSQL + MySQL
