@@ -1,0 +1,120 @@
+import { Router, Request, Response } from 'express';
+import { authMiddleware } from '../middleware/auth.middleware';
+import { AppDataSource } from '../config/database';
+import { Connection } from '../entities/connection.entity';
+import { decrypt } from '../config/encryption';
+import { PostgresAdapter } from '../adapters/postgres.adapter';
+
+const router = Router();
+const connRepo = () => AppDataSource.getRepository(Connection);
+
+interface SchemaDiff {
+  tables: { onlyInSource: string[]; onlyInTarget: string[]; different: { name: string; differences: string[] }[] };
+  views: { onlyInSource: string[]; onlyInTarget: string[] };
+  functions: { onlyInSource: string[]; onlyInTarget: string[] };
+}
+
+// POST /api/compare
+router.post('/', authMiddleware, async (req: Request, res: Response) => {
+  const { sourceId, targetId, schema = 'public' } = req.body;
+  if (!sourceId || !targetId) return res.status(400).json({ error: 'sourceId e targetId são obrigatórios' });
+
+  try {
+    const [source, target] = await Promise.all([
+      connRepo().findOne({ where: { id: sourceId } }),
+      connRepo().findOne({ where: { id: targetId } }),
+    ]);
+    if (!source || !target) return res.status(404).json({ error: 'Conexão não encontrada' });
+
+    const srcAdapter = new PostgresAdapter();
+    const tgtAdapter = new PostgresAdapter();
+    await srcAdapter.connect({ host: source.host, port: source.port, database: source.databaseName, username: source.username, password: decrypt(source.passwordEncrypted) });
+    await tgtAdapter.connect({ host: target.host, port: target.port, database: target.databaseName, username: target.username, password: decrypt(target.passwordEncrypted) });
+
+    const [srcTables, tgtTables] = await Promise.all([srcAdapter.listTables(schema), tgtAdapter.listTables(schema)]);
+    const [srcViews, tgtViews] = await Promise.all([srcAdapter.listViews(schema), tgtAdapter.listViews(schema)]);
+    const [srcFns, tgtFns] = await Promise.all([srcAdapter.listFunctions(schema), tgtAdapter.listFunctions(schema)]);
+
+    const srcTableNames = new Set(srcTables.map(t => t.name));
+    const tgtTableNames = new Set(tgtTables.map(t => t.name));
+
+    const onlyInSource = [...srcTableNames].filter(t => !tgtTableNames.has(t));
+    const onlyInTarget = [...tgtTableNames].filter(t => !srcTableNames.has(t));
+    const common = [...srcTableNames].filter(t => tgtTableNames.has(t));
+
+    // Compare columns of common tables
+    const different: { name: string; differences: string[] }[] = [];
+    for (const table of common) {
+      const [srcCols, tgtCols] = await Promise.all([
+        srcAdapter.listColumns(schema, table),
+        tgtAdapter.listColumns(schema, table),
+      ]);
+      const diffs: string[] = [];
+      const srcColMap = new Map(srcCols.map(c => [c.name, c]));
+      const tgtColMap = new Map(tgtCols.map(c => [c.name, c]));
+
+      for (const [name, col] of srcColMap) {
+        if (!tgtColMap.has(name)) { diffs.push(`+ coluna "${name}" (${col.type}) só existe no source`); continue; }
+        const tgt = tgtColMap.get(name)!;
+        if (col.type !== tgt.type) diffs.push(`~ "${name}": tipo ${col.type} → ${tgt.type}`);
+        if (col.nullable !== tgt.nullable) diffs.push(`~ "${name}": nullable ${col.nullable} → ${tgt.nullable}`);
+      }
+      for (const [name] of tgtColMap) {
+        if (!srcColMap.has(name)) diffs.push(`- coluna "${name}" só existe no target`);
+      }
+      if (diffs.length > 0) different.push({ name: table, differences: diffs });
+    }
+
+    await srcAdapter.disconnect();
+    await tgtAdapter.disconnect();
+
+    const diff: SchemaDiff = {
+      tables: { onlyInSource, onlyInTarget, different },
+      views: {
+        onlyInSource: srcViews.filter(v => !tgtViews.some(t => t.name === v.name)).map(v => v.name),
+        onlyInTarget: tgtViews.filter(v => !srcViews.some(s => s.name === v.name)).map(v => v.name),
+      },
+      functions: {
+        onlyInSource: srcFns.filter(f => !tgtFns.some(t => t.name === f.name)).map(f => f.name),
+        onlyInTarget: tgtFns.filter(f => !srcFns.some(s => s.name === f.name)).map(f => f.name),
+      },
+    };
+
+    return res.json({ data: diff });
+  } catch (err: any) { return res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/compare/migration-script
+router.post('/migration-script', authMiddleware, async (req: Request, res: Response) => {
+  const { sourceId, targetId, schema = 'public' } = req.body;
+  // Simplified: generate ALTER statements for the diff
+  // In production would use pg_dump --schema-only and diff
+  try {
+    const { data: diff } = await (await fetch(`http://localhost:3030/api/compare`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: req.headers.authorization || '' },
+      body: JSON.stringify({ sourceId, targetId, schema })
+    })).json();
+
+    let script = '-- Migration Script (Source → Target)\n-- Generated by DBA Analyser\n\n';
+    
+    if (diff.tables.onlyInSource.length) {
+      script += '-- Tables only in source (need CREATE in target):\n';
+      diff.tables.onlyInSource.forEach((t: string) => script += `-- TODO: CREATE TABLE ${schema}.${t} (...)\n`);
+    }
+    if (diff.tables.onlyInTarget.length) {
+      script += '\n-- Tables only in target (need DROP or ignore):\n';
+      diff.tables.onlyInTarget.forEach((t: string) => script += `-- DROP TABLE IF EXISTS ${schema}.${t};\n`);
+    }
+    if (diff.tables.different.length) {
+      script += '\n-- Tables with differences:\n';
+      diff.tables.different.forEach((d: any) => {
+        script += `\n-- Table: ${d.name}\n`;
+        d.differences.forEach((dd: string) => script += `--   ${dd}\n`);
+      });
+    }
+
+    return res.json({ data: { script } });
+  } catch (err: any) { return res.status(500).json({ error: err.message }); }
+});
+
+export default router;

@@ -1,11 +1,14 @@
 import { NavLink } from 'react-router-dom'
-import { Database, LayoutDashboard, Plug, FolderTree, Activity, Play, FileText } from 'lucide-react'
+import { Database, LayoutDashboard, Plug, FolderTree, Activity, Terminal, GitCompareArrows, Play } from 'lucide-react'
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/connections', icon: Plug, label: 'Conexões' },
   { to: '/explorer', icon: FolderTree, label: 'Explorer' },
+  { to: '/query', icon: Terminal, label: 'Query' },
   { to: '/monitor', icon: Activity, label: 'Monitor' },
+  { to: '/executions', icon: Play, label: 'Execuções' },
+  { to: '/compare', icon: GitCompareArrows, label: 'Comparador' },
 ]
 
 export default function Sidebar() {

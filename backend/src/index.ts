@@ -13,6 +13,9 @@ import connectionRoutes from './routes/connections.routes';
 import vpnRoutes from './routes/vpn.routes';
 import explorerRoutes from './routes/explorer.routes';
 import monitorRoutes from './routes/monitor.routes';
+import queryRoutes from './routes/query.routes';
+import executionRoutes from './routes/execution.routes';
+import compareRoutes from './routes/compare.routes';
 
 dotenv.config();
 
@@ -39,6 +42,9 @@ app.use('/api/connections', connectionRoutes);
 app.use('/api/vpn', vpnRoutes);
 app.use('/api/explorer', explorerRoutes);
 app.use('/api/monitor', monitorRoutes);
+app.use('/api/query', queryRoutes);
+app.use('/api/execution', executionRoutes);
+app.use('/api/compare', compareRoutes);
 
 // Status (no auth - used by frontend to check API)
 app.get('/api/status', (_req, res) => {

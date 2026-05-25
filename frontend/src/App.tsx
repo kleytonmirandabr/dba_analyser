@@ -6,6 +6,9 @@ import DashboardPage from './pages/DashboardPage'
 import ConnectionsPage from './pages/ConnectionsPage'
 import ExplorerPage from './pages/ExplorerPage'
 import MonitorPage from './pages/MonitorPage'
+import QueryPage from './pages/QueryPage'
+import ExecutionPage from './pages/ExecutionPage'
+import ComparePage from './pages/ComparePage'
 import LoginPage from './pages/LoginPage'
 import VPNSetupWizard from './components/wizard/VPNSetupWizard'
 import { Loader2 } from 'lucide-react'
@@ -43,7 +46,10 @@ export default function App() {
           <Route index element={<DashboardPage />} />
           <Route path="connections" element={<ConnectionsPage />} />
           <Route path="explorer" element={<ExplorerPage />} />
+          <Route path="query" element={<QueryPage />} />
           <Route path="monitor" element={<MonitorPage />} />
+          <Route path="executions" element={<ExecutionPage />} />
+          <Route path="compare" element={<ComparePage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
