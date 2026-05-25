@@ -34,10 +34,18 @@ router.post('/:connId/execute', authMiddleware, async (req: Request, res: Respon
     const adapter = createAdapter(conn.dbType);
     await adapter.connect({ host: conn.host, port: conn.port, database: conn.databaseName, username: conn.username, password: decrypt(conn.passwordEncrypted), timeoutMs: conn.queryTimeoutMs });
 
-    // Add LIMIT if SELECT and no limit present
+    // Add row limit if SELECT and no limit present
     let finalSql = sql.trim();
-    if (finalSql.toUpperCase().startsWith('SELECT') && !finalSql.toUpperCase().includes('LIMIT')) {
-      finalSql = `${finalSql} LIMIT ${limit}`;
+    const upperSql = finalSql.toUpperCase();
+    if (upperSql.startsWith('SELECT')) {
+      const hasLimit = upperSql.includes('LIMIT') || upperSql.includes('TOP ') || upperSql.includes('OFFSET') || upperSql.includes('FETCH NEXT');
+      if (!hasLimit) {
+        if (conn.dbType === 'postgresql' || conn.dbType === 'mysql') {
+          finalSql = `${finalSql} LIMIT ${limit}`;
+        } else if (conn.dbType === 'mssql') {
+          finalSql = finalSql.replace(/^SELECT/i, `SELECT TOP ${limit}`);
+        }
+      }
     }
 
     const result = await adapter.executeSQL(finalSql);
