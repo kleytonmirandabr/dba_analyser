@@ -11,6 +11,7 @@ import ExecutionPage from './pages/ExecutionPage'
 import ComparePage from './pages/ComparePage'
 import AuditPage from './pages/AuditPage'
 import SettingsPage from './pages/SettingsPage'
+import VPNPage from './pages/VPNPage'
 import LoginPage from './pages/LoginPage'
 import VPNSetupWizard from './components/wizard/VPNSetupWizard'
 import { Loader2 } from 'lucide-react'
@@ -53,6 +54,7 @@ export default function App() {
           <Route path="executions" element={<ExecutionPage />} />
           <Route path="compare" element={<ComparePage />} />
           <Route path="audit" element={<AuditPage />} />
+          <Route path="vpn" element={<VPNPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

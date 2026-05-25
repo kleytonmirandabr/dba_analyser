@@ -1,9 +1,10 @@
 import { NavLink } from 'react-router-dom'
-import { Database, LayoutDashboard, Plug, FolderTree, Activity, Terminal, GitCompareArrows, Play, Shield, Settings } from 'lucide-react'
+import { Database, LayoutDashboard, Plug, FolderTree, Activity, Terminal, GitCompareArrows, Play, Shield, Settings, Wifi } from 'lucide-react'
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/connections', icon: Plug, label: 'Conexões' },
+  { to: '/vpn', icon: Wifi, label: 'VPN' },
   { to: '/explorer', icon: FolderTree, label: 'Explorer' },
   { to: '/query', icon: Terminal, label: 'Query' },
   { to: '/monitor', icon: Activity, label: 'Monitor' },
