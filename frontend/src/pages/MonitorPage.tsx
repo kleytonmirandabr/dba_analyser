@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Activity, Skull, Lock, RefreshCw, Loader2, AlertTriangle, Database, X } from 'lucide-react'
+import { Activity, Skull, Lock, RefreshCw, Loader2, AlertTriangle, Database, X, Copy, Check, ExternalLink } from 'lucide-react'
 import api from '../lib/api'
 
 interface Connection { id: string; name: string; environment: string; databaseName?: string; }
@@ -15,6 +15,8 @@ export default function MonitorPage() {
   const [allStats, setAllStats] = useState<ConnStats[]>([])
   const [loading, setLoading] = useState(false)
   const [autoRefresh, setAutoRefresh] = useState(true)
+  const [selectedQuery, setSelectedQuery] = useState<ActiveQuery | null>(null)
+  const [copied, setCopied] = useState(false)
   const intervalRef = useRef<any>(null)
 
   useEffect(() => {
@@ -76,6 +78,19 @@ export default function MonitorPage() {
     if (!confirm(`Tem certeza que deseja matar o processo PID ${pid}?`)) return
     await api.post(`/api/monitor/${connId}/kill/${pid}`)
     refresh()
+  }
+
+  const copyQuery = async (text: string) => {
+    await navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const openInQueryEditor = (q: ActiveQuery) => {
+    // Store query in sessionStorage and navigate to Query page
+    sessionStorage.setItem('dba_prefill_query', q.query)
+    sessionStorage.setItem('dba_prefill_connId', q.connId || '')
+    window.location.href = '/query'
   }
 
   const formatMs = (ms: number) => ms > 60000 ? `${(ms / 60000).toFixed(1)}min` : ms > 1000 ? `${(ms / 1000).toFixed(1)}s` : `${Math.round(ms)}ms`
@@ -185,7 +200,7 @@ export default function MonitorPage() {
                       <td className="py-2 px-3 text-gray-400">{q.username}</td>
                       <td className="py-2 px-3"><span className={`px-1.5 py-0.5 rounded text-[10px] ${q.state === 'active' || q.state === 'running' ? 'bg-green-900/30 text-green-400' : 'bg-gray-800 text-gray-400'}`}>{q.state}</span></td>
                       <td className={`py-2 px-3 font-mono ${q.durationMs > 10000 ? 'text-red-400' : 'text-gray-300'}`}>{formatMs(q.durationMs)}</td>
-                      <td className="py-2 px-3 text-gray-400 font-mono max-w-md truncate">{q.query}</td>
+                      <td className="py-2 px-3 text-gray-400 font-mono max-w-md truncate cursor-pointer hover:text-white" onClick={() => setSelectedQuery(q)} title="Clique para ver completa">{q.query}</td>
                       <td className="py-2 px-3">
                         <button onClick={() => killQuery(q.connId!, q.pid)} className="p-1 text-gray-600 hover:text-red-400" title="Kill">
                           <Skull className="w-3.5 h-3.5" />
@@ -238,6 +253,47 @@ export default function MonitorPage() {
       {selectedConns.length === 0 && (
         <div className="flex items-center justify-center py-20">
           <p className="text-gray-600">Selecione um ou mais bancos para monitorar</p>
+        </div>
+      )}
+
+      {/* Query Detail Modal */}
+      {selectedQuery && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedQuery(null)}>
+          <div className="bg-gray-900 border border-gray-700 rounded-xl max-w-4xl w-full max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-gray-800">
+              <div className="flex items-center gap-3">
+                <Activity className="w-4 h-4 text-green-400" />
+                <div>
+                  <h3 className="text-sm font-semibold text-white">Query Detalhada</h3>
+                  <p className="text-[10px] text-gray-500">PID {selectedQuery.pid} • {selectedQuery.username} • {selectedQuery.connName} • {formatMs(selectedQuery.durationMs)}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => copyQuery(selectedQuery.query)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-xs text-gray-300 transition">
+                  {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? 'Copiado!' : 'Copiar'}
+                </button>
+                <button onClick={() => openInQueryEditor(selectedQuery)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-xs text-white transition">
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Abrir no Editor
+                </button>
+                <button onClick={() => setSelectedQuery(null)} className="p-1.5 text-gray-500 hover:text-white">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            <div className="p-4 overflow-auto max-h-[60vh]">
+              <div className="flex mb-3 gap-4 text-xs">
+                <span className="text-gray-500">Estado: <span className={`${selectedQuery.state === 'running' ? 'text-green-400' : 'text-gray-300'}`}>{selectedQuery.state}</span></span>
+                {selectedQuery.waitEvent && <span className="text-gray-500">Wait: <span className="text-amber-400">{selectedQuery.waitEvent}</span></span>}
+              </div>
+              <pre className="text-sm text-gray-200 font-mono bg-gray-950 border border-gray-800 rounded-lg p-4 whitespace-pre-wrap break-words leading-relaxed">
+                {selectedQuery.query}
+              </pre>
+            </div>
+          </div>
         </div>
       )}
     </div>
