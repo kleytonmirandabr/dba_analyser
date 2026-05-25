@@ -441,3 +441,58 @@ docker compose up --build
 | TypeORM docs | https://typeorm.io/ |
 | Socket.io docs | https://socket.io/docs/ |
 | Monaco Editor (SQL) | https://github.com/suren-atoyan/monaco-react |
+
+
+---
+
+## Changelog (Controle de Versão)
+
+### v0.1.0 — Fundação (2026-05-25)
+**Commits:** `f76761e` → `a5db2d1` (9 commits)
+
+| Versão | Commit | Descrição |
+|--------|--------|-----------|
+| 0.0.1 | f76761e | Docs iniciais (README, SPRINT, CLAUDE, ANALISE) |
+| 0.0.2 | 602c9ad | Arquitetura OpenVPN sidecar + docker-compose |
+| 0.1.0 | 1d8b70c | Monorepo completo (backend + frontend + Docker) |
+| 0.1.1 | 42e63b0 | TypeORM entities + Auth JWT + Seed |
+| 0.1.2 | bbe02eb | Connection CRUD + AES-256 + PG adapter + VPN service |
+| 0.1.3 | a5db2d1 | Frontend funcional (Login, Conexões, VPN Wizard) |
+
+### Arquitetura de Pastas (v0.1.3)
+```
+dba_analyser/
+├── backend/
+│   ├── src/
+│   │   ├── adapters/         # Database adapters (PG, MSSQL, MySQL)
+│   │   ├── config/           # database.ts, encryption.ts
+│   │   ├── entities/         # TypeORM entities
+│   │   ├── middleware/       # auth, audit
+│   │   ├── routes/           # auth, connections, vpn
+│   │   ├── seeds/            # Admin default
+│   │   ├── services/         # vpn.service
+│   │   └── index.ts          # Entry point
+│   ├── Dockerfile / Dockerfile.dev
+│   └── package.json
+├── frontend/
+│   ├── src/
+│   │   ├── components/       # layout/, wizard/
+│   │   ├── lib/              # api.ts, utils.ts
+│   │   ├── pages/            # Dashboard, Connections, Login
+│   │   ├── stores/           # auth.store (Zustand)
+│   │   ├── App.tsx
+│   │   └── main.tsx
+│   ├── Dockerfile / Dockerfile.dev
+│   └── package.json
+├── demandas/                  # Controle de entregas
+├── docker-compose.yml         # Dev environment
+├── docker-compose.prod.yml    # Production
+├── CLAUDE.md                  # Contexto para AI
+├── SPRINT.md                  # Planejamento 4 semanas
+└── README.md
+```
+
+### Próxima versão: v0.2.0 — Explorer (Semana 2)
+- Tree view de objetos
+- DDL viewer
+- Adapters MSSQL + MySQL
