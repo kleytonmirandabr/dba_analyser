@@ -3,11 +3,16 @@ import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 import { AppDataSource } from '../config/database';
 import { User } from '../entities/user.entity';
+import { AuditLog } from '../entities/audit-log.entity';
 
 const router = Router();
 const userRepo = () => AppDataSource.getRepository(User);
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
+if (process.env.NODE_ENV === 'production' && JWT_SECRET === 'dev-secret') {
+  console.error('[SECURITY] JWT_SECRET must be set in production!');
+  process.exit(1);
+}
 const JWT_EXPIRES = '24h';
 
 const MAX_FAILED_ATTEMPTS = 5;
@@ -65,6 +70,11 @@ router.post('/login', async (req: Request, res: Response) => {
         return res.status(423).json({ error: `Conta bloqueada por ${LOCKOUT_MINUTES} minutos após ${MAX_FAILED_ATTEMPTS} tentativas falhas.` });
       }
       await userRepo().save(user);
+      // Audit: login failure
+      await AppDataSource.getRepository(AuditLog).save({
+        userId: user.id, action: 'LOGIN_FAILED', entity: 'auth',
+        details: JSON.stringify({ ip, attempts: user.failedLoginAttempts }),
+      });
       const remaining = MAX_FAILED_ATTEMPTS - user.failedLoginAttempts;
       return res.status(401).json({ error: `Credenciais inválidas. ${remaining} tentativa(s) restante(s).` });
     }
@@ -77,10 +87,16 @@ router.post('/login', async (req: Request, res: Response) => {
     }
 
     const token = jwt.sign(
-      { userId: user.id, username: user.username, role: user.role, name: user.name },
+      { userId: user.id, username: user.username, role: user.role, name: user.name, iat: Math.floor(Date.now() / 1000) },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES }
     );
+
+    // Audit: login success
+    await AppDataSource.getRepository(AuditLog).save({
+      userId: user.id, action: 'LOGIN_SUCCESS', entity: 'auth',
+      details: JSON.stringify({ ip, username: user.username }),
+    });
 
     return res.json({ data: { token, user: { id: user.id, name: user.name, username: user.username, role: user.role } } });
   } catch (err: any) {
@@ -130,5 +146,28 @@ router.post('/change-password', async (req: Request, res: Response) => {
     return res.status(401).json({ error: 'Token inválido' });
   }
 });
+
+// Token blacklist (in-memory, resets on restart - use Redis in production)
+const blacklistedTokens = new Set<string>();
+
+export function isTokenBlacklisted(token: string): boolean {
+  return blacklistedTokens.has(token);
+}
+
+// POST /api/auth/logout
+router.post('/logout', (req: Request, res: Response) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith('Bearer ')) {
+    blacklistedTokens.add(authHeader.slice(7));
+  }
+  return res.json({ data: { message: 'Logout realizado' } });
+});
+
+// Clean expired tokens every hour
+setInterval(() => {
+  blacklistedTokens.forEach(token => {
+    try { jwt.verify(token, JWT_SECRET); } catch { blacklistedTokens.delete(token); }
+  });
+}, 3600000);
 
 export default router;

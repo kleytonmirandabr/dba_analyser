@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as jwt from 'jsonwebtoken';
+import { isTokenBlacklisted } from '../routes/auth.routes';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 
