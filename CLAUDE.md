@@ -585,6 +585,33 @@ O sprint de 4 semanas foi completado + polish de deploy e VPN UX.
 9. **Severidade** — Info/Warning/Critical com cores distintas
 10. **Ações** — Testar, Pausar/Ativar, Editar, Excluir
 
+### v1.0.0 — Security Hardening + UX Monitor (2026-05-25) — Security Hardening + UX Monitor (2026-05-25)
+- **BREAKING:** Login agora é por username (não email). Default: admin / Dba@2025!Secure
+- **BREAKING:** DBA_MASTER_KEY obrigatória (app não inicia sem ela)
+- **BREAKING:** Username das conexões agora criptografado (banco resetado)
+- Feat: Login por username (não email)
+- Feat: Senha forte obrigatória (8+ chars, maiúscula, número, especial)
+- Feat: Rate limit global (200 req/min) + login (5/min por IP)
+- Feat: Account lockout (5 falhas = 15min bloqueio)
+- Feat: Audit log de LOGIN_SUCCESS/LOGIN_FAILED com IP
+- Feat: Token blacklist (logout invalida sessão imediatamente)
+- Feat: Username criptografado AES-256-GCM (igual password)
+- Feat: PBKDF2 100k iterações + SHA-512 para derivação de chave
+- Feat: keyVersion para suporte futuro a rotação de chave
+- Feat: getConnCredentials() helper centralizado
+- Feat: Helmet CSP + X-Powered-By removido + body 1MB
+- Feat: Discover databases filtra bancos já monitorados
+- Feat: Discover databases filtra somente ONLINE (state=0)
+- Feat: Monitor — seletor compacto colapsável com busca (suporta 60+ bancos)
+- Feat: Monitor — stats em tabela colapsável (não mais 61 cards)
+- Feat: Monitor — collapse em Queries Ativas e Painéis DBA
+- Feat: Monitor — filtro de texto nas queries ativas (busca por query, user, banco, PID)
+- Feat: Monitor — DBA panels fetch independente (não bloqueado por 183 requests)
+- Feat: Monitor — "Abrir no Editor" prefill query + seleciona conexão
+- Fix: DBA panels refresh imediato ao toggle (não espera 5s)
+- Fix: DBA panels merge state (não perde painéis ao ativar novos)
+- Fix: DBA panels fetch all (sempre busca todos habilitados)
+
 ### v0.9.1 — Fixes MSSQL + Monitor Filter + Compare Diff
 - Fix: Explorer schemas para MSSQL (sys.schemas)
 - Fix: Monitor filtra queries/locks/stats somente do banco selecionado (DB_ID())
