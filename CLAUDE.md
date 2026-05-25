@@ -18,6 +18,31 @@ Este arquivo é lido no início de cada sessão de trabalho. Contém tudo que o 
 
 ## 2. Restrições de Ambiente
 
+### 🐳 100% Dockerizado — Nada no Host
+
+O DBA Analyser é **completamente containerizado**. Na máquina host só precisa de Docker + Docker Compose instalados. Nenhum Node.js, npm, PostgreSQL, ou qualquer outra dependência no host.
+
+| Container | Imagem | Função |
+|-----------|--------|--------|
+| `vpn` | dperson/openvpn-client | Túnel OpenVPN para rede dos clientes |
+| `backend` | Node.js 22 (custom build) | API REST + WebSocket (network_mode: service:vpn) |
+| `frontend` | Node.js (dev) / Nginx (prod) | Interface web React |
+| `postgres` | postgres:16-alpine | Banco INTERNO do sistema (usuários, conexões, audit) |
+
+**Os bancos dos clientes NÃO estão no Docker** — eles estão na rede remota do cliente, acessíveis pelo túnel VPN. O DBA Analyser apenas conecta neles para consultar/monitorar/comparar.
+
+```bash
+# Requisitos da máquina host:
+# - Docker Engine 24+
+# - Docker Compose v2+
+# - /dev/net/tun disponível (padrão em Linux)
+# - Nada mais.
+
+docker compose up --build   # Sobe TUDO
+```
+
+---
+
 ### ⚠️ VPN Obrigatória
 - Os bancos de dados alvos (que o DBA Analyser conecta) estão atrás de VPN
 - A VPN roda APENAS na máquina do Kleyton

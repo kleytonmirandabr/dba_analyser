@@ -579,3 +579,127 @@ Nota: Backend e OpenVPN compartilham o mesmo network namespace
       o backend faz pg.connect("10.8.0.50:5432"), o tráfego
       sai pelo túnel VPN automaticamente.
 ```
+
+
+---
+
+## 💡 CONTRIBUIÇÕES ADICIONAIS DO ARQUITETO
+
+### 1. Schema Versioning (Git para Banco de Dados)
+
+Além de comparar dois bancos ao vivo, o sistema pode **versionar** o schema automaticamente:
+
+```
+Toda vez que o DBA conecta no Explorer ou executa um diff:
+  → Sistema tira "snapshot" do catálogo completo (JSON)
+  → Salva na tabela schema_snapshots com timestamp
+  → Permite comparar "banco hoje" vs "banco há 2 semanas"
+  → Timeline visual de mudanças
+```
+
+**Valor:** Responde "o que mudou e quando?" sem precisar de diff ao vivo com outro banco.
+
+---
+
+### 2. Script Library (Biblioteca de Scripts)
+
+Templates prontos para operações comuns:
+
+| Template | SQL |
+|----------|-----|
+| Adicionar coluna | `ALTER TABLE {table} ADD COLUMN {name} {type} {nullable} {default};` |
+| Adicionar index | `CREATE INDEX idx_{table}_{cols} ON {table} ({cols});` |
+| Adicionar FK | `ALTER TABLE {table} ADD CONSTRAINT fk_{name} FOREIGN KEY ({col}) REFERENCES {ref_table}({ref_col});` |
+| Recriar trigger | `DROP TRIGGER IF EXISTS {name} ON {table}; CREATE TRIGGER...` |
+| Refresh materialized view | `REFRESH MATERIALIZED VIEW CONCURRENTLY {name};` |
+| Vacuum analyze | `VACUUM ANALYZE {table};` |
+| Reindex | `REINDEX INDEX CONCURRENTLY {name};` |
+
+O DBA seleciona template, preenche parâmetros, preview, executa com aprovação.
+
+---
+
+### 3. Health Score por Banco
+
+Dashboard com "nota de saúde" calculada:
+
+| Métrica | Peso | Bom | Ruim |
+|---------|------|-----|------|
+| Cache hit ratio | 25% | > 99% | < 95% |
+| Index usage ratio | 20% | > 95% | < 80% |
+| Dead tuples / live tuples | 15% | < 5% | > 20% |
+| Long running queries (> 30s) | 15% | 0 | > 3 |
+| Locks ativos | 15% | 0 | > 2 |
+| Conexões ativas / max | 10% | < 50% | > 80% |
+
+Resultado: 🟢 Saudável (> 80) | 🟡 Atenção (50-80) | 🔴 Crítico (< 50)
+
+Visível no dashboard principal, badge no card de cada conexão.
+
+---
+
+### 4. Query Explain Visualizer
+
+Quando o DBA identifica uma query lenta no Monitor:
+- Botão "Explain" → roda `EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)`
+- Visualiza o plano de execução como árvore
+- Destaca nós caros (Seq Scan em tabela grande, Nested Loop com muitas rows)
+- Sugere indexes (baseado em Filter conditions sem index)
+
+---
+
+### 5. Notificações Proativas
+
+Além de alertas no browser, o sistema pode notificar:
+
+| Canal | Quando |
+|-------|--------|
+| Email | Query > 60s, Lock > 30s, VPN caiu |
+| Webhook (Slack/Teams) | Mesmos triggers |
+| Badge no browser | Query > 30s (threshold configurável) |
+| Som | Lock detectado (configurável) |
+
+---
+
+### 6. Comparação Agendada (Drift Detection)
+
+Configurar: "Compare PROD vs HML todo dia às 6h"
+- Se drift detectado → notificação
+- Relatório: "3 tabelas divergentes, 1 procedure diferente"
+- Histórico de drifts ao longo do tempo
+
+Isso responde à dor: "implantação quebrou e eu só descubro quando o cliente liga"
+
+---
+
+### 7. Exportação de Schema Completo
+
+Botão "Exportar DDL" que gera:
+```sql
+-- DBA Analyser - Export completo
+-- Banco: photocoat_prod
+-- Data: 2026-05-25 15:00:00
+-- Objetos: 45 tabelas, 12 triggers, 8 procedures, 3 views
+
+CREATE TABLE users (...);
+CREATE TABLE orders (...);
+...
+CREATE OR REPLACE FUNCTION calc_total() ...;
+CREATE TRIGGER trg_updated_at ...;
+```
+
+Valor: backup de schema legível + versionável no Git do projeto.
+
+---
+
+### 8. Integração Futura — CI/CD
+
+Fase futura: CLI que roda no pipeline de deploy:
+
+```bash
+# No GitHub Actions / GitLab CI:
+dba-analyser diff --source=hml --target=prod --fail-on-drift
+# Se houver diferença → pipeline falha → dev corrige antes de deployar
+```
+
+Isso transforma o DBA Analyser de "ferramenta reativa" em "guardrail proativo".
