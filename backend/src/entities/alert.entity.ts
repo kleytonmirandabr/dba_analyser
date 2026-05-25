@@ -12,7 +12,7 @@ export class Alert {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ length: 150 })
+  @Column('varchar', { length: 150 })
   name!: string;
 
   @Column('uuid')
@@ -31,7 +31,7 @@ export class Alert {
   @Column('varchar', { length: 5, nullable: true })
   operator!: AlertOperator | null;
 
-  @Column({ length: 100, nullable: true })
+  @Column('varchar', { length: 100, nullable: true })
   threshold!: string | null;
 
   @Column('int', { default: 300 })
