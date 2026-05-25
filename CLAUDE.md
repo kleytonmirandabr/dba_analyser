@@ -519,9 +519,29 @@ dba_analyser/
 7. **Comparador** — Diff entre 2 DBs (tables, views, functions)
 8. **Audit Log** — Todas ações logadas, filtros, CSV export
 
-### Próxima versão: v0.4.0 — Polish + Adapters (Semana 4)
-- MSSQL adapter
-- MySQL adapter
-- Syntax highlight no editor (CodeMirror)
-- WebSocket real-time para monitor
-- Temas/preferências do usuário
+### v0.4.0 — Adapters + WebSocket + Polish (2026-05-25)
+**Commits:** `ca9609a`
+
+| Versão | Commit | Descrição |
+|--------|--------|-----------|
+| 0.4.0 | ca9609a | MSSQL + MySQL adapters, WebSocket monitor, Settings page |
+
+### Funcionalidades completas (v0.4.0 — MVP)
+1. **Dashboard** — Stats reais, quick actions
+2. **Conexões** — CRUD + test + VPN Wizard (PG, MSSQL, MySQL)
+3. **Explorer** — Tree (schema → table → columns/PK/FK)
+4. **Query Editor** — SQL, Ctrl+Enter, CSV export, histórico, readonly guard
+5. **Monitor** — Queries ativas (WebSocket 5s), locks, kill, stats
+6. **Execuções** — Workflow submit → approve → execute (role-based)
+7. **Comparador** — Diff entre 2 DBs (tables, views, functions, columns)
+8. **Audit Log** — Append-only, filtros, CSV export
+9. **Configurações** — Perfil, alterar senha
+
+### MVP Completo ✅
+O sprint de 4 semanas foi completado. Próximos passos opcionais:
+- Syntax highlight (CodeMirror / Monaco)
+- Temas claros
+- Notificações push (execuções pendentes)
+- Backup/restore management
+- Schema versioning (git-like)
+- ER Diagram visual
