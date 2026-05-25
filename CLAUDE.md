@@ -519,11 +519,13 @@ dba_analyser/
 7. **Comparador** — Diff entre 2 DBs (tables, views, functions)
 8. **Audit Log** — Todas ações logadas, filtros, CSV export
 
-### v0.4.0 — Adapters + WebSocket + Polish (2026-05-25)
-**Commits:** `ca9609a`
+### v0.5.0 — VPN UX + Deploy fixes (2026-05-25)
+**Commits:** `ca9609a` → (current)
 
 | Versão | Commit | Descrição |
 |--------|--------|-----------|
+| 0.5.0 | (current) | VPN page completa, auto-connect, progress indicator, docker-compose.dev |
+| 0.4.1 | - | Fix frontend proxy (Vite), docker-compose.dev.yml sem VPN |
 | 0.4.0 | ca9609a | MSSQL + MySQL adapters, WebSocket monitor, Settings page |
 
 ### Funcionalidades completas (v0.4.0 — MVP)
@@ -537,8 +539,8 @@ dba_analyser/
 8. **Audit Log** — Append-only, filtros, CSV export
 9. **Configurações** — Perfil, alterar senha
 
-### MVP Completo ✅
-O sprint de 4 semanas foi completado. Próximos passos opcionais:
+### MVP Completo ✅ (v0.5.0)
+O sprint de 4 semanas foi completado + polish de deploy e VPN UX. Próximos passos opcionais:
 - Syntax highlight (CodeMirror / Monaco)
 - Temas claros
 - Notificações push (execuções pendentes)
