@@ -1,0 +1,351 @@
+# CLAUDE.md — Guia de contexto para o agente
+
+Este arquivo é lido no início de cada sessão de trabalho. Contém tudo que o agente precisa saber para operar no projeto DBA Analyser.
+
+---
+
+## 1. Projeto
+
+**DBA Analyser** — Ferramenta web self-hosted para análise, comparação e monitoramento de bancos de dados.
+- **Dono:** Kleyton Miranda (`kleytonmiranda@gmail.com`)
+- **Idioma de trabalho:** Português (Brasil)
+- **Repositório:** `https://github.com/kleytonmirandabr/dba_analyser`
+- **URL de produção:** TBD (self-hosted via Docker Compose)
+
+**Stack:** Node.js + Express + TypeScript (backend) | React + Vite + TypeScript + Tailwind + shadcn/ui (frontend) | PostgreSQL 16 (DB interno) | Socket.io (real-time) | Docker Compose (deploy)
+
+---
+
+## 2. Restrições de Ambiente
+
+### ⚠️ VPN Obrigatória
+- Os bancos de dados alvos (que o DBA Analyser conecta) estão atrás de VPN
+- A VPN roda APENAS na máquina do Kleyton
+- O servidor Koi (cloud) NÃO consegue acessar os bancos diretamente
+- **Consequência:** Todo o ambiente de execução precisa ser Docker Compose rodando na máquina do Kleyton (ou em um servidor com acesso à VPN)
+- **Desenvolvimento:** O agente escreve código e commita no Git. Kleyton faz `git pull && docker compose up` na máquina com VPN
+
+### Modelo de Trabalho
+```
+[Agente Koi] → escreve código → git push
+[Kleyton]    → git pull → docker compose up → acessa via browser localhost
+```
+
+- O agente NUNCA tenta conectar em bancos de dados externos
+- O agente NUNCA tenta fazer deploy remoto (sem SSH para a máquina do Kleyton)
+- Todo o trabalho do agente é: escrever código + commitar + documentar
+
+---
+
+## 3. Como fazer deploy
+
+### 3.1 Ambiente de desenvolvimento (máquina do Kleyton)
+
+```bash
+# Clone
+git clone git@github.com:kleytonmirandabr/dba_analyser.git
+cd dba_analyser
+
+# Subir tudo
+docker compose up --build
+
+# Frontend: http://localhost:5173 (dev com hot reload)
+# Backend:  http://localhost:3030
+# Postgres interno: localhost:5433
+```
+
+### 3.2 Ambiente de produção (mesma máquina ou servidor com VPN)
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+# Acesso: http://localhost (porta 80)
+```
+
+### 3.3 Atualizar
+
+```bash
+cd dba_analyser
+git pull origin main
+docker compose up --build -d
+```
+
+---
+
+## 4. Estrutura do Repositório
+
+```
+dba_analyser/
+├── frontend/                    # React + Vite + TS + Tailwind + shadcn
+│   ├── Dockerfile
+│   ├── Dockerfile.dev
+│   ├── package.json
+│   ├── vite.config.ts
+│   ├── tailwind.config.ts
+│   ├── tsconfig.json
+│   └── src/
+│       ├── main.tsx
+│       ├── App.tsx
+│       ├── lib/                 # utils, api client
+│       ├── stores/              # Zustand stores
+│       ├── components/          # Componentes reutilizáveis
+│       │   ├── ui/              # shadcn/ui
+│       │   └── layout/          # AppLayout, Sidebar, Header
+│       └── pages/               # Páginas por rota
+│
+├── backend/                     # Node.js + Express + TS + TypeORM
+│   ├── Dockerfile
+│   ├── Dockerfile.dev
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── src/
+│       ├── index.ts             # Bootstrap Express + Socket.io
+│       ├── config/              # DB config, encryption config
+│       ├── middleware/          # auth, permission, audit
+│       ├── entities/            # TypeORM entities
+│       ├── adapters/            # Multi-DB adapters (pg, mssql, mysql)
+│       ├── services/            # Business logic
+│       ├── routes/              # Express routes
+│       └── websocket/           # Socket.io handlers
+│
+├── docker-compose.yml           # Dev (com hot reload)
+├── docker-compose.prod.yml      # Produção (build + nginx)
+├── .env.example                 # Template de variáveis
+├── CLAUDE.md                    # Este arquivo
+├── SPRINT.md                    # Planejamento de sprints
+├── ANALISE.md                   # Análise completa (DBA/Dev/Req/Arq)
+└── README.md
+```
+
+---
+
+## 5. Docker Compose (Dev)
+
+```yaml
+# docker-compose.yml (desenvolvimento com hot reload)
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    environment:
+      - VITE_API_URL=http://localhost:3030
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3030:3030"
+    volumes:
+      - ./backend/src:/app/src
+    environment:
+      - DATABASE_URL=postgresql://dba_app:dba_secret@postgres:5432/dba_analyser
+      - DBA_MASTER_KEY=${DBA_MASTER_KEY:-dev-master-key-change-in-prod}
+      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret-change-in-prod}
+      - NODE_ENV=development
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: dba_analyser
+      POSTGRES_USER: dba_app
+      POSTGRES_PASSWORD: dba_secret
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dba_app -d dba_analyser"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pgdata:
+```
+
+---
+
+## 6. Docker Compose (Produção)
+
+```yaml
+# docker-compose.prod.yml
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3030:3030"
+    environment:
+      - DATABASE_URL=postgresql://dba_app:${DB_PASSWORD}@postgres:5432/dba_analyser
+      - DBA_MASTER_KEY=${DBA_MASTER_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+      - NODE_ENV=production
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: dba_analyser
+      POSTGRES_USER: dba_app
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dba_app -d dba_analyser"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+```
+
+---
+
+## 7. Convenções de Código
+
+### Geral
+- **Idioma do código:** Inglês (variáveis, funções, classes, comments técnicos)
+- **Idioma da UI:** Português (Brasil) com suporte a i18n futuro
+- **Tamanho de arquivo:** Máximo 300 linhas — decompor se ultrapassar
+- **Commits:** Conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`, `chore:`
+
+### Backend (Node.js + Express + TypeScript)
+- Express com middleware pattern (auth → permission → audit → handler)
+- TypeORM com `dataSource.query(sql, params)` retorna array diretamente
+- Todas queries parametrizadas (NUNCA concatenar strings SQL)
+- Services não conhecem Express (recebem dados puros, retornam dados puros)
+- Routes são finas: validam input (Zod), chamam service, formatam response
+- Responses sempre: `{ data, error?, meta? }`
+- Credenciais NUNCA aparecem em logs, responses, ou error messages
+- Erros tipados com código e mensagem
+
+### Frontend (React + TypeScript)
+- Zustand para state management
+- Componentes < 150 linhas idealmente
+- Pages importam components, não têm lógica pesada
+- API calls via `lib/api.ts` (Axios com interceptors de auth)
+- Tailwind + shadcn/ui para todos os componentes visuais
+- Dark mode obrigatório (todas as telas)
+
+### SQL
+- Todas queries via adapters — nunca SQL direto nos routes/services
+- Parametrização obrigatória (`$1, $2` para PG, `@param` para MSSQL)
+- Nenhum `DROP DATABASE` ou `TRUNCATE` executável sem double-confirm
+
+---
+
+## 8. Regras de Segurança (INVIOLÁVEIS)
+
+1. **Credenciais armazenadas com AES-256-GCM** — salt único por conexão
+2. **Master key em variável de ambiente** — nunca hardcoded, nunca commitada
+3. **API NUNCA retorna senhas** — nem criptografadas, nem mascaradas parcialmente
+4. **Permissão do sistema > GRANT do banco** — se o sistema diz READ_ONLY, não executa DDL/DML mesmo que o user do banco seja superuser
+5. **Toda execução precisa de aprovação** (exceto modo auto-approve para DEV)
+6. **Audit log é append-only** — sem UPDATE/DELETE na aplicação
+7. **SQL injection impossível** — 100% parametrizado, validado com Zod
+8. **Timeout em TODA conexão externa** — default 30s, configurável
+9. **Credenciais descriptografadas just-in-time** — não ficam em memória entre requests
+10. **Rate limiting** em todas as rotas de auth
+
+---
+
+## 9. Modelo de Permissões
+
+### Roles de Usuário
+| Role | Pode consultar | Pode solicitar execução | Pode aprovar | Pode configurar |
+|------|---|---|---|---|
+| VIEWER | ✅ | ❌ | ❌ | ❌ |
+| DBA | ✅ | ✅ | ❌ | ❌ |
+| ADMIN | ✅ | ✅ | ✅ | ✅ |
+
+### Modos de Conexão
+| Modo | SELECT | ALTER/CREATE | DROP | Approval |
+|------|---|---|---|---|
+| READ_ONLY | ✅ | ❌ | ❌ | N/A |
+| EXECUTE | ✅ | ✅ | ⚠️ (whitelist) | Obrigatório (exceto DEV auto-approve) |
+
+### Workflow de Execução
+```
+Solicitar → [Pendente] → Aprovar → [Aprovado] → Executar → [Concluído/Falhou]
+                       → Rejeitar → [Rejeitado]
+```
+
+---
+
+## 10. Variáveis de Ambiente
+
+```bash
+# .env.example
+DATABASE_URL=postgresql://dba_app:senha@postgres:5432/dba_analyser
+DBA_MASTER_KEY=gerar-chave-aleatoria-256-bits
+JWT_SECRET=gerar-secret-aleatorio
+DB_PASSWORD=senha-do-postgres-interno
+
+# Opcionais
+NODE_ENV=production
+PORT=3030
+LOG_LEVEL=info
+ALERT_EMAIL_SMTP=smtp://...
+ALERT_WEBHOOK_URL=https://...
+```
+
+---
+
+## 11. Troubleshooting
+
+### "Connection refused" ao conectar em banco externo
+- Verificar se a VPN está ativa na máquina
+- O Docker precisa usar `network_mode: host` OU o host do banco deve ser acessível pela rede Docker
+- Para acessar serviços na máquina host de dentro do container: usar `host.docker.internal` (Mac/Windows) ou `172.17.0.1` (Linux)
+
+### TypeORM migrations
+```bash
+# Gerar migration
+docker compose exec backend npx typeorm migration:generate -d src/config/database.ts src/migrations/NomeDaMigration
+
+# Rodar migrations
+docker compose exec backend npx typeorm migration:run -d src/config/database.ts
+```
+
+### Reset do banco interno
+```bash
+docker compose down -v  # Remove volume do postgres
+docker compose up --build
+```
+
+---
+
+## 12. Referências
+
+| Recurso | URL |
+|---------|-----|
+| pg-diff (inspiração) | https://github.com/michaelsogos/pg-diff |
+| PostgresCompare (UX ref) | https://www.postgrescompare.com/ |
+| shadcn/ui | https://ui.shadcn.com/ |
+| TypeORM docs | https://typeorm.io/ |
+| Socket.io docs | https://socket.io/docs/ |
+| Monaco Editor (SQL) | https://github.com/suren-atoyan/monaco-react |
