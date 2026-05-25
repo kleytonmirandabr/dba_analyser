@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Activity, Skull, Lock, RefreshCw, Loader2, AlertTriangle, Database, X, Copy, Check, ExternalLink, Cpu, HardDrive, Clock, Users, Zap, ToggleLeft, ToggleRight, Timer } from 'lucide-react'
+import { Activity, Skull, Lock, RefreshCw, Loader2, AlertTriangle, Database, X, Copy, Check, ExternalLink, Cpu, HardDrive, Clock, Users, Zap, ToggleLeft, ToggleRight, Timer, ChevronDown, ChevronRight } from 'lucide-react'
 import api from '../lib/api'
 
 interface Connection { id: string; name: string; environment: string; databaseName?: string; }
@@ -18,6 +18,8 @@ export default function MonitorPage() {
   const [selectedQuery, setSelectedQuery] = useState<ActiveQuery | null>(null)
   const [copied, setCopied] = useState(false)
   const [dbaStats, setDbaStats] = useState<any>({})
+  const [queriesCollapsed, setQueriesCollapsed] = useState(false)
+  const [dbaPanelsCollapsed, setDbaPanelsCollapsed] = useState(false)
   const [enabledPanels, setEnabledPanels] = useState<Set<string>>(new Set(['longQueries', 'waitStats', 'memory', 'idleSessions', 'sessionsByApp']))
   const [showPanelConfig, setShowPanelConfig] = useState(false)
   const intervalRef = useRef<any>(null)
@@ -191,11 +193,12 @@ export default function MonitorPage() {
       {/* Active queries */}
       {selectedConns.length > 0 && (
         <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-          <div className="p-4 border-b border-gray-800 flex items-center gap-2">
+          <button onClick={() => setQueriesCollapsed(!queriesCollapsed)} className="w-full p-4 border-b border-gray-800 flex items-center gap-2 hover:bg-gray-800/50 transition">
+            {queriesCollapsed ? <ChevronRight className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
             <Activity className="w-4 h-4 text-green-400" />
             <h2 className="text-sm font-semibold text-white">Queries Ativas ({queries.length})</h2>
-          </div>
-          {queries.length === 0 ? (
+          </button>
+          {!queriesCollapsed && (queries.length === 0 ? (
             <p className="p-4 text-sm text-gray-500">Nenhuma query ativa</p>
           ) : (
             <div className="overflow-x-auto">
@@ -228,7 +231,7 @@ export default function MonitorPage() {
                 </tbody>
               </table>
             </div>
-          )}
+          ))}
         </div>
       )}
 
@@ -271,17 +274,21 @@ export default function MonitorPage() {
       {selectedConns.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-              <Zap className="w-4 h-4 text-amber-400" /> Painéis DBA
-            </h2>
-            <button onClick={() => setShowPanelConfig(!showPanelConfig)}
-              className="text-[10px] text-gray-500 hover:text-gray-300 flex items-center gap-1">
-              {showPanelConfig ? <ToggleRight className="w-4 h-4 text-blue-400" /> : <ToggleLeft className="w-4 h-4" />}
-              Configurar painéis
+            <button onClick={() => setDbaPanelsCollapsed(!dbaPanelsCollapsed)} className="flex items-center gap-2 hover:opacity-80 transition">
+              {dbaPanelsCollapsed ? <ChevronRight className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
+              <Zap className="w-4 h-4 text-amber-400" />
+              <h2 className="text-sm font-semibold text-white">Painéis DBA</h2>
             </button>
+            {!dbaPanelsCollapsed && (
+              <button onClick={() => setShowPanelConfig(!showPanelConfig)}
+                className="text-[10px] text-gray-500 hover:text-gray-300 flex items-center gap-1">
+                {showPanelConfig ? <ToggleRight className="w-4 h-4 text-blue-400" /> : <ToggleLeft className="w-4 h-4" />}
+                Configurar painéis
+              </button>
+            )}
           </div>
 
-          {showPanelConfig && (
+          {!dbaPanelsCollapsed && showPanelConfig && (
             <div className="p-3 bg-gray-900 border border-gray-800 rounded-lg flex flex-wrap gap-2">
               {[
                 { id: 'longQueries', label: 'Long Queries', icon: '🐌' },
@@ -308,7 +315,7 @@ export default function MonitorPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {!dbaPanelsCollapsed && <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Long Running Queries */}
             {enabledPanels.has('longQueries') && dbaStats.longQueries && (
               <DbaPanel title="🐌 Long Running Queries" subtitle={`>\ 60s (${dbaStats.longQueries.length})`} alert={dbaStats.longQueries.length > 0}>
@@ -457,7 +464,7 @@ export default function MonitorPage() {
                 )}
               </DbaPanel>
             )}
-          </div>
+          </div>}
         </div>
       )}
 
