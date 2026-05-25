@@ -22,6 +22,8 @@ import healthRoutes from './routes/health.routes';
 import alertRoutes from './routes/alerts.routes';
 import { initAlertScheduler } from './services/alert.scheduler';
 import { initGrowthScheduler } from './services/growth.scheduler';
+import { initHealthCollector } from './services/health.collector';
+import diagnosticsRoutes from './routes/diagnostics.routes';
 import growthRoutes from './routes/growth.routes';
 import { initMonitorSocket } from './services/monitor.ws';
 
@@ -79,6 +81,7 @@ app.use('/api/query', queryRoutes);
 app.use('/api/execution', executionRoutes);
 app.use('/api/compare', compareRoutes);
 app.use('/api/audit', auditRoutes);
+app.use('/api/diagnostics', diagnosticsRoutes);
 
 // Status (no auth - used by frontend to check API)
 app.get('/api/status', (_req, res) => {
@@ -109,6 +112,7 @@ AppDataSource.initialize()
     await seedDefaultAdmin();
     initAlertScheduler(io);
     initGrowthScheduler(io);
+    initHealthCollector();
     
     httpServer.listen(PORT, '0.0.0.0', () => {
       console.log(`[DBA Analyser] Backend running on port ${PORT}`);

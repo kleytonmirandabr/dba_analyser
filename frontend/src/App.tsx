@@ -6,6 +6,7 @@ import DashboardPage from './pages/DashboardPage'
 import ConnectionsPage from './pages/ConnectionsPage'
 import ExplorerPage from './pages/ExplorerPage'
 import MonitorPage from './pages/MonitorPage'
+import DiagnosticsPage from './pages/DiagnosticsPage'
 import QueryPage from './pages/QueryPage'
 import ExecutionPage from './pages/ExecutionPage'
 import ComparePage from './pages/ComparePage'
@@ -53,7 +54,8 @@ export default function App() {
           <Route path="connections" element={<ConnectionsPage />} />
           <Route path="explorer" element={<ExplorerPage />} />
           <Route path="query" element={<QueryPage />} />
-          <Route path="monitor" element={<MonitorPage />} />
+          <Route path="diagnostics" element={<DiagnosticsPage />} />
+            <Route path="monitor" element={<MonitorPage />} />
           <Route path="health" element={<HealthPage />} />
           <Route path="alerts" element={<AlertsPage />} />
           <Route path="growth" element={<GrowthPage />} />
