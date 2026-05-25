@@ -519,6 +519,13 @@ dba_analyser/
 7. **Comparador** — Diff entre 2 DBs (tables, views, functions)
 8. **Audit Log** — Todas ações logadas, filtros, CSV export
 
+### v0.5.1 — VPN Auto-Connect via Docker Socket (2026-05-25)
+**Commits:** latest
+
+| Versão | Commit | Descrição |
+|--------|--------|-----------|
+| 0.5.1 | (current) | Backend controla VPN container via Docker socket, botão Cancelar + timeout |
+
 ### v0.5.0 — VPN UX + Deploy fixes (2026-05-25)
 **Commits:** `ca9609a` → (current)
 
