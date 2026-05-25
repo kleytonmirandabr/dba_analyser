@@ -9,7 +9,7 @@ import { DatabaseAdapter } from '../adapters/base.adapter';
 const router = Router();
 const connRepo = () => AppDataSource.getRepository(Connection);
 
-async function getAdapter(connId: string): Promise<{ adapter: DatabaseAdapter; error?: string }> {
+async function getAdapter(connId: string): Promise<{ adapter: DatabaseAdapter; connection?: Connection; error?: string }> {
   const conn = await connRepo().findOne({ where: { id: connId, isActive: true } });
   if (!conn) return { adapter: null as any, error: 'Conexão não encontrada' };
 
@@ -23,7 +23,7 @@ async function getAdapter(connId: string): Promise<{ adapter: DatabaseAdapter; e
     password,
     timeoutMs: conn.queryTimeoutMs,
   });
-  return { adapter };
+  return { adapter, connection: conn };
 }
 
 // GET /api/explorer/:connId/databases
@@ -40,12 +40,21 @@ router.get('/:connId/databases', authMiddleware, async (req: Request, res: Respo
 // GET /api/explorer/:connId/schemas
 router.get('/:connId/schemas', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const { adapter, error } = await getAdapter(req.params.connId);
+    const { adapter, error, connection } = await getAdapter(req.params.connId);
     if (error) return res.status(404).json({ error });
-    const pool = (adapter as any).pool;
-    const result = await pool.query("SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT IN ('pg_catalog','information_schema','pg_toast') ORDER BY schema_name");
+
+    let schemas: string[] = [];
+    if (connection!.dbType === 'postgresql') {
+      const pool = (adapter as any).pool;
+      const result = await pool.query("SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT IN ('pg_catalog','information_schema','pg_toast') ORDER BY schema_name");
+      schemas = result.rows.map((r: any) => r.schema_name);
+    } else {
+      const result = await (adapter as any).query("SELECT s.name as schema_name FROM sys.schemas s WHERE s.schema_id < 16384 AND s.name NOT IN ('guest','INFORMATION_SCHEMA','sys') ORDER BY s.name");
+      schemas = result.map((r: any) => r.schema_name);
+    }
+
     await adapter.disconnect();
-    return res.json({ data: result.rows.map((r: any) => r.schema_name) });
+    return res.json({ data: schemas });
   } catch (err: any) { return res.status(500).json({ error: err.message }); }
 });
 
