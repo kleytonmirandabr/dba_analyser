@@ -52,7 +52,7 @@ services:
       - ./frontend/public:/app/public
       - ./frontend/index.html:/app/index.html
     environment:
-      - VITE_API_URL=http://localhost:3030
+      - VITE_API_URL=
     depends_on:
       - vpn
 
