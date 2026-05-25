@@ -16,6 +16,7 @@ import monitorRoutes from './routes/monitor.routes';
 import queryRoutes from './routes/query.routes';
 import executionRoutes from './routes/execution.routes';
 import compareRoutes from './routes/compare.routes';
+import auditRoutes from './routes/audit.routes';
 
 dotenv.config();
 
@@ -45,6 +46,7 @@ app.use('/api/monitor', monitorRoutes);
 app.use('/api/query', queryRoutes);
 app.use('/api/execution', executionRoutes);
 app.use('/api/compare', compareRoutes);
+app.use('/api/audit', auditRoutes);
 
 // Status (no auth - used by frontend to check API)
 app.get('/api/status', (_req, res) => {

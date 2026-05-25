@@ -501,8 +501,27 @@ dba_analyser/
 | 0.1.4 | da98db3 | Fix TypeORM entity column types |
 | 0.1.3a | 6848d80 | Docs: demandas/ + changelog |
 
-### Próxima versão: v0.3.0 — Comparador + SQL Editor (Semana 3)
-- Diff visual entre dois bancos (schema diff)
-- SQL Editor com syntax highlight
-- Workflow de execução (submeter → aprovar → executar)
-- Adapters MSSQL + MySQL
+### v0.3.0 — SQL Editor + Execution + Comparador + Audit (2026-05-25)
+**Commits:** `0bc237b` → (current)
+
+| Versão | Commit | Descrição |
+|--------|--------|-----------|
+| 0.3.0 | (current) | SQL Editor, Execution Workflow, Comparador, Audit Log, Dashboard real |
+| 0.2.1 | 0bc237b | Backend routes (query, execution, compare) |
+
+### Funcionalidades completas (v0.3.0)
+1. **Dashboard** — Stats reais, quick actions
+2. **Conexões** — CRUD + test + VPN Wizard
+3. **Explorer** — Tree (schema → table → columns/PK/FK)
+4. **Query** — SQL Editor, Ctrl+Enter, CSV export, histórico
+5. **Monitor** — Queries ativas, locks, kill, stats
+6. **Execuções** — Workflow submit → approve → execute
+7. **Comparador** — Diff entre 2 DBs (tables, views, functions)
+8. **Audit Log** — Todas ações logadas, filtros, CSV export
+
+### Próxima versão: v0.4.0 — Polish + Adapters (Semana 4)
+- MSSQL adapter
+- MySQL adapter
+- Syntax highlight no editor (CodeMirror)
+- WebSocket real-time para monitor
+- Temas/preferências do usuário
