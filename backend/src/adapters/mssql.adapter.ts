@@ -34,7 +34,7 @@ export class MSSQLAdapter implements DatabaseAdapter {
   }
 
   async listDatabases(): Promise<DatabaseInfo[]> {
-    return this.query("SELECT name, NULL as sizeBytes, NULL as encoding FROM sys.databases WHERE database_id > 4 ORDER BY name");
+    return this.query("SELECT name, NULL as sizeBytes, NULL as encoding FROM sys.databases WHERE database_id > 4 AND state = 0 ORDER BY name");
   }
 
   async listTables(schema = 'dbo'): Promise<TableInfo[]> {
