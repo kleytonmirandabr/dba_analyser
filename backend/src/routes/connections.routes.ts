@@ -118,6 +118,78 @@ router.put('/:id', authMiddleware, requireRole('admin'), async (req: Request, re
   }
 });
 
+// POST /api/connections/:id/databases — discover all databases on the server
+router.post('/:id/databases', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const conn = await connRepo().findOne({ where: { id: req.params.id } });
+    if (!conn) return res.status(404).json({ error: 'Conexão não encontrada' });
+
+    const password = decrypt(conn.passwordEncrypted);
+    const adapter = createAdapter(conn.dbType);
+
+    await adapter.connect({
+      host: conn.host,
+      port: conn.port,
+      database: conn.databaseName || (conn.dbType === 'postgresql' ? 'postgres' : 'master'),
+      username: conn.username,
+      password,
+      timeoutMs: conn.queryTimeoutMs,
+    });
+
+    const databases = await adapter.listDatabases();
+    await adapter.disconnect();
+
+    return res.json({ data: databases });
+  } catch (err: any) {
+    return res.json({ data: [], error: err.message });
+  }
+});
+
+// POST /api/connections/:id/select-databases — mark which databases to monitor
+router.post('/:id/select-databases', authMiddleware, requireRole('admin'), async (req: Request, res: Response) => {
+  try {
+    const conn = await connRepo().findOne({ where: { id: req.params.id } });
+    if (!conn) return res.status(404).json({ error: 'Conexão não encontrada' });
+
+    const { databases } = req.body as { databases: string[] };
+    if (!databases || !Array.isArray(databases)) return res.status(400).json({ error: 'databases array required' });
+
+    // Store selected databases as JSON in a new column or create child connections
+    // Strategy: create a child connection for each selected database
+    const password = decrypt(conn.passwordEncrypted);
+    const { encrypted, salt } = encrypt(password);
+
+    const created: any[] = [];
+    for (const dbName of databases) {
+      // Skip if already exists
+      const existing = await connRepo().findOne({ where: { host: conn.host, port: conn.port, databaseName: dbName } });
+      if (existing) continue;
+
+      const child = connRepo().create({
+        name: `${conn.name} / ${dbName}`,
+        host: conn.host,
+        port: conn.port,
+        databaseName: dbName,
+        username: conn.username,
+        passwordEncrypted: encrypted,
+        passwordSalt: salt,
+        dbType: conn.dbType,
+        environment: conn.environment,
+        mode: conn.mode,
+        autoApprove: conn.autoApprove,
+        groupName: conn.name,
+        createdById: req.user!.userId,
+      });
+      const saved = await connRepo().save(child);
+      created.push({ ...saved, passwordEncrypted: undefined, passwordSalt: undefined });
+    }
+
+    return res.json({ data: { created: created.length, connections: created } });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // DELETE /api/connections/:id
 router.delete('/:id', authMiddleware, requireRole('admin'), async (req: Request, res: Response) => {
   const result = await connRepo().delete(req.params.id);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plug, Plus, Trash2, Pencil, CheckCircle2, XCircle, Loader2, Database, Server } from 'lucide-react'
+import { Plug, Plus, Trash2, Pencil, CheckCircle2, XCircle, Loader2, Database, Server, Search } from 'lucide-react'
 import api from '../lib/api'
 
 interface Connection {
@@ -14,6 +14,7 @@ export default function ConnectionsPage() {
   const [testing, setTesting] = useState<string | null>(null)
   const [testResult, setTestResult] = useState<Record<string, { ok: boolean; version?: string; error?: string }>>({})
   const [editingConn, setEditingConn] = useState<Connection | null>(null)
+  const [discoverConn, setDiscoverConn] = useState<Connection | null>(null)
 
   const load = async () => {
     try {
@@ -93,6 +94,10 @@ export default function ConnectionsPage() {
                   className="px-3 py-1.5 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition">
                   {testing === conn.id ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Testar'}
                 </button>
+                <button onClick={() => setDiscoverConn(conn)} title="Descobrir databases"
+                  className="p-1.5 text-gray-500 hover:text-green-400 transition">
+                  <Search className="w-4 h-4" />
+                </button>
                 <button onClick={() => setEditingConn(conn)}
                   className="p-1.5 text-gray-500 hover:text-blue-400 transition">
                   <Pencil className="w-4 h-4" />
@@ -109,6 +114,7 @@ export default function ConnectionsPage() {
 
       {showForm && <ConnectionForm onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); load() }} />}
       {editingConn && <ConnectionForm connection={editingConn} onClose={() => setEditingConn(null)} onSaved={() => { setEditingConn(null); load() }} />}
+      {discoverConn && <DatabaseDiscovery connection={discoverConn} onClose={() => setDiscoverConn(null)} onSaved={() => { setDiscoverConn(null); load() }} />}
     </div>
   )
 }
@@ -216,6 +222,119 @@ function ConnectionForm({ onClose, onSaved, connection }: { onClose: () => void;
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  )
+}
+
+
+function DatabaseDiscovery({ connection, onClose, onSaved }: { connection: Connection; onClose: () => void; onSaved: () => void }) {
+  const [databases, setDatabases] = useState<{ name: string; sizeBytes?: number; encoding?: string }[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    const discover = async () => {
+      try {
+        const { data } = await api.post(`/api/connections/${connection.id}/databases`)
+        setDatabases(data.data || [])
+        if (data.error) setError(data.error)
+      } catch (err: any) {
+        setError(err.message)
+      }
+      setLoading(false)
+    }
+    discover()
+  }, [connection.id])
+
+  const toggleDb = (name: string) => {
+    setSelected(prev => {
+      const next = new Set(prev)
+      next.has(name) ? next.delete(name) : next.add(name)
+      return next
+    })
+  }
+
+  const toggleAll = () => {
+    if (selected.size === databases.length) {
+      setSelected(new Set())
+    } else {
+      setSelected(new Set(databases.map(d => d.name)))
+    }
+  }
+
+  const handleSave = async () => {
+    if (selected.size === 0) return
+    setSaving(true)
+    try {
+      await api.post(`/api/connections/${connection.id}/select-databases`, { databases: Array.from(selected) })
+      onSaved()
+    } catch (err: any) {
+      setError(err.response?.data?.error || err.message)
+      setSaving(false)
+    }
+  }
+
+  const formatSize = (bytes?: number) => {
+    if (!bytes) return ''
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div className="bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
+        <h2 className="text-lg font-bold text-white mb-1">Descobrir Databases</h2>
+        <p className="text-xs text-gray-400 mb-4">Servidor: {connection.host}:{connection.port} ({connection.dbType})</p>
+
+        {error && <div className="mb-3 p-2 bg-red-900/30 border border-red-800 rounded text-xs text-red-400">{error}</div>}
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+            <span className="ml-2 text-sm text-gray-400">Conectando e listando databases...</span>
+          </div>
+        ) : databases.length === 0 ? (
+          <p className="text-sm text-gray-400 py-8 text-center">Nenhum database encontrado.</p>
+        ) : (
+          <>
+            <div className="flex items-center justify-between mb-3">
+              <button onClick={toggleAll} className="text-xs text-blue-400 hover:text-blue-300">
+                {selected.size === databases.length ? 'Desmarcar todos' : 'Selecionar todos'}
+              </button>
+              <span className="text-xs text-gray-500">{selected.size} de {databases.length} selecionados</span>
+            </div>
+            <div className="space-y-1 max-h-[50vh] overflow-y-auto">
+              {databases.map(db => (
+                <label key={db.name}
+                  className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition ${
+                    selected.has(db.name) ? 'bg-blue-900/20 border-blue-700' : 'bg-gray-800/50 border-gray-800 hover:border-gray-700'
+                  }`}>
+                  <input type="checkbox" checked={selected.has(db.name)} onChange={() => toggleDb(db.name)}
+                    className="rounded border-gray-600 text-blue-500 focus:ring-blue-500" />
+                  <Database className="w-4 h-4 text-blue-400 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm text-white font-medium">{db.name}</span>
+                    {db.encoding && <span className="ml-2 text-[10px] text-gray-500">{db.encoding}</span>}
+                  </div>
+                  {db.sizeBytes ? <span className="text-xs text-gray-500">{formatSize(db.sizeBytes)}</span> : null}
+                </label>
+              ))}
+            </div>
+          </>
+        )}
+
+        <div className="flex gap-3 pt-4 mt-4 border-t border-gray-800">
+          <button onClick={onClose} className="flex-1 px-4 py-2.5 text-sm text-gray-400 hover:bg-gray-800 rounded-lg transition">Cancelar</button>
+          <button onClick={handleSave} disabled={saving || selected.size === 0}
+            className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-lg transition flex items-center justify-center gap-2">
+            {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+            Monitorar {selected.size > 0 ? `(${selected.size})` : ''}
+          </button>
+        </div>
       </div>
     </div>
   )
