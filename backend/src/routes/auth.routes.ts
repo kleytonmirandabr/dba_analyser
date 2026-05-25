@@ -51,4 +51,29 @@ router.get('/me', async (req: Request, res: Response) => {
   }
 });
 
+
+// POST /api/auth/change-password
+router.post('/change-password', async (req: Request, res: Response) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) return res.status(401).json({ error: 'Token não fornecido' });
+
+  try {
+    const payload = jwt.verify(authHeader.slice(7), JWT_SECRET) as any;
+    const user = await userRepo().findOne({ where: { id: payload.userId } });
+    if (!user) return res.status(401).json({ error: 'Usuário não encontrado' });
+
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) return res.status(400).json({ error: 'Campos obrigatórios' });
+
+    const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!valid) return res.status(401).json({ error: 'Senha atual incorreta' });
+
+    user.passwordHash = await bcrypt.hash(newPassword, 10);
+    await userRepo().save(user);
+    return res.json({ data: { message: 'Senha alterada com sucesso' } });
+  } catch {
+    return res.status(401).json({ error: 'Token inválido' });
+  }
+});
+
 export default router;

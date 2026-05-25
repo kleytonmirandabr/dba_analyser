@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Database, LayoutDashboard, Plug, FolderTree, Activity, Terminal, GitCompareArrows, Play, Shield } from 'lucide-react'
+import { Database, LayoutDashboard, Plug, FolderTree, Activity, Terminal, GitCompareArrows, Play, Shield, Settings } from 'lucide-react'
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -10,6 +10,7 @@ const navItems = [
   { to: '/executions', icon: Play, label: 'Execuções' },
   { to: '/compare', icon: GitCompareArrows, label: 'Comparador' },
   { to: '/audit', icon: Shield, label: 'Audit Log' },
+  { to: '/settings', icon: Settings, label: 'Configurações' },
 ]
 
 export default function Sidebar() {

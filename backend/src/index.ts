@@ -17,6 +17,7 @@ import queryRoutes from './routes/query.routes';
 import executionRoutes from './routes/execution.routes';
 import compareRoutes from './routes/compare.routes';
 import auditRoutes from './routes/audit.routes';
+import { initMonitorSocket } from './services/monitor.ws';
 
 dotenv.config();
 
@@ -66,6 +67,7 @@ io.on('connection', (socket) => {
   console.log('[WS] Client connected:', socket.id);
   socket.on('disconnect', () => console.log('[WS] Client disconnected:', socket.id));
 });
+initMonitorSocket(io);
 
 // Start
 const PORT = parseInt(process.env.PORT || '3030');

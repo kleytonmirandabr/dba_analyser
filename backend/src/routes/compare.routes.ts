@@ -3,7 +3,7 @@ import { authMiddleware } from '../middleware/auth.middleware';
 import { AppDataSource } from '../config/database';
 import { Connection } from '../entities/connection.entity';
 import { decrypt } from '../config/encryption';
-import { PostgresAdapter } from '../adapters/postgres.adapter';
+import { createAdapter } from '../adapters/adapter.factory';
 
 const router = Router();
 const connRepo = () => AppDataSource.getRepository(Connection);
@@ -26,8 +26,8 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
     ]);
     if (!source || !target) return res.status(404).json({ error: 'Conexão não encontrada' });
 
-    const srcAdapter = new PostgresAdapter();
-    const tgtAdapter = new PostgresAdapter();
+    const srcAdapter = createAdapter(source.dbType);
+    const tgtAdapter = createAdapter(source.dbType);
     await srcAdapter.connect({ host: source.host, port: source.port, database: source.databaseName, username: source.username, password: decrypt(source.passwordEncrypted) });
     await tgtAdapter.connect({ host: target.host, port: target.port, database: target.databaseName, username: target.username, password: decrypt(target.passwordEncrypted) });
 

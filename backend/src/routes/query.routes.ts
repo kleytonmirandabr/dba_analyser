@@ -4,7 +4,7 @@ import { AppDataSource } from '../config/database';
 import { Connection } from '../entities/connection.entity';
 import { AuditLog } from '../entities/audit-log.entity';
 import { decrypt } from '../config/encryption';
-import { PostgresAdapter } from '../adapters/postgres.adapter';
+import { createAdapter } from '../adapters/adapter.factory';
 
 const router = Router();
 const connRepo = () => AppDataSource.getRepository(Connection);
@@ -31,7 +31,7 @@ router.post('/:connId/execute', authMiddleware, async (req: Request, res: Respon
       return res.status(403).json({ error: 'Conexão em modo somente-leitura. Use o workflow de execução para comandos de escrita.' });
     }
 
-    const adapter = new PostgresAdapter();
+    const adapter = createAdapter(conn.dbType);
     await adapter.connect({ host: conn.host, port: conn.port, database: conn.databaseName, username: conn.username, password: decrypt(conn.passwordEncrypted), timeoutMs: conn.queryTimeoutMs });
 
     // Add LIMIT if SELECT and no limit present
@@ -67,7 +67,7 @@ router.post('/:connId/explain', authMiddleware, async (req: Request, res: Respon
     const conn = await connRepo().findOne({ where: { id: req.params.connId, isActive: true } });
     if (!conn) return res.status(404).json({ error: 'Conexão não encontrada' });
 
-    const adapter = new PostgresAdapter();
+    const adapter = createAdapter(conn.dbType);
     await adapter.connect({ host: conn.host, port: conn.port, database: conn.databaseName, username: conn.username, password: decrypt(conn.passwordEncrypted) });
     const result = await adapter.executeSQL(`EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) ${sql}`);
     await adapter.disconnect();

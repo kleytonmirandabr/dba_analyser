@@ -3,7 +3,7 @@ import { authMiddleware, requireRole } from '../middleware/auth.middleware';
 import { AppDataSource } from '../config/database';
 import { Connection } from '../entities/connection.entity';
 import { decrypt } from '../config/encryption';
-import { PostgresAdapter } from '../adapters/postgres.adapter';
+import { createAdapter } from '../adapters/adapter.factory';
 
 const router = Router();
 const connRepo = () => AppDataSource.getRepository(Connection);
@@ -14,7 +14,7 @@ router.get('/:connId/queries', authMiddleware, async (req: Request, res: Respons
     const conn = await connRepo().findOne({ where: { id: req.params.connId, isActive: true } });
     if (!conn) return res.status(404).json({ error: 'Conexão não encontrada' });
 
-    const adapter = new PostgresAdapter();
+    const adapter = createAdapter(conn.dbType);
     await adapter.connect({ host: conn.host, port: conn.port, database: conn.databaseName, username: conn.username, password: decrypt(conn.passwordEncrypted) });
     const data = await adapter.getActiveQueries();
     await adapter.disconnect();
@@ -28,7 +28,7 @@ router.get('/:connId/locks', authMiddleware, async (req: Request, res: Response)
     const conn = await connRepo().findOne({ where: { id: req.params.connId, isActive: true } });
     if (!conn) return res.status(404).json({ error: 'Conexão não encontrada' });
 
-    const adapter = new PostgresAdapter();
+    const adapter = createAdapter(conn.dbType);
     await adapter.connect({ host: conn.host, port: conn.port, database: conn.databaseName, username: conn.username, password: decrypt(conn.passwordEncrypted) });
     const data = await adapter.getLocks();
     await adapter.disconnect();
@@ -42,7 +42,7 @@ router.post('/:connId/kill/:pid', authMiddleware, requireRole('admin', 'dba'), a
     const conn = await connRepo().findOne({ where: { id: req.params.connId, isActive: true } });
     if (!conn) return res.status(404).json({ error: 'Conexão não encontrada' });
 
-    const adapter = new PostgresAdapter();
+    const adapter = createAdapter(conn.dbType);
     await adapter.connect({ host: conn.host, port: conn.port, database: conn.databaseName, username: conn.username, password: decrypt(conn.passwordEncrypted) });
     const result = await adapter.killQuery(parseInt(req.params.pid));
     await adapter.disconnect();
@@ -56,7 +56,7 @@ router.get('/:connId/stats', authMiddleware, async (req: Request, res: Response)
     const conn = await connRepo().findOne({ where: { id: req.params.connId, isActive: true } });
     if (!conn) return res.status(404).json({ error: 'Conexão não encontrada' });
 
-    const adapter = new PostgresAdapter();
+    const adapter = createAdapter(conn.dbType);
     await adapter.connect({ host: conn.host, port: conn.port, database: conn.databaseName, username: conn.username, password: decrypt(conn.passwordEncrypted) });
     
     const pool = (adapter as any).pool;

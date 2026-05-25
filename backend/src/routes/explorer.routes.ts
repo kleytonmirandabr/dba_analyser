@@ -3,7 +3,7 @@ import { authMiddleware } from '../middleware/auth.middleware';
 import { AppDataSource } from '../config/database';
 import { Connection } from '../entities/connection.entity';
 import { decrypt } from '../config/encryption';
-import { PostgresAdapter } from '../adapters/postgres.adapter';
+import { createAdapter } from '../adapters/adapter.factory';
 import { DatabaseAdapter } from '../adapters/base.adapter';
 
 const router = Router();
@@ -14,7 +14,7 @@ async function getAdapter(connId: string): Promise<{ adapter: DatabaseAdapter; e
   if (!conn) return { adapter: null as any, error: 'Conexão não encontrada' };
 
   const password = decrypt(conn.passwordEncrypted);
-  const adapter = new PostgresAdapter(); // TODO: factory by dbType
+  const adapter = createAdapter(conn.dbType);
   await adapter.connect({
     host: conn.host,
     port: conn.port,
