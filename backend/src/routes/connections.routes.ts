@@ -171,25 +171,29 @@ router.post('/:id/select-databases', authMiddleware, requireRole('admin'), async
     const { databases } = req.body as { databases: string[] };
     if (!databases || !Array.isArray(databases)) return res.status(400).json({ error: 'databases array required' });
 
-    // Store selected databases as JSON in a new column or create child connections
-    // Strategy: create a child connection for each selected database
-    const password = decrypt(conn.passwordEncrypted, conn.passwordSalt);
-    const { encrypted, salt } = encrypt(password);
-
+    // Create a child connection for each selected database
     const created: any[] = [];
     for (const dbName of databases) {
       // Skip if already exists
       const existing = await connRepo().findOne({ where: { host: conn.host, port: conn.port, databaseName: dbName } });
       if (existing) continue;
 
+      // Re-encrypt for each child (unique salt per connection)
+      const password = decrypt(conn.passwordEncrypted, conn.passwordSalt);
+      const username = decrypt(conn.usernameEncrypted, conn.usernameSalt);
+      const { encrypted: passEnc, salt: passSalt } = encrypt(password);
+      const { encrypted: userEnc, salt: userSalt } = encrypt(username);
+
       const child = connRepo().create({
         name: `${conn.name} / ${dbName}`,
         host: conn.host,
         port: conn.port,
         databaseName: dbName,
-        username: decrypt(conn.usernameEncrypted, conn.usernameSalt),
-        passwordEncrypted: encrypted,
-        passwordSalt: salt,
+        usernameEncrypted: userEnc,
+        usernameSalt: userSalt,
+        passwordEncrypted: passEnc,
+        passwordSalt: passSalt,
+        keyVersion: 1,
         dbType: conn.dbType,
         environment: conn.environment,
         mode: conn.mode,
