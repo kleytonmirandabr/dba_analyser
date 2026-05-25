@@ -64,10 +64,7 @@ export default function MonitorPage() {
       setLocks(results.flatMap(r => r.locks))
       setAllStats(results.filter(r => r.stats).map(r => r.stats!) as ConnStats[])
 
-      // Fetch DBA stats for first selected connection (server-level metrics)
-      if (ids.length > 0 && enabledPanels.size > 0) {
-        api.get(`/api/monitor/${ids[0]}/dba-stats?panels=all`).then(r => setDbaStats(r.data.data)).catch(() => {})
-      }
+      // DBA stats fetched separately to avoid being blocked by 183 parallel requests
     } catch {}
     setLoading(false)
   }
@@ -85,12 +82,26 @@ export default function MonitorPage() {
     if (selectedConns.length > 0 && !autoRefresh) refresh()
   }, [selectedConns])
 
-  // Refetch dba-stats when panels change
+  // DBA stats - independent fetch cycle (not blocked by main refresh)
+  const dbaIntervalRef = useRef<any>(null)
+  const fetchDbaStats = () => {
+    if (selectedConns.length === 0 || enabledPanels.size === 0) return
+    api.get(`/api/monitor/${selectedConns[0]}/dba-stats?panels=all`)
+      .then(r => setDbaStats(r.data.data)).catch(() => {})
+  }
+
   useEffect(() => {
     if (selectedConns.length > 0 && enabledPanels.size > 0) {
-      const panels = [...enabledPanels].join(',')
-      api.get(`/api/monitor/${selectedConns[0]}/dba-stats?panels=${panels}`).then(r => setDbaStats((prev: any) => ({ ...prev, ...r.data.data }))).catch(() => {})
+      fetchDbaStats()
+      dbaIntervalRef.current = setInterval(fetchDbaStats, 10000)
+      return () => clearInterval(dbaIntervalRef.current)
     }
+    return () => clearInterval(dbaIntervalRef.current)
+  }, [selectedConns.length > 0, enabledPanels])
+  
+  useEffect(() => {
+    // Immediate fetch when panels change
+    if (selectedConns.length > 0 && enabledPanels.size > 0) fetchDbaStats()
   }, [enabledPanels])
 
   const killQuery = async (connId: string, pid: number) => {
