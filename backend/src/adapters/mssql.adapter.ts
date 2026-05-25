@@ -140,12 +140,13 @@ export class MSSQLAdapter implements DatabaseAdapter {
 
   async getLocks(): Promise<LockInfo[]> {
     return this.query(`SELECT blocked.session_id as blockedPid, bt.text as blockedQuery,
-      blocking.session_id as blockingPid, blt.text as blockingQuery,
+      blocked.blocking_session_id as blockingPid,
+      ISNULL(blt.text, '') as blockingQuery,
       blocked.wait_type as lockType, blocked.wait_time as durationMs
       FROM sys.dm_exec_requests blocked
       CROSS APPLY sys.dm_exec_sql_text(blocked.sql_handle) bt
-      JOIN sys.dm_exec_sessions blocking ON blocked.blocking_session_id = blocking.session_id
-      CROSS APPLY sys.dm_exec_sql_text(blocking.most_recent_sql_handle) blt
+      LEFT JOIN sys.dm_exec_connections bc ON blocked.blocking_session_id = bc.session_id
+      OUTER APPLY sys.dm_exec_sql_text(bc.most_recent_sql_handle) blt
       WHERE blocked.blocking_session_id > 0`);
   }
 
