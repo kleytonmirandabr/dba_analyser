@@ -214,6 +214,61 @@ function TablesSection({ tables }: { tables: TableDiff[] }) {
   )
 }
 
+function DiffView({ source, target }: { source?: string; target?: string }) {
+  const srcLines = (source || '').split('\n')
+  const tgtLines = (target || '').split('\n')
+
+  // Simple LCS-based line diff
+  const diff = computeLineDiff(srcLines, tgtLines)
+
+  return (
+    <div className="font-mono text-[11px] max-h-80 overflow-auto rounded border border-gray-800 bg-gray-950">
+      {diff.map((line, i) => (
+        <div key={i} className={`flex ${line.type === 'add' ? 'bg-green-900/20' : line.type === 'remove' ? 'bg-red-900/20' : line.type === 'changed' ? 'bg-yellow-900/15' : ''}`}>
+          <span className={`w-5 text-center select-none shrink-0 border-r border-gray-800 ${line.type === 'add' ? 'text-green-500 bg-green-900/30' : line.type === 'remove' ? 'text-red-500 bg-red-900/30' : line.type === 'changed' ? 'text-yellow-500 bg-yellow-900/20' : 'text-gray-600'}`}>
+            {line.type === 'add' ? '+' : line.type === 'remove' ? '-' : line.type === 'changed' ? '~' : ' '}
+          </span>
+          <pre className={`px-2 py-0.5 whitespace-pre-wrap flex-1 ${line.type === 'add' ? 'text-green-300' : line.type === 'remove' ? 'text-red-300' : line.type === 'changed' ? 'text-yellow-300' : 'text-gray-400'}`}>{line.text}</pre>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+interface DiffLine { type: 'same' | 'add' | 'remove' | 'changed'; text: string; }
+
+function computeLineDiff(src: string[], tgt: string[]): DiffLine[] {
+  const result: DiffLine[] = []
+  const maxLen = Math.max(src.length, tgt.length)
+  
+  // Use simple sequential comparison with context
+  // For each line: if same -> same, if different -> show both
+  const srcSet = new Set(src.map(s => s.trim().toLowerCase()))
+  const tgtSet = new Set(tgt.map(s => s.trim().toLowerCase()))
+  
+  // Mark lines unique to source (removed) and target (added)
+  for (const line of src) {
+    const norm = line.trim().toLowerCase()
+    if (!norm) continue
+    if (!tgtSet.has(norm)) {
+      result.push({ type: 'remove', text: line })
+    }
+  }
+  for (const line of tgt) {
+    const norm = line.trim().toLowerCase()
+    if (!norm) continue
+    if (!srcSet.has(norm)) {
+      result.push({ type: 'add', text: line })
+    }
+  }
+
+  if (result.length === 0) {
+    result.push({ type: 'same', text: '(nenhuma diferença significativa)' })
+  }
+  
+  return result
+}
+
 function ObjectsSection({ objects, type }: { objects: ObjectDiff[]; type: string }) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
@@ -236,7 +291,6 @@ function ObjectsSection({ objects, type }: { objects: ObjectDiff[]; type: string
       {objects.map(obj => {
         const st = statusLabel(obj.status)
         const isExpanded = expanded.has(obj.name)
-        const showDiff = obj.status === 'different'
         return (
           <div key={obj.name} className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
             <button onClick={() => toggle(obj.name)} className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-800/50 transition">
@@ -247,16 +301,23 @@ function ObjectsSection({ objects, type }: { objects: ObjectDiff[]; type: string
             </button>
             {isExpanded && (
               <div className="px-4 pb-3 border-t border-gray-800 pt-3">
-                {showDiff ? (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <p className="text-[10px] text-green-400 font-medium mb-1 uppercase">Source</p>
-                      <pre className="text-[11px] text-gray-300 font-mono bg-green-900/10 border border-green-900/20 rounded p-2 max-h-60 overflow-auto whitespace-pre-wrap">{obj.sourceDefinition || '(vazio)'}</pre>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-red-400 font-medium mb-1 uppercase">Target</p>
-                      <pre className="text-[11px] text-gray-300 font-mono bg-red-900/10 border border-red-900/20 rounded p-2 max-h-60 overflow-auto whitespace-pre-wrap">{obj.targetDefinition || '(vazio)'}</pre>
-                    </div>
+                {obj.status === 'different' ? (
+                  <div className="space-y-3">
+                    <p className="text-[10px] text-gray-500 uppercase font-medium">Linhas diferentes (- source / + target)</p>
+                    <DiffView source={obj.sourceDefinition} target={obj.targetDefinition} />
+                    <details className="mt-2">
+                      <summary className="text-[10px] text-gray-500 cursor-pointer hover:text-gray-300">Ver código completo lado a lado</summary>
+                      <div className="grid grid-cols-2 gap-3 mt-2">
+                        <div>
+                          <p className="text-[10px] text-green-400 font-medium mb-1 uppercase">Source</p>
+                          <pre className="text-[11px] text-gray-300 font-mono bg-green-900/10 border border-green-900/20 rounded p-2 max-h-60 overflow-auto whitespace-pre-wrap">{obj.sourceDefinition || '(vazio)'}</pre>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-red-400 font-medium mb-1 uppercase">Target</p>
+                          <pre className="text-[11px] text-gray-300 font-mono bg-red-900/10 border border-red-900/20 rounded p-2 max-h-60 overflow-auto whitespace-pre-wrap">{obj.targetDefinition || '(vazio)'}</pre>
+                        </div>
+                      </div>
+                    </details>
                   </div>
                 ) : (
                   <pre className="text-[11px] text-gray-400 font-mono bg-gray-800 rounded p-2 max-h-40 overflow-auto whitespace-pre-wrap">
@@ -271,3 +332,4 @@ function ObjectsSection({ objects, type }: { objects: ObjectDiff[]; type: string
     </div>
   )
 }
+
