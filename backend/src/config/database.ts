@@ -6,13 +6,15 @@ import { AuditLog } from '../entities/audit-log.entity';
 import { Alert } from '../entities/alert.entity';
 import { AlertHistory } from '../entities/alert-history.entity';
 import { TableSnapshot } from '../entities/table-snapshot.entity';
+import { HealthSnapshot } from '../entities/health-snapshot.entity';
 import { TableGrowthRule } from '../entities/table-growth-rule.entity';
+import { HealthSnapshot } from '../entities/health-snapshot.entity';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
   url: process.env.DATABASE_URL,
   synchronize: process.env.NODE_ENV === 'development', // Auto-sync in dev only
   logging: process.env.NODE_ENV === 'development' ? ['error'] : false,
-  entities: [User, Connection, ExecutionRequest, AuditLog, Alert, AlertHistory, TableSnapshot, TableGrowthRule],
+  entities: [User, Connection, ExecutionRequest, AuditLog, Alert, AlertHistory, TableSnapshot, TableGrowthRule, HealthSnapshot],
   migrations: ['dist/migrations/*.js'],
 });
