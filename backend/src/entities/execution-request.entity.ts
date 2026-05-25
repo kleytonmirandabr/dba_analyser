@@ -30,7 +30,7 @@ export class ExecutionRequest {
   @JoinColumn({ name: 'approvedById' })
   approvedBy!: User | null;
 
-  @Column({ length: 20, default: 'pending' })
+  @Column('varchar', { length: 20, default: 'pending' })
   status!: ExecutionStatus;
 
   @Column('text')

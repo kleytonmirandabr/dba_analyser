@@ -16,13 +16,13 @@ export class AuditLog {
   @Column('uuid', { nullable: true })
   connectionId!: string | null;
 
-  @Column({ length: 255, nullable: true })
+  @Column('varchar', { length: 255, nullable: true })
   targetObject!: string | null;
 
   @Column('text', { nullable: true })
   sqlText!: string | null;
 
-  @Column({ length: 20, nullable: true })
+  @Column('varchar', { length: 20, nullable: true })
   result!: string | null;
 
   @Column('text', { nullable: true })
@@ -31,7 +31,7 @@ export class AuditLog {
   @Column('int', { nullable: true })
   durationMs!: number | null;
 
-  @Column({ length: 45, nullable: true })
+  @Column('varchar', { length: 45, nullable: true })
   ipAddress!: string | null;
 
   @Column('jsonb', { nullable: true })

@@ -43,10 +43,10 @@ export class Connection {
   @Column({ default: false })
   autoApprove!: boolean;
 
-  @Column('text', { array: true, nullable: true })
+  @Column('simple-array', { nullable: true })
   allowedOperations!: string[] | null;
 
-  @Column('text', { array: true, nullable: true })
+  @Column('simple-array', { nullable: true })
   blockedOperations!: string[] | null;
 
   @Column('int', { default: 30000 })
@@ -55,7 +55,7 @@ export class Connection {
   @Column({ default: true })
   isActive!: boolean;
 
-  @Column({ length: 100, nullable: true })
+  @Column('varchar', { length: 100, nullable: true })
   groupName!: string | null;
 
   @Column('uuid', { nullable: true })
