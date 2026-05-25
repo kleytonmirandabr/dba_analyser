@@ -1,6 +1,49 @@
 version: '3.8'
 
 services:
+  # ─── VPN Container (OpenVPN Client) ─────────────────────
+  vpn:
+    image: dperson/openvpn-client
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    volumes:
+      - vpn-data:/vpn
+    environment:
+      - FIREWALL=  # Desabilitar firewall interno (o Docker já isola)
+    ports:
+      - "3030:3030"  # Backend exposto AQUI (pois backend usa network do vpn)
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ping", "-c", "1", "-W", "3", "8.8.8.8"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ─── Backend (Node.js + Express + TypeScript) ────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    network_mode: "service:vpn"  # ← TODO tráfego sai pela VPN
+    volumes:
+      - ./backend/src:/app/src
+      - vpn-data:/vpn:ro         # Lê configs VPN para status
+    environment:
+      - DATABASE_URL=postgresql://dba_app:dba_secret@postgres:5432/dba_analyser
+      - DBA_MASTER_KEY=${DBA_MASTER_KEY:-dev-master-key-change-in-prod}
+      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret-change-in-prod}
+      - NODE_ENV=development
+      - VPN_CONFIG_PATH=/vpn
+    depends_on:
+      vpn:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
+  # ─── Frontend (React + Vite) ─────────────────────────────
   frontend:
     build:
       context: ./frontend
@@ -16,23 +59,7 @@ services:
     depends_on:
       - backend
 
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.dev
-    ports:
-      - "3030:3030"
-    volumes:
-      - ./backend/src:/app/src
-    environment:
-      - DATABASE_URL=postgresql://dba_app:dba_secret@postgres:5432/dba_analyser
-      - DBA_MASTER_KEY=${DBA_MASTER_KEY:-dev-master-key-change-in-prod}
-      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret-change-in-prod}
-      - NODE_ENV=development
-    depends_on:
-      postgres:
-        condition: service_healthy
-
+  # ─── PostgreSQL (DB interno do sistema) ──────────────────
   postgres:
     image: postgres:16-alpine
     environment:
@@ -51,3 +78,4 @@ services:
 
 volumes:
   pgdata:
+  vpn-data:  # Configs VPN armazenadas aqui (criptografadas)

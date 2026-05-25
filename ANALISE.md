@@ -459,3 +459,123 @@ CREATE TABLE alert_configs (
 | WebSocket sobrecarrega bancos | MÉDIA | Polling condicional + interval config |
 | Master key perdida | MÉDIA | Documentar rotação; env var com backup |
 | Banco lento trava app | BAIXA | Timeouts + connection pooling |
+
+
+---
+
+## 🔌 MÓDULO VPN (Adendo)
+
+### Requisitos Funcionais — VPN
+
+| ID | Requisito | P |
+|---|---|---|
+| RF-VPN.1 | Upload de arquivo .ovpn via interface web | P0 |
+| RF-VPN.2 | Informar user/pass da VPN (quando necessário) | P0 |
+| RF-VPN.3 | Armazenar config VPN com AES-256 (mesmo padrão das credenciais de banco) | P0 |
+| RF-VPN.4 | Iniciar/parar conexão VPN via interface | P0 |
+| RF-VPN.5 | Exibir status da VPN em tempo real (conectado/desconectado/reconectando) | P0 |
+| RF-VPN.6 | Reconexão automática se túnel cair | P0 |
+| RF-VPN.7 | Healthcheck a cada 30s (ping em host interno) | P0 |
+| RF-VPN.8 | Wizard de primeiro acesso: VPN → Conexão → Teste | P0 |
+| RF-VPN.9 | Bloquear cadastro de conexão se VPN não estiver ativa | P1 |
+| RF-VPN.10 | Suportar múltiplos perfis VPN (ex: VPN cliente A, VPN cliente B) | P2 |
+| RF-VPN.11 | Logs da VPN acessíveis via interface (debug) | P2 |
+
+### Arquitetura VPN
+
+```
+Wizard UI (primeiro acesso)
+│
+├── Passo 1: "Sua rede requer VPN?"
+│   └── Sim → Upload do .ovpn
+│   └── Não → Pular, ir direto para conexão de banco
+│
+├── Passo 2: Credenciais VPN (opcional - alguns .ovpn já tem embutido)
+│   └── Usuário + Senha → armazena criptografado
+│
+├── Passo 3: Conectar
+│   └── Backend escreve .ovpn no volume vpn-data
+│   └── Reinicia container VPN (docker restart via API)
+│   └── Aguarda healthcheck passar
+│   └── Exibe: "VPN Conectada ✅ - IP interno: 10.x.x.x"
+│
+├── Passo 4: Cadastrar conexão de banco
+│   └── Host (agora acessível via VPN), porta, database, user, senha
+│   └── Testar conexão → ✅ ou ❌
+│
+└── Passo 5: Pronto!
+    └── Redireciona para Dashboard
+```
+
+### Detalhes Técnicos
+
+**Container VPN:**
+- Imagem: `dperson/openvpn-client` (OpenVPN 2.5+)
+- Capabilities: `NET_ADMIN`
+- Devices: `/dev/net/tun`
+- Volume: `vpn-data:/vpn` (persiste configs entre restarts)
+- Healthcheck: `ping -c 1 -W 3 8.8.8.8` (ou IP interno configurável)
+
+**Backend gerencia VPN via:**
+```typescript
+// services/vpn.service.ts
+export class VPNService {
+  // Upload e armazena .ovpn criptografado
+  async uploadConfig(ovpnFile: Buffer, credentials?: { user: string; pass: string }): Promise<void>;
+  
+  // Escreve config no volume e reinicia container
+  async connect(): Promise<{ success: boolean; assignedIp?: string; error?: string }>;
+  
+  // Para a VPN
+  async disconnect(): Promise<void>;
+  
+  // Verifica estado atual
+  async getStatus(): Promise<{
+    connected: boolean;
+    ip?: string;
+    uptime?: string;
+    lastError?: string;
+    configUploaded: boolean;
+  }>;
+  
+  // Logs do OpenVPN (últimas N linhas)
+  async getLogs(lines?: number): Promise<string[]>;
+  
+  // Remove config (reset)
+  async removeConfig(): Promise<void>;
+}
+```
+
+**Como o backend reinicia o container VPN:**
+- Opção 1: Monta `/var/run/docker.sock` no backend → usa dockerode para `docker restart vpn`
+- Opção 2: Escreve config no volume compartilhado → OpenVPN detecta mudança (inotify)
+- **Recomendado:** Opção 1 (controle total)
+
+**Segurança:**
+- Arquivo .ovpn NUNCA é retornado pela API (nem parcialmente)
+- Credenciais VPN criptografadas com mesma master key do sistema
+- Container VPN isolado — não tem acesso ao DB interno nem ao frontend
+- Se VPN cair, backend retorna HTTP 503 "VPN desconectada" nas rotas de banco
+
+### Diagrama de Rede Docker
+
+```
+┌─── docker network: dba_default ───────────────────────────┐
+│                                                           │
+│  ┌──────────┐         ┌──────────────────────────────┐    │
+│  │ frontend │◀───────▶│ vpn (network_mode: bridge)   │    │
+│  │ :80/5173 │  HTTP   │  ┌────────┐  ┌───────────┐  │    │
+│  └──────────┘  :3030  │  │backend │  │ openvpn   │──┼───▶ 10.x.x.x (rede VPN)
+│                       │  │        │  │ client    │  │    │
+│  ┌──────────┐         │  └────────┘  └───────────┘  │    │
+│  │ postgres │         └──────────────────────────────┘    │
+│  │ :5432    │ (acessível pelo backend via hostname)        │
+│  └──────────┘                                             │
+│                                                           │
+└───────────────────────────────────────────────────────────┘
+
+Nota: Backend e OpenVPN compartilham o mesmo network namespace
+      (network_mode: "service:vpn"). Isso significa que quando
+      o backend faz pg.connect("10.8.0.50:5432"), o tráfego
+      sai pelo túnel VPN automaticamente.
+```

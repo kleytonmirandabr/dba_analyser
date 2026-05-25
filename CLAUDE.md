@@ -37,6 +37,73 @@ Este arquivo é lido no início de cada sessão de trabalho. Contém tudo que o 
 
 ---
 
+
+
+### OpenVPN Integrado (Container Sidecar)
+
+O sistema usa um container OpenVPN como sidecar. O backend roteia TODO tráfego de banco de dados através do túnel VPN.
+
+**Arquitetura:**
+```
+┌─────────────────── Docker Compose ───────────────────────┐
+│                                                          │
+│  ┌──────────┐     ┌──────────────────────────────────┐   │
+│  │ Frontend │     │  network_mode: "service:vpn"     │   │
+│  │ :80/:5173│     │  ┌──────────┐    ┌───────────┐   │   │
+│  └────┬─────┘     │  │ Backend  │    │  OpenVPN  │   │   │
+│       │           │  │ :3030    │    │  Client   │───┼──▶ Rede do Cliente
+│       └───────────┼─▶│          │    │           │   │   │ (bancos de dados)
+│                   │  └──────────┘    └───────────┘   │   │
+│                   └──────────────────────────────────┘   │
+│                                                          │
+│  ┌──────────┐                                            │
+│  │ Postgres │ (DB interno - NÃO precisa de VPN)          │
+│  │ :5433    │                                            │
+│  └──────────┘                                            │
+└──────────────────────────────────────────────────────────┘
+```
+
+**Fluxo de configuração (Wizard na UI):**
+1. Upload do arquivo `.ovpn` via interface
+2. Informar usuário e senha da VPN (se necessário)
+3. Sistema armazena criptografado (AES-256) no volume `vpn-data`
+4. Backend reinicia o container VPN com a nova config
+5. Status exibido no dashboard: "VPN Conectada ✅" / "Desconectada ❌"
+6. Só depois de VPN ativa → cadastrar conexões de banco
+
+**Imagens Docker usadas:**
+- `dperson/openvpn-client` — container leve que roda OpenVPN client
+- Alternativa: `ghcr.io/wfg/openvpn-client` (mais mantido)
+
+**Requisitos do host:**
+- `/dev/net/tun` disponível (padrão em Linux)
+- Docker com `cap_add: NET_ADMIN` permitido
+
+**Reconexão automática:**
+- OpenVPN já faz reconnect nativo (`persist-tun`, `persist-key`)
+- Healthcheck no container verifica conectividade a cada 30s
+- Se VPN cai, backend retorna erro "VPN desconectada" nas chamadas de banco
+
+---
+
+### Modelo de Trabalho (atualizado com VPN)
+
+**Cenário 1: Servidor Koi (cloud) com VPN**
+```
+[Agente Koi] → escreve código → git push
+[Servidor]   → docker compose up → VPN conecta → bancos acessíveis
+```
+
+**Cenário 2: Máquina local do Kleyton**
+```
+[Agente Koi] → escreve código → git push
+[Kleyton]    → git pull → docker compose up → VPN conecta → bancos acessíveis
+```
+
+Em ambos os cenários, a VPN roda DENTRO do Docker — não precisa de VPN no host.
+
+---
+
 ## 3. Como fazer deploy
 
 ### 3.1 Ambiente de desenvolvimento (máquina do Kleyton)

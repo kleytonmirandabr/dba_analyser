@@ -108,13 +108,20 @@
 
 ## Sprint 1 - MVP (4 semanas)
 
-### Semana 1: Fundação
-- [ ] Setup monorepo (frontend + backend)
-- [ ] Backend: Express + TypeScript + structure
+### Semana 1: Fundação + VPN + Conexões
+- [ ] Setup monorepo (frontend + backend + Dockerfiles)
+- [ ] Docker Compose com OpenVPN sidecar funcionando
+- [ ] Backend: Express + TypeScript + TypeORM migrations
+- [ ] Backend: VPN Service (upload .ovpn, start/stop, status)
+- [ ] Backend: Connection Service (CRUD + AES-256 + test)
+- [ ] Backend: Auth (JWT + roles: admin/dba/viewer)
+- [ ] Backend: Permission middleware + Audit middleware
 - [ ] DB Adapter layer (interface genérica + impl PostgreSQL)
-- [ ] CRUD de conexões (com teste de conexão)
 - [ ] Frontend: Layout base (sidebar, header, dark mode)
-- [ ] Tela de conexões (cadastro, teste, listagem)
+- [ ] Frontend: Wizard de primeiro acesso (VPN → Conexão → Teste)
+- [ ] Frontend: Tela de conexões (cadastro, teste, listagem)
+- [ ] Frontend: Status da VPN no header (indicador verde/vermelho)
+- [ ] Frontend: Login + proteção de rotas
 
 ### Semana 2: Explorer
 - [ ] Backend: Listar databases, schemas, tabelas, colunas
