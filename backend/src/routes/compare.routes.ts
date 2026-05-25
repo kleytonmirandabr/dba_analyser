@@ -4,20 +4,58 @@ import { AppDataSource } from '../config/database';
 import { Connection } from '../entities/connection.entity';
 import { decrypt } from '../config/encryption';
 import { createAdapter } from '../adapters/adapter.factory';
+import { DatabaseAdapter, ColumnInfo, IndexInfo, TriggerInfo, ProcedureInfo, FunctionInfo, ViewInfo } from '../adapters/base.adapter';
 
 const router = Router();
 const connRepo = () => AppDataSource.getRepository(Connection);
 
-interface SchemaDiff {
-  tables: { onlyInSource: string[]; onlyInTarget: string[]; different: { name: string; differences: string[] }[] };
-  views: { onlyInSource: string[]; onlyInTarget: string[] };
-  functions: { onlyInSource: string[]; onlyInTarget: string[] };
+// === DIFF INTERFACES ===
+interface ColumnDiff {
+  column: string;
+  field: string; // type, nullable, default, isPK, isFK
+  sourceValue: string;
+  targetValue: string;
 }
 
-// POST /api/compare
+interface TableDiff {
+  name: string;
+  status: 'only_source' | 'only_target' | 'different' | 'identical';
+  columnsOnlyInSource: string[];
+  columnsOnlyInTarget: string[];
+  columnDifferences: ColumnDiff[];
+  indexesOnlyInSource: string[];
+  indexesOnlyInTarget: string[];
+}
+
+interface ObjectDiff {
+  name: string;
+  status: 'only_source' | 'only_target' | 'different' | 'identical';
+  sourceDefinition?: string;
+  targetDefinition?: string;
+}
+
+interface FullSchemaDiff {
+  summary: { tables: number; columns: number; triggers: number; procedures: number; functions: number; views: number; indexes: number; total: number };
+  tables: TableDiff[];
+  triggers: ObjectDiff[];
+  procedures: ObjectDiff[];
+  functions: ObjectDiff[];
+  views: ObjectDiff[];
+}
+
+// === HELPER: normalize SQL for comparison ===
+function normalizeSql(sql: string | null | undefined): string {
+  if (!sql) return '';
+  return sql.replace(/\s+/g, ' ').replace(/\r\n/g, '\n').trim().toLowerCase();
+}
+
+// === MAIN COMPARE ENDPOINT ===
 router.post('/', authMiddleware, async (req: Request, res: Response) => {
-  const { sourceId, targetId, schema = 'public' } = req.body;
+  const { sourceId, targetId, schema } = req.body;
   if (!sourceId || !targetId) return res.status(400).json({ error: 'sourceId e targetId são obrigatórios' });
+
+  let srcAdapter: DatabaseAdapter | null = null;
+  let tgtAdapter: DatabaseAdapter | null = null;
 
   try {
     const [source, target] = await Promise.all([
@@ -26,95 +64,156 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
     ]);
     if (!source || !target) return res.status(404).json({ error: 'Conexão não encontrada' });
 
-    const srcAdapter = createAdapter(source.dbType);
-    const tgtAdapter = createAdapter(source.dbType);
-    await srcAdapter.connect({ host: source.host, port: source.port, database: source.databaseName, username: source.username, password: decrypt(source.passwordEncrypted) });
-    await tgtAdapter.connect({ host: target.host, port: target.port, database: target.databaseName, username: target.username, password: decrypt(target.passwordEncrypted) });
+    const srcSchema = schema || (source.dbType === 'postgresql' ? 'public' : 'dbo');
+    const tgtSchema = schema || (target.dbType === 'postgresql' ? 'public' : 'dbo');
 
-    const [srcTables, tgtTables] = await Promise.all([srcAdapter.listTables(schema), tgtAdapter.listTables(schema)]);
-    const [srcViews, tgtViews] = await Promise.all([srcAdapter.listViews(schema), tgtAdapter.listViews(schema)]);
-    const [srcFns, tgtFns] = await Promise.all([srcAdapter.listFunctions(schema), tgtAdapter.listFunctions(schema)]);
+    srcAdapter = createAdapter(source.dbType);
+    tgtAdapter = createAdapter(target.dbType);
+    await srcAdapter.connect({ host: source.host, port: source.port, database: source.databaseName, username: source.username, password: decrypt(source.passwordEncrypted), timeoutMs: 30000 });
+    await tgtAdapter.connect({ host: target.host, port: target.port, database: target.databaseName, username: target.username, password: decrypt(target.passwordEncrypted), timeoutMs: 30000 });
 
+    // Fetch all objects in parallel
+    const [srcTables, tgtTables] = await Promise.all([srcAdapter.listTables(srcSchema), tgtAdapter.listTables(tgtSchema)]);
+    const [srcTriggers, tgtTriggers] = await Promise.all([srcAdapter.listTriggers(srcSchema), tgtAdapter.listTriggers(tgtSchema)]);
+    const [srcProcs, tgtProcs] = await Promise.all([srcAdapter.listProcedures(srcSchema), tgtAdapter.listProcedures(tgtSchema)]);
+    const [srcFuncs, tgtFuncs] = await Promise.all([srcAdapter.listFunctions(srcSchema), tgtAdapter.listFunctions(tgtSchema)]);
+    const [srcViews, tgtViews] = await Promise.all([srcAdapter.listViews(srcSchema), tgtAdapter.listViews(tgtSchema)]);
+
+    // === COMPARE TABLES + COLUMNS + INDEXES ===
     const srcTableNames = new Set(srcTables.map(t => t.name));
     const tgtTableNames = new Set(tgtTables.map(t => t.name));
+    const allTableNames = new Set([...srcTableNames, ...tgtTableNames]);
 
-    const onlyInSource = [...srcTableNames].filter(t => !tgtTableNames.has(t));
-    const onlyInTarget = [...tgtTableNames].filter(t => !srcTableNames.has(t));
-    const common = [...srcTableNames].filter(t => tgtTableNames.has(t));
+    const tableDiffs: TableDiff[] = [];
+    let totalColDiffs = 0;
+    let totalIdxDiffs = 0;
 
-    // Compare columns of common tables
-    const different: { name: string; differences: string[] }[] = [];
-    for (const table of common) {
+    for (const tableName of allTableNames) {
+      if (!tgtTableNames.has(tableName)) {
+        tableDiffs.push({ name: tableName, status: 'only_source', columnsOnlyInSource: [], columnsOnlyInTarget: [], columnDifferences: [], indexesOnlyInSource: [], indexesOnlyInTarget: [] });
+        continue;
+      }
+      if (!srcTableNames.has(tableName)) {
+        tableDiffs.push({ name: tableName, status: 'only_target', columnsOnlyInSource: [], columnsOnlyInTarget: [], columnDifferences: [], indexesOnlyInSource: [], indexesOnlyInTarget: [] });
+        continue;
+      }
+
+      // Compare columns
       const [srcCols, tgtCols] = await Promise.all([
-        srcAdapter.listColumns(schema, table),
-        tgtAdapter.listColumns(schema, table),
+        srcAdapter.listColumns(srcSchema, tableName),
+        tgtAdapter.listColumns(tgtSchema, tableName),
       ]);
-      const diffs: string[] = [];
       const srcColMap = new Map(srcCols.map(c => [c.name, c]));
       const tgtColMap = new Map(tgtCols.map(c => [c.name, c]));
 
-      for (const [name, col] of srcColMap) {
-        if (!tgtColMap.has(name)) { diffs.push(`+ coluna "${name}" (${col.type}) só existe no source`); continue; }
-        const tgt = tgtColMap.get(name)!;
-        if (col.type !== tgt.type) diffs.push(`~ "${name}": tipo ${col.type} → ${tgt.type}`);
-        if (col.nullable !== tgt.nullable) diffs.push(`~ "${name}": nullable ${col.nullable} → ${tgt.nullable}`);
+      const columnsOnlyInSource: string[] = [];
+      const columnsOnlyInTarget: string[] = [];
+      const columnDifferences: ColumnDiff[] = [];
+
+      for (const [name, srcCol] of srcColMap) {
+        if (!tgtColMap.has(name)) { columnsOnlyInSource.push(name); continue; }
+        const tgtCol = tgtColMap.get(name)!;
+        if (srcCol.type.toLowerCase() !== tgtCol.type.toLowerCase()) columnDifferences.push({ column: name, field: 'type', sourceValue: srcCol.type, targetValue: tgtCol.type });
+        if (srcCol.nullable !== tgtCol.nullable) columnDifferences.push({ column: name, field: 'nullable', sourceValue: String(srcCol.nullable), targetValue: String(tgtCol.nullable) });
+        if ((srcCol.defaultValue || '') !== (tgtCol.defaultValue || '')) columnDifferences.push({ column: name, field: 'default', sourceValue: srcCol.defaultValue || 'NULL', targetValue: tgtCol.defaultValue || 'NULL' });
+        if (srcCol.isPrimaryKey !== tgtCol.isPrimaryKey) columnDifferences.push({ column: name, field: 'primaryKey', sourceValue: String(srcCol.isPrimaryKey), targetValue: String(tgtCol.isPrimaryKey) });
+        if (srcCol.isForeignKey !== tgtCol.isForeignKey) columnDifferences.push({ column: name, field: 'foreignKey', sourceValue: String(srcCol.isForeignKey), targetValue: String(tgtCol.isForeignKey) });
       }
       for (const [name] of tgtColMap) {
-        if (!srcColMap.has(name)) diffs.push(`- coluna "${name}" só existe no target`);
+        if (!srcColMap.has(name)) columnsOnlyInTarget.push(name);
       }
-      if (diffs.length > 0) different.push({ name: table, differences: diffs });
-    }
 
-    await srcAdapter.disconnect();
-    await tgtAdapter.disconnect();
+      // Compare indexes
+      let indexesOnlyInSource: string[] = [];
+      let indexesOnlyInTarget: string[] = [];
+      try {
+        const [srcIdx, tgtIdx] = await Promise.all([
+          srcAdapter.listIndexes(srcSchema, tableName),
+          tgtAdapter.listIndexes(tgtSchema, tableName),
+        ]);
+        const srcIdxNames = new Set(srcIdx.map(i => i.name));
+        const tgtIdxNames = new Set(tgtIdx.map(i => i.name));
+        indexesOnlyInSource = [...srcIdxNames].filter(n => !tgtIdxNames.has(n));
+        indexesOnlyInTarget = [...tgtIdxNames].filter(n => !srcIdxNames.has(n));
+      } catch {}
 
-    const diff: SchemaDiff = {
-      tables: { onlyInSource, onlyInTarget, different },
-      views: {
-        onlyInSource: srcViews.filter(v => !tgtViews.some(t => t.name === v.name)).map(v => v.name),
-        onlyInTarget: tgtViews.filter(v => !srcViews.some(s => s.name === v.name)).map(v => v.name),
-      },
-      functions: {
-        onlyInSource: srcFns.filter(f => !tgtFns.some(t => t.name === f.name)).map(f => f.name),
-        onlyInTarget: tgtFns.filter(f => !srcFns.some(s => s.name === f.name)).map(f => f.name),
-      },
-    };
+      const hasDiffs = columnsOnlyInSource.length > 0 || columnsOnlyInTarget.length > 0 || columnDifferences.length > 0 || indexesOnlyInSource.length > 0 || indexesOnlyInTarget.length > 0;
+      totalColDiffs += columnsOnlyInSource.length + columnsOnlyInTarget.length + columnDifferences.length;
+      totalIdxDiffs += indexesOnlyInSource.length + indexesOnlyInTarget.length;
 
-    return res.json({ data: diff });
-  } catch (err: any) { return res.status(500).json({ error: err.message }); }
-});
-
-// POST /api/compare/migration-script
-router.post('/migration-script', authMiddleware, async (req: Request, res: Response) => {
-  const { sourceId, targetId, schema = 'public' } = req.body;
-  // Simplified: generate ALTER statements for the diff
-  // In production would use pg_dump --schema-only and diff
-  try {
-    const { data: diff } = await (await fetch(`http://localhost:3030/api/compare`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: req.headers.authorization || '' },
-      body: JSON.stringify({ sourceId, targetId, schema })
-    })).json();
-
-    let script = '-- Migration Script (Source → Target)\n-- Generated by DBA Analyser\n\n';
-    
-    if (diff.tables.onlyInSource.length) {
-      script += '-- Tables only in source (need CREATE in target):\n';
-      diff.tables.onlyInSource.forEach((t: string) => script += `-- TODO: CREATE TABLE ${schema}.${t} (...)\n`);
-    }
-    if (diff.tables.onlyInTarget.length) {
-      script += '\n-- Tables only in target (need DROP or ignore):\n';
-      diff.tables.onlyInTarget.forEach((t: string) => script += `-- DROP TABLE IF EXISTS ${schema}.${t};\n`);
-    }
-    if (diff.tables.different.length) {
-      script += '\n-- Tables with differences:\n';
-      diff.tables.different.forEach((d: any) => {
-        script += `\n-- Table: ${d.name}\n`;
-        d.differences.forEach((dd: string) => script += `--   ${dd}\n`);
+      tableDiffs.push({
+        name: tableName,
+        status: hasDiffs ? 'different' : 'identical',
+        columnsOnlyInSource, columnsOnlyInTarget, columnDifferences,
+        indexesOnlyInSource, indexesOnlyInTarget,
       });
     }
 
-    return res.json({ data: { script } });
-  } catch (err: any) { return res.status(500).json({ error: err.message }); }
+    // === COMPARE TRIGGERS ===
+    const triggerDiffs = compareObjects(srcTriggers, tgtTriggers, t => t.name, t => t.definition);
+
+    // === COMPARE PROCEDURES ===
+    const procDiffs = compareObjects(srcProcs, tgtProcs, p => p.name, p => p.definition);
+
+    // === COMPARE FUNCTIONS ===
+    const funcDiffs = compareObjects(srcFuncs, tgtFuncs, f => f.name, f => f.definition);
+
+    // === COMPARE VIEWS ===
+    const viewDiffs = compareObjects(srcViews, tgtViews, v => v.name, v => v.definition);
+
+    const diff: FullSchemaDiff = {
+      summary: {
+        tables: tableDiffs.filter(t => t.status !== 'identical').length,
+        columns: totalColDiffs,
+        triggers: triggerDiffs.filter(t => t.status !== 'identical').length,
+        procedures: procDiffs.filter(p => p.status !== 'identical').length,
+        functions: funcDiffs.filter(f => f.status !== 'identical').length,
+        views: viewDiffs.filter(v => v.status !== 'identical').length,
+        indexes: totalIdxDiffs,
+        total: 0,
+      },
+      tables: tableDiffs.filter(t => t.status !== 'identical'),
+      triggers: triggerDiffs.filter(t => t.status !== 'identical'),
+      procedures: procDiffs.filter(p => p.status !== 'identical'),
+      functions: funcDiffs.filter(f => f.status !== 'identical'),
+      views: viewDiffs.filter(v => v.status !== 'identical'),
+    };
+    diff.summary.total = diff.summary.tables + diff.summary.triggers + diff.summary.procedures + diff.summary.functions + diff.summary.views;
+
+    return res.json({ data: diff });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  } finally {
+    if (srcAdapter) await srcAdapter.disconnect();
+    if (tgtAdapter) await tgtAdapter.disconnect();
+  }
 });
+
+// Helper: compare named objects with definitions
+function compareObjects<T>(source: T[], target: T[], getName: (o: T) => string, getDef: (o: T) => string): ObjectDiff[] {
+  const srcMap = new Map(source.map(o => [getName(o), o]));
+  const tgtMap = new Map(target.map(o => [getName(o), o]));
+  const allNames = new Set([...srcMap.keys(), ...tgtMap.keys()]);
+  const diffs: ObjectDiff[] = [];
+
+  for (const name of allNames) {
+    const src = srcMap.get(name);
+    const tgt = tgtMap.get(name);
+
+    if (!tgt) {
+      diffs.push({ name, status: 'only_source', sourceDefinition: getDef(src!) });
+    } else if (!src) {
+      diffs.push({ name, status: 'only_target', targetDefinition: getDef(tgt!) });
+    } else {
+      const srcDef = normalizeSql(getDef(src));
+      const tgtDef = normalizeSql(getDef(tgt));
+      if (srcDef !== tgtDef) {
+        diffs.push({ name, status: 'different', sourceDefinition: getDef(src), targetDefinition: getDef(tgt) });
+      }
+    }
+  }
+
+  return diffs;
+}
 
 export default router;
