@@ -585,7 +585,17 @@ O sprint de 4 semanas foi completado + polish de deploy e VPN UX.
 9. **Severidade** — Info/Warning/Critical com cores distintas
 10. **Ações** — Testar, Pausar/Ativar, Editar, Excluir
 
-### v0.9.0 — Comparador de Schema Completo
+### v0.9.1 — Fixes MSSQL + Monitor Filter + Compare Diff
+- Fix: Explorer schemas para MSSQL (sys.schemas)
+- Fix: Monitor filtra queries/locks/stats somente do banco selecionado (DB_ID())
+- Fix: getLocks usa dm_exec_connections (most_recent_sql_handle)
+- Fix: Query injection usa TOP para MSSQL em vez de LIMIT
+- Fix: Compare normalização remove comentários, brackets, whitespace
+- Feat: Contador de linhas no diff do Comparador
+- Feat: Diff inline (linhas vermelhas/verdes) + side-by-side com numeração
+- Perf: Compare bulk fetch (listAllColumns/listAllIndexes) — 3s vs 4min
+
+## v0.9.0 — Comparador de Schema Completo
 - Comparação completa: tabelas, colunas (tipo/nullable/default/PK/FK), índices, triggers, procedures, functions, views
 - Diff de corpo/definição SQL para triggers, procedures, functions e views
 - UI side-by-side para código diferente (source vs target)

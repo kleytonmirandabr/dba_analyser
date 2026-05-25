@@ -10,6 +10,7 @@
 - Alertas Configuráveis (v0.7.0)
 - Growth Tracker - Cron Diário (v0.8.0)
 - Comparador de Schema Completo (v0.9.0)
+- Fixes MSSQL + Monitor DB filter + Compare diff view (v0.9.1)
 
 ## 🔜 Próximas
 - [ ] Syntax highlight (CodeMirror / Monaco) no SQL Editor
