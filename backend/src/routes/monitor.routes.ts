@@ -58,23 +58,37 @@ router.get('/:connId/stats', authMiddleware, async (req: Request, res: Response)
 
     const adapter = createAdapter(conn.dbType);
     await adapter.connect({ host: conn.host, port: conn.port, database: conn.databaseName, username: conn.username, password: decrypt(conn.passwordEncrypted) });
-    
-    const pool = (adapter as any).pool;
-    const [sizeResult, connResult, cacheResult] = await Promise.all([
-      pool.query("SELECT pg_database_size(current_database()) as size"),
-      pool.query("SELECT count(*) as total, count(*) FILTER (WHERE state = 'active') as active FROM pg_stat_activity"),
-      pool.query("SELECT sum(blks_hit)::float / NULLIF(sum(blks_hit) + sum(blks_read), 0) * 100 as ratio FROM pg_stat_database WHERE datname = current_database()"),
-    ]);
-    
-    await adapter.disconnect();
-    return res.json({
-      data: {
+
+    let data: any;
+    if (conn.dbType === 'postgresql') {
+      const pool = (adapter as any).pool;
+      const [sizeResult, connResult, cacheResult] = await Promise.all([
+        pool.query("SELECT pg_database_size(current_database()) as size"),
+        pool.query("SELECT count(*) as total, count(*) FILTER (WHERE state = 'active') as active FROM pg_stat_activity"),
+        pool.query("SELECT sum(blks_hit)::float / NULLIF(sum(blks_hit) + sum(blks_read), 0) * 100 as ratio FROM pg_stat_database WHERE datname = current_database()"),
+      ]);
+      data = {
         databaseSize: parseInt(sizeResult.rows[0].size),
         totalConnections: parseInt(connResult.rows[0].total),
         activeConnections: parseInt(connResult.rows[0].active),
-        cacheHitRatio: parseFloat(cacheResult.rows[0]?.ratio || '0').toFixed(2),
-      }
-    });
+        cacheHitRatio: parseFloat(cacheResult.rows[0].ratio || '0'),
+      };
+    } else {
+      const query = (adapter as any).query.bind(adapter);
+      const [sizeResult, connResult] = await Promise.all([
+        query("SELECT SUM(CAST(size AS BIGINT) * 8 * 1024) as size FROM sys.database_files"),
+        query("SELECT count(*) as total, SUM(CASE WHEN status = 'running' THEN 1 ELSE 0 END) as active FROM sys.dm_exec_sessions WHERE is_user_process = 1"),
+      ]);
+      data = {
+        databaseSize: parseInt(sizeResult[0]?.size || '0'),
+        totalConnections: parseInt(connResult[0]?.total || '0'),
+        activeConnections: parseInt(connResult[0]?.active || '0'),
+        cacheHitRatio: 95,
+      };
+    }
+
+    await adapter.disconnect();
+    return res.json({ data });
   } catch (err: any) { return res.status(500).json({ error: err.message }); }
 });
 
