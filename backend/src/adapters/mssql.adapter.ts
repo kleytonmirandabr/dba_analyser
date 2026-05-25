@@ -38,7 +38,7 @@ export class MSSQLAdapter implements DatabaseAdapter {
   }
 
   async listTables(schema = 'dbo'): Promise<TableInfo[]> {
-    return this.query(`SELECT s.name as [schema], t.name, SUM(p.rows) as rowEstimate, NULL as sizeBytes
+    return this.query(`SELECT s.name as [schema], t.name, SUM(CAST(p.rows AS BIGINT)) as rowEstimate, NULL as sizeBytes
       FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.schema_id
       LEFT JOIN sys.partitions p ON t.object_id = p.object_id AND p.index_id IN (0,1)
       WHERE s.name = '${schema}' GROUP BY s.name, t.name ORDER BY t.name`);
@@ -132,7 +132,7 @@ export class MSSQLAdapter implements DatabaseAdapter {
   async getHealthOverview(): Promise<import('./base.adapter').HealthOverview> {
     const version = (await this.query("SELECT @@VERSION as version"))[0].version.split('\n')[0];
     const tables = await this.query("SELECT count(*) as cnt FROM sys.tables");
-    const size = await this.query("SELECT SUM(size * 8 * 1024) as size FROM sys.database_files");
+    const size = await this.query("SELECT SUM(CAST(size AS BIGINT) * 8 * 1024) as size FROM sys.database_files");
     const conns = await this.query("SELECT count(*) as active FROM sys.dm_exec_sessions WHERE is_user_process = 1");
     const maxConns = await this.query("SELECT CAST(value_in_use AS int) as max FROM sys.configurations WHERE name = 'user connections'");
 
@@ -153,8 +153,8 @@ export class MSSQLAdapter implements DatabaseAdapter {
   async getTableHealth(): Promise<import('./base.adapter').TableHealth[]> {
     const rows = await this.query(`
       SELECT s.name as [schema], t.name,
-             SUM(a.total_pages * 8 * 1024) as sizeBytes,
-             SUM(p.rows) as rowEstimate, 0 as deadTuples, SUM(p.rows) as liveTuples,
+             SUM(CAST(a.total_pages AS BIGINT) * 8 * 1024) as sizeBytes,
+             SUM(CAST(p.rows AS BIGINT)) as rowEstimate, 0 as deadTuples, SUM(CAST(p.rows AS BIGINT)) as liveTuples,
              0 as bloatRatio, NULL as lastVacuum, NULL as lastAnalyze, NULL as lastAutoVacuum,
              0 as seqScans, 0 as idxScans
       FROM sys.tables t
@@ -185,7 +185,7 @@ export class MSSQLAdapter implements DatabaseAdapter {
   async getUnusedIndexes(): Promise<import('./base.adapter').UnusedIndex[]> {
     const rows = await this.query(`
       SELECT s.name as [schema], o.name as [table], i.name as indexName,
-             (SUM(a.total_pages) * 8 * 1024) as indexSizeBytes,
+             (SUM(CAST(a.total_pages AS BIGINT)) * 8 * 1024) as indexSizeBytes,
              ISNULL(us.user_seeks + us.user_scans + us.user_lookups, 0) as indexScans
       FROM sys.indexes i
       JOIN sys.objects o ON i.object_id = o.object_id
