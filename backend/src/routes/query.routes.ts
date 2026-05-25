@@ -3,7 +3,7 @@ import { authMiddleware } from '../middleware/auth.middleware';
 import { AppDataSource } from '../config/database';
 import { Connection } from '../entities/connection.entity';
 import { AuditLog } from '../entities/audit-log.entity';
-import { decrypt } from '../config/encryption';
+import { getConnCredentials } from '../utils/credentials';
 import { createAdapter } from '../adapters/adapter.factory';
 
 const router = Router();
@@ -32,7 +32,7 @@ router.post('/:connId/execute', authMiddleware, async (req: Request, res: Respon
     }
 
     const adapter = createAdapter(conn.dbType);
-    await adapter.connect({ host: conn.host, port: conn.port, database: conn.databaseName, username: conn.username, password: decrypt(conn.passwordEncrypted), timeoutMs: conn.queryTimeoutMs });
+    await adapter.connect(getConnCredentials(conn));
 
     // Add row limit if SELECT and no limit present
     let finalSql = sql.trim();
@@ -76,7 +76,7 @@ router.post('/:connId/explain', authMiddleware, async (req: Request, res: Respon
     if (!conn) return res.status(404).json({ error: 'Conexão não encontrada' });
 
     const adapter = createAdapter(conn.dbType);
-    await adapter.connect({ host: conn.host, port: conn.port, database: conn.databaseName, username: conn.username, password: decrypt(conn.passwordEncrypted) });
+    await adapter.connect(getConnCredentials(conn));
     const result = await adapter.executeSQL(`EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) ${sql}`);
     await adapter.disconnect();
     return res.json({ data: result });

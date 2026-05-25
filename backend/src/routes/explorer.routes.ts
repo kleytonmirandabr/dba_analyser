@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { authMiddleware } from '../middleware/auth.middleware';
 import { AppDataSource } from '../config/database';
 import { Connection } from '../entities/connection.entity';
-import { decrypt } from '../config/encryption';
+import { getConnCredentials } from '../utils/credentials';
 import { createAdapter } from '../adapters/adapter.factory';
 import { DatabaseAdapter } from '../adapters/base.adapter';
 
@@ -13,14 +13,10 @@ async function getAdapter(connId: string): Promise<{ adapter: DatabaseAdapter; c
   const conn = await connRepo().findOne({ where: { id: connId, isActive: true } });
   if (!conn) return { adapter: null as any, error: 'Conexão não encontrada' };
 
-  const password = decrypt(conn.passwordEncrypted);
+  
   const adapter = createAdapter(conn.dbType);
   await adapter.connect({
-    host: conn.host,
-    port: conn.port,
-    database: conn.databaseName,
-    username: conn.username,
-    password,
+    ...getConnCredentials(conn),
     timeoutMs: conn.queryTimeoutMs,
   });
   return { adapter, connection: conn };

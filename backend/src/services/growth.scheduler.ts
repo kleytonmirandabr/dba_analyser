@@ -4,7 +4,7 @@ import { TableSnapshot } from '../entities/table-snapshot.entity';
 import { TableGrowthRule } from '../entities/table-growth-rule.entity';
 import { Alert } from '../entities/alert.entity';
 import { AlertHistory } from '../entities/alert-history.entity';
-import { decrypt } from '../config/encryption';
+import { getConnCredentials } from '../utils/credentials';
 import { createAdapter } from '../adapters/adapter.factory';
 import { Server as SocketIO } from 'socket.io';
 
@@ -96,15 +96,14 @@ async function snapshotConnection(conn: Connection): Promise<GrowthAnomaly[]> {
   const snapshotRepo = AppDataSource.getRepository(TableSnapshot);
   const ruleRepo = AppDataSource.getRepository(TableGrowthRule);
 
-  const password = decrypt(conn.passwordEncrypted);
+  
   const adapter = createAdapter(conn.dbType);
 
   await adapter.connect({
     host: conn.host,
     port: conn.port,
     database: conn.databaseName || (conn.dbType === 'postgresql' ? 'postgres' : 'master'),
-    username: conn.username,
-    password,
+    ...getConnCredentials(conn),
     timeoutMs: 30000,
   });
 

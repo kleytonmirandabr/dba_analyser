@@ -32,6 +32,7 @@ services:
       - DATABASE_URL=postgresql://dba_app:dba_secret@172.18.0.1:5433/dba_analyser
       - DBA_MASTER_KEY=dev-master-key-change-in-prod-32ch
       - JWT_SECRET=dev-jwt-secret-change-in-prod
+      - DBA_MASTER_KEY=dba-analyser-dev-master-key-2025-secure
       - NODE_ENV=development
       - VPN_CONFIG_PATH=/vpn
       - FRONTEND_URL=http://localhost:5173

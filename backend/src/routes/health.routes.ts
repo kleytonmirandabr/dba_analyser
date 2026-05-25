@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { authMiddleware } from '../middleware/auth.middleware';
 import { AppDataSource } from '../config/database';
 import { Connection } from '../entities/connection.entity';
-import { decrypt } from '../config/encryption';
+import { getConnCredentials } from '../utils/credentials';
 import { createAdapter } from '../adapters/adapter.factory';
 
 const router = Router();
@@ -13,17 +13,12 @@ async function getConnectedAdapter(connId: string) {
   const conn = await connRepo().findOne({ where: { id: connId } });
   if (!conn) throw new Error('Conexão não encontrada');
 
-  const password = decrypt(conn.passwordEncrypted);
+  
   const adapter = createAdapter(conn.dbType);
+  const creds = getConnCredentials(conn);
+  if (!conn.databaseName) creds.database = conn.dbType === 'postgresql' ? 'postgres' : 'master';
 
-  await adapter.connect({
-    host: conn.host,
-    port: conn.port,
-    database: conn.databaseName || (conn.dbType === 'postgresql' ? 'postgres' : 'master'),
-    username: conn.username,
-    password,
-    timeoutMs: conn.queryTimeoutMs,
-  });
+  await adapter.connect(creds);
 
   return adapter;
 }

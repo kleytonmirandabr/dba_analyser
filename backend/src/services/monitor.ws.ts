@@ -1,7 +1,7 @@
 import { Server as SocketIO } from 'socket.io';
 import { AppDataSource } from '../config/database';
 import { Connection } from '../entities/connection.entity';
-import { decrypt } from '../config/encryption';
+import { getConnCredentials } from '../utils/credentials';
 import { createAdapter } from '../adapters/adapter.factory';
 
 let io: SocketIO;
@@ -52,7 +52,7 @@ async function fetchMonitorData(connId: string) {
   if (!conn) throw new Error('Connection not found');
 
   const adapter = createAdapter(conn.dbType);
-  await adapter.connect({ host: conn.host, port: conn.port, database: conn.databaseName, username: conn.username, password: decrypt(conn.passwordEncrypted) });
+  await adapter.connect(getConnCredentials(conn));
 
   const [queries, locks] = await Promise.all([adapter.getActiveQueries(), adapter.getLocks()]);
   await adapter.disconnect();

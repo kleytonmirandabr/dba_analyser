@@ -13,7 +13,7 @@ const connRepo = () => AppDataSource.getRepository(Connection);
 router.get('/', authMiddleware, async (req: Request, res: Response) => {
   const connections = await connRepo().find({ order: { name: 'ASC' } });
   // NEVER return password
-  const safe = connections.map(c => ({ ...c, passwordEncrypted: undefined, passwordSalt: undefined }));
+  const safe = connections.map(c => ({ ...c, passwordEncrypted: undefined, passwordSalt: undefined, usernameEncrypted: undefined, usernameSalt: undefined, username: decrypt(c.usernameEncrypted, c.usernameSalt) }));
   return res.json({ data: safe });
 });
 
@@ -46,7 +46,7 @@ router.post('/', authMiddleware, requireRole('admin'), async (req: Request, res:
     delete (conn as any).password; // Remove plain password
     const saved = await connRepo().save(conn);
 
-    return res.status(201).json({ data: { ...saved, passwordEncrypted: undefined, passwordSalt: undefined } });
+    return res.status(201).json({ data: { ...saved, passwordEncrypted: undefined, passwordSalt: undefined, usernameEncrypted: undefined, usernameSalt: undefined, username: data.username } });
   } catch (err: any) {
     if (err.name === 'ZodError') return res.status(400).json({ error: 'Dados inválidos', details: err.errors });
     return res.status(500).json({ error: err.message });
@@ -59,14 +59,14 @@ router.post('/:id/test', authMiddleware, async (req: Request, res: Response) => 
     const conn = await connRepo().findOne({ where: { id: req.params.id } });
     if (!conn) return res.status(404).json({ error: 'Conexão não encontrada' });
 
-    const password = decrypt(conn.passwordEncrypted);
+    const password = decrypt(conn.passwordEncrypted, conn.passwordSalt);
     const adapter = createAdapter(conn.dbType);
 
     await adapter.connect({
       host: conn.host,
       port: conn.port,
       database: conn.databaseName,
-      username: conn.username,
+      username: decrypt(conn.usernameEncrypted, conn.usernameSalt),
       password,
       timeoutMs: conn.queryTimeoutMs,
     });
@@ -107,11 +107,17 @@ router.put('/:id', authMiddleware, requireRole('admin'), async (req: Request, re
       conn.passwordEncrypted = encrypted;
       conn.passwordSalt = salt;
     }
+    if (data.username) {
+      const { encrypted, salt } = encrypt(data.username);
+      conn.usernameEncrypted = encrypted;
+      conn.usernameSalt = salt;
+    }
     delete (data as any).password;
+    delete (data as any).username;
 
     Object.assign(conn, data);
     const saved = await connRepo().save(conn);
-    return res.json({ data: { ...saved, passwordEncrypted: undefined, passwordSalt: undefined } });
+    return res.json({ data: { ...saved, passwordEncrypted: undefined, passwordSalt: undefined, usernameEncrypted: undefined, usernameSalt: undefined, username: decrypt(saved.usernameEncrypted, saved.usernameSalt) } });
   } catch (err: any) {
     if (err.name === 'ZodError') return res.status(400).json({ error: 'Dados inválidos', details: err.errors });
     return res.status(500).json({ error: err.message });
@@ -124,14 +130,14 @@ router.post('/:id/databases', authMiddleware, async (req: Request, res: Response
     const conn = await connRepo().findOne({ where: { id: req.params.id } });
     if (!conn) return res.status(404).json({ error: 'Conexão não encontrada' });
 
-    const password = decrypt(conn.passwordEncrypted);
+    const password = decrypt(conn.passwordEncrypted, conn.passwordSalt);
     const adapter = createAdapter(conn.dbType);
 
     await adapter.connect({
       host: conn.host,
       port: conn.port,
       database: conn.databaseName || (conn.dbType === 'postgresql' ? 'postgres' : 'master'),
-      username: conn.username,
+      username: decrypt(conn.usernameEncrypted, conn.usernameSalt),
       password,
       timeoutMs: conn.queryTimeoutMs,
     });
@@ -156,7 +162,7 @@ router.post('/:id/select-databases', authMiddleware, requireRole('admin'), async
 
     // Store selected databases as JSON in a new column or create child connections
     // Strategy: create a child connection for each selected database
-    const password = decrypt(conn.passwordEncrypted);
+    const password = decrypt(conn.passwordEncrypted, conn.passwordSalt);
     const { encrypted, salt } = encrypt(password);
 
     const created: any[] = [];
@@ -170,7 +176,7 @@ router.post('/:id/select-databases', authMiddleware, requireRole('admin'), async
         host: conn.host,
         port: conn.port,
         databaseName: dbName,
-        username: conn.username,
+        username: decrypt(conn.usernameEncrypted, conn.usernameSalt),
         passwordEncrypted: encrypted,
         passwordSalt: salt,
         dbType: conn.dbType,
@@ -181,7 +187,7 @@ router.post('/:id/select-databases', authMiddleware, requireRole('admin'), async
         createdById: req.user!.userId,
       });
       const saved = await connRepo().save(child);
-      created.push({ ...saved, passwordEncrypted: undefined, passwordSalt: undefined });
+      created.push({ ...saved, passwordEncrypted: undefined, passwordSalt: undefined, usernameEncrypted: undefined, usernameSalt: undefined, username });
     }
 
     return res.json({ data: { created: created.length, connections: created } });

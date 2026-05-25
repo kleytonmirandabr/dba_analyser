@@ -1,17 +1,23 @@
 import * as crypto from 'crypto';
 
 const ALGORITHM = 'aes-256-gcm';
-const MASTER_KEY = process.env.DBA_MASTER_KEY || 'dev-master-key-change-in-prod-32ch';
+const MASTER_KEY = process.env.DBA_MASTER_KEY;
+const PBKDF2_ITERATIONS = 100000;
+const KEY_LENGTH = 32;
 
-function getKey(): Buffer {
-  // Derive 32-byte key from master key
-  return crypto.createHash('sha256').update(MASTER_KEY).digest();
+if (!MASTER_KEY || MASTER_KEY.length < 16) {
+  console.error('[SECURITY] DBA_MASTER_KEY must be set (min 16 chars)! Cannot start without encryption key.');
+  process.exit(1);
+}
+
+function deriveKey(salt: Buffer): Buffer {
+  return crypto.pbkdf2Sync(MASTER_KEY!, salt, PBKDF2_ITERATIONS, KEY_LENGTH, 'sha512');
 }
 
 export function encrypt(plainText: string): { encrypted: string; salt: string } {
-  const salt = crypto.randomBytes(16).toString('hex');
+  const salt = crypto.randomBytes(16);
   const iv = crypto.randomBytes(12);
-  const key = getKey();
+  const key = deriveKey(salt);
 
   const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
   let encrypted = cipher.update(plainText, 'utf8', 'hex');
@@ -21,17 +27,18 @@ export function encrypt(plainText: string): { encrypted: string; salt: string } 
   // Format: iv:authTag:encrypted
   return {
     encrypted: `${iv.toString('hex')}:${authTag}:${encrypted}`,
-    salt,
+    salt: salt.toString('hex'),
   };
 }
 
-export function decrypt(encryptedData: string): string {
+export function decrypt(encryptedData: string, saltHex: string): string {
   const [ivHex, authTagHex, encryptedHex] = encryptedData.split(':');
   if (!ivHex || !authTagHex || !encryptedHex) throw new Error('Invalid encrypted data format');
 
+  const salt = Buffer.from(saltHex, 'hex');
   const iv = Buffer.from(ivHex, 'hex');
   const authTag = Buffer.from(authTagHex, 'hex');
-  const key = getKey();
+  const key = deriveKey(salt);
 
   const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
   decipher.setAuthTag(authTag);

@@ -2,7 +2,7 @@ import { AppDataSource } from '../config/database';
 import { Alert, AlertStatus } from '../entities/alert.entity';
 import { AlertHistory } from '../entities/alert-history.entity';
 import { Connection } from '../entities/connection.entity';
-import { decrypt } from '../config/encryption';
+import { getConnCredentials } from '../utils/credentials';
 import { createAdapter } from '../adapters/adapter.factory';
 import { Server as SocketIO } from 'socket.io';
 
@@ -87,15 +87,14 @@ async function runAlertCheck(alertId: string) {
   let adapter: any = null;
 
   try {
-    const password = decrypt(conn.passwordEncrypted);
+    
     adapter = createAdapter(conn.dbType);
 
     await adapter.connect({
       host: conn.host,
       port: conn.port,
       database: conn.databaseName || (conn.dbType === 'postgresql' ? 'postgres' : 'master'),
-      username: conn.username,
-      password,
+      ...getConnCredentials(conn),
       timeoutMs: 10000, // 10s max for alert queries
     });
 

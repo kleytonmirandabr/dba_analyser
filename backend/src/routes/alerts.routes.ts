@@ -133,18 +133,18 @@ router.post('/:id/test', authMiddleware, async (req: Request, res: Response) => 
 
   // Import and run check inline
   const { Connection } = require('../entities/connection.entity');
-  const { decrypt } = require('../config/encryption');
+  const { getConnCredentials } = require('../utils/credentials');
   const { createAdapter } = require('../adapters/adapter.factory');
 
   const conn = alert.connection;
   let adapter: any = null;
   try {
-    const password = decrypt(conn.passwordEncrypted);
+    
     adapter = createAdapter(conn.dbType);
     await adapter.connect({
       host: conn.host, port: conn.port,
       database: conn.databaseName || (conn.dbType === 'postgresql' ? 'postgres' : 'master'),
-      username: conn.username, password, timeoutMs: 10000,
+      ...getConnCredentials(conn, 10000),
     });
     const result = await adapter.executeSQL(alert.query);
     return res.json({ data: { result, rows: result.rows?.slice(0, 10), rowCount: result.rows?.length || 0 } });

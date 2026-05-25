@@ -4,7 +4,7 @@ import { AppDataSource } from '../config/database';
 import { ExecutionRequest } from '../entities/execution-request.entity';
 import { Connection } from '../entities/connection.entity';
 import { AuditLog } from '../entities/audit-log.entity';
-import { decrypt } from '../config/encryption';
+import { getConnCredentials } from '../utils/credentials';
 import { PostgresAdapter } from '../adapters/postgres.adapter';
 import { z } from 'zod';
 
@@ -114,7 +114,7 @@ router.post('/:id/execute', authMiddleware, requireRole('admin', 'dba'), async (
 
   try {
     const adapter = new PostgresAdapter();
-    await adapter.connect({ host: conn.host, port: conn.port, database: conn.databaseName, username: conn.username, password: decrypt(conn.passwordEncrypted) });
+    await adapter.connect(getConnCredentials(conn));
     const result = await adapter.executeSQL(request.sqlText);
     await adapter.disconnect();
 

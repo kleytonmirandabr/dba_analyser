@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { authMiddleware, requireRole } from '../middleware/auth.middleware';
 import { AppDataSource } from '../config/database';
 import { Connection } from '../entities/connection.entity';
-import { decrypt } from '../config/encryption';
+import { getConnCredentials } from '../utils/credentials';
 import { createAdapter } from '../adapters/adapter.factory';
 
 const router = Router();
@@ -15,7 +15,7 @@ router.get('/:connId/queries', authMiddleware, async (req: Request, res: Respons
     if (!conn) return res.status(404).json({ error: 'Conexão não encontrada' });
 
     const adapter = createAdapter(conn.dbType);
-    await adapter.connect({ host: conn.host, port: conn.port, database: conn.databaseName, username: conn.username, password: decrypt(conn.passwordEncrypted) });
+    await adapter.connect(getConnCredentials(conn));
     const data = await adapter.getActiveQueries();
     await adapter.disconnect();
     return res.json({ data });
@@ -29,7 +29,7 @@ router.get('/:connId/locks', authMiddleware, async (req: Request, res: Response)
     if (!conn) return res.status(404).json({ error: 'Conexão não encontrada' });
 
     const adapter = createAdapter(conn.dbType);
-    await adapter.connect({ host: conn.host, port: conn.port, database: conn.databaseName, username: conn.username, password: decrypt(conn.passwordEncrypted) });
+    await adapter.connect(getConnCredentials(conn));
     const data = await adapter.getLocks();
     await adapter.disconnect();
     return res.json({ data });
@@ -43,7 +43,7 @@ router.post('/:connId/kill/:pid', authMiddleware, requireRole('admin', 'dba'), a
     if (!conn) return res.status(404).json({ error: 'Conexão não encontrada' });
 
     const adapter = createAdapter(conn.dbType);
-    await adapter.connect({ host: conn.host, port: conn.port, database: conn.databaseName, username: conn.username, password: decrypt(conn.passwordEncrypted) });
+    await adapter.connect(getConnCredentials(conn));
     const result = await adapter.killQuery(parseInt(req.params.pid));
     await adapter.disconnect();
     return res.json({ data: result });
@@ -57,7 +57,7 @@ router.get('/:connId/stats', authMiddleware, async (req: Request, res: Response)
     if (!conn) return res.status(404).json({ error: 'Conexão não encontrada' });
 
     const adapter = createAdapter(conn.dbType);
-    await adapter.connect({ host: conn.host, port: conn.port, database: conn.databaseName, username: conn.username, password: decrypt(conn.passwordEncrypted) });
+    await adapter.connect(getConnCredentials(conn));
 
     let data: any;
     if (conn.dbType === 'postgresql') {
@@ -100,7 +100,7 @@ router.get('/:connId/dba-stats', authMiddleware, async (req: Request, res: Respo
     if (!conn) return res.status(404).json({ error: 'Conexão não encontrada' });
 
     const adapter = createAdapter(conn.dbType);
-    await adapter.connect({ host: conn.host, port: conn.port, database: conn.databaseName, username: conn.username, password: decrypt(conn.passwordEncrypted), timeoutMs: 30000 });
+    await adapter.connect(getConnCredentials(conn, 30000));
 
     let data: any = {};
 

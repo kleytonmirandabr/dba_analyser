@@ -22,14 +22,20 @@ export class Connection {
   @Column({ length: 100, nullable: true, default: '' })
   databaseName!: string;
 
-  @Column({ length: 100 })
-  username!: string;
+  @Column('text')
+  usernameEncrypted!: string;
+
+  @Column({ length: 64 })
+  usernameSalt!: string;
 
   @Column('text')
   passwordEncrypted!: string;
 
   @Column({ length: 64 })
   passwordSalt!: string;
+
+  @Column({ type: 'smallint', default: 1 })
+  keyVersion!: number;
 
   @Column({ length: 20 })
   dbType!: DbType;

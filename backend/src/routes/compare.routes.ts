@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { authMiddleware } from '../middleware/auth.middleware';
 import { AppDataSource } from '../config/database';
 import { Connection } from '../entities/connection.entity';
-import { decrypt } from '../config/encryption';
+import { getConnCredentials } from '../utils/credentials';
 import { createAdapter } from '../adapters/adapter.factory';
 import { DatabaseAdapter } from '../adapters/base.adapter';
 
@@ -70,8 +70,8 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
 
     srcAdapter = createAdapter(source.dbType);
     tgtAdapter = createAdapter(target.dbType);
-    await srcAdapter.connect({ host: source.host, port: source.port, database: source.databaseName, username: source.username, password: decrypt(source.passwordEncrypted), timeoutMs: 30000 });
-    await tgtAdapter.connect({ host: target.host, port: target.port, database: target.databaseName, username: target.username, password: decrypt(target.passwordEncrypted), timeoutMs: 30000 });
+    await srcAdapter.connect({ host: source.host, port: source.port, database: source.databaseName, ...getConnCredentials(source, 30000) });
+    await tgtAdapter.connect({ host: target.host, port: target.port, database: target.databaseName, ...getConnCredentials(target, 30000) });
 
     // === FETCH EVERYTHING IN PARALLEL (6 queries per side = 12 total, but parallel = 6 round trips) ===
     const [srcTables, tgtTables, srcTriggers, tgtTriggers, srcProcs, tgtProcs, srcFuncs, tgtFuncs, srcViews, tgtViews, srcAllCols, tgtAllCols, srcAllIdx, tgtAllIdx] = await Promise.all([
