@@ -89,7 +89,7 @@ export class MSSQLAdapter implements DatabaseAdapter {
 
   async listFunctions(schema = 'dbo'): Promise<FunctionInfo[]> {
     return this.query(`SELECT s.name as [schema], o.name, 'T-SQL' as language,
-      TYPE_NAME(o.type) as returnType, OBJECT_DEFINITION(o.object_id) as definition, '' as parameters
+      o.type_desc as returnType, OBJECT_DEFINITION(o.object_id) as definition, '' as parameters
       FROM sys.objects o JOIN sys.schemas s ON o.schema_id = s.schema_id
       WHERE o.type IN ('FN','IF','TF') AND s.name = '${schema}' ORDER BY o.name`);
   }
