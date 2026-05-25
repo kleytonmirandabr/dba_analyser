@@ -35,15 +35,26 @@ const createSchema = z.object({
 router.post('/', authMiddleware, requireRole('admin'), async (req: Request, res: Response) => {
   try {
     const data = createSchema.parse(req.body);
-    const { encrypted, salt } = encrypt(data.password);
+    const { encrypted: passEnc, salt: passSalt } = encrypt(data.password);
+    const { encrypted: userEnc, salt: userSalt } = encrypt(data.username);
 
     const conn = connRepo().create({
-      ...data,
-      passwordEncrypted: encrypted,
-      passwordSalt: salt,
+      name: data.name,
+      host: data.host,
+      port: data.port,
+      databaseName: data.databaseName || '',
+      dbType: data.dbType,
+      environment: data.environment,
+      mode: data.mode,
+      autoApprove: data.autoApprove,
+      groupName: data.groupName || null,
+      usernameEncrypted: userEnc,
+      usernameSalt: userSalt,
+      passwordEncrypted: passEnc,
+      passwordSalt: passSalt,
+      keyVersion: 1,
       createdById: req.user!.userId,
     });
-    delete (conn as any).password; // Remove plain password
     const saved = await connRepo().save(conn);
 
     return res.status(201).json({ data: { ...saved, passwordEncrypted: undefined, passwordSalt: undefined, usernameEncrypted: undefined, usernameSalt: undefined, username: data.username } });
