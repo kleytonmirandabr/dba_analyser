@@ -15,7 +15,20 @@ export default function QueryPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
-    api.get('/api/connections').then(r => setConnections(r.data.data)).catch(() => {})
+    api.get('/api/connections').then(r => {
+      setConnections(r.data.data)
+      // Check for prefill from Monitor
+      const prefillConn = sessionStorage.getItem('dba_prefill_connId')
+      if (prefillConn) {
+        setSelectedConn(prefillConn)
+        sessionStorage.removeItem('dba_prefill_connId')
+      }
+    }).catch(() => {})
+    const prefillQuery = sessionStorage.getItem('dba_prefill_query')
+    if (prefillQuery) {
+      setSql(prefillQuery)
+      sessionStorage.removeItem('dba_prefill_query')
+    }
   }, [])
 
   const execute = async () => {
