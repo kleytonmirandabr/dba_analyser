@@ -83,6 +83,14 @@ export default function MonitorPage() {
     if (selectedConns.length > 0 && !autoRefresh) refresh()
   }, [selectedConns])
 
+  // Refetch dba-stats when panels change
+  useEffect(() => {
+    if (selectedConns.length > 0 && enabledPanels.size > 0) {
+      const panels = [...enabledPanels].join(',')
+      api.get(`/api/monitor/${selectedConns[0]}/dba-stats?panels=${panels}`).then(r => setDbaStats(r.data.data)).catch(() => {})
+    }
+  }, [enabledPanels])
+
   const killQuery = async (connId: string, pid: number) => {
     if (!confirm(`Tem certeza que deseja matar o processo PID ${pid}?`)) return
     await api.post(`/api/monitor/${connId}/kill/${pid}`)
