@@ -1,49 +1,22 @@
-# Demanda: Semana 2 - Explorer de Objetos
-**Status:** 🔜 Próxima
-**Data início:** -
-**Previsão:** Semana 2
+# Backlog - DBA Analyser
 
-## Escopo
-Visualização em árvore de todos os objetos do banco (schemas, tabelas, colunas, indexes, views, functions, triggers).
+## ✅ Concluídas
+- Semana 1: Fundação (v0.1.x)
+- Semana 2: Explorer + Monitor (v0.2.x)
+- Semana 3: Query + Execução + Comparador (v0.3.x)
+- Semana 4: Adapters + WebSocket + Polish (v0.4.x)
+- VPN UX + Deploy fixes (v0.5.x)
+- Health Monitor + Database Discovery (v0.6.0)
 
-## Entregas planejadas
-- [ ] Tree view hierárquica (schema → table → columns/indexes)
-- [ ] Painel de detalhes ao clicar no objeto
-- [ ] DDL viewer (CREATE TABLE statement)
-- [ ] Busca global de objetos
-- [ ] Suporte MSSQL adapter
-- [ ] Suporte MySQL adapter
-
----
-
-# Demanda: Semana 3 - Comparador + Monitor
-**Status:** 🔜 Backlog
-**Previsão:** Semana 3
-
-## Escopo
-Comparar estruturas entre bancos e monitorar queries ativas em tempo real.
-
-## Entregas planejadas
-- [ ] Diff visual entre dois bancos (schema diff)
-- [ ] Gerar script de migração
-- [ ] Monitor de queries ativas (real-time via WebSocket)
-- [ ] Kill query
-- [ ] Lock viewer
-- [ ] Alertas de performance
-
----
-
-# Demanda: Semana 4 - Execução + Audit + Polish
-**Status:** 🔜 Backlog
-**Previsão:** Semana 4
-
-## Escopo
-Workflow de execução de SQL com aprovação, audit trail completo, e polimento geral.
-
-## Entregas planejadas
-- [ ] SQL Editor com syntax highlight
-- [ ] Workflow: submeter → aprovar → executar
-- [ ] Rollback SQL associado
-- [ ] Audit log viewer (filtros por user, connection, action)
-- [ ] Export audit para CSV
-- [ ] Dashboard com métricas reais
+## 🔜 Próximas
+- [ ] Syntax highlight (CodeMirror / Monaco) no SQL Editor
+- [ ] Tema claro (light mode)
+- [ ] Notificações push (execuções pendentes)
+- [ ] Backup/restore management
+- [ ] Schema versioning (git-like history)
+- [ ] ER Diagram visual
+- [ ] Rate limit interno no health monitor
+- [ ] Horário de coleta configurável (queries pesadas fora do pico)
+- [ ] Dashboard de tendências (crescimento de tabelas ao longo do tempo)
+- [ ] Alertas automáticos (bloat > X%, cache hit < Y%)
+- [ ] Export de relatório de saúde (PDF)

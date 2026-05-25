@@ -547,10 +547,31 @@ dba_analyser/
 9. **Configurações** — Perfil, alterar senha
 
 ### MVP Completo ✅ (v0.5.0)
-O sprint de 4 semanas foi completado + polish de deploy e VPN UX. Próximos passos opcionais:
+O sprint de 4 semanas foi completado + polish de deploy e VPN UX.
+
+### v0.6.0 — Health Monitor + Database Discovery (2026-05-25)
+
+| Versão | Commit | Descrição |
+|--------|--------|-----------|
+| 0.6.0 | (current) | Health Monitor completo + Database Discovery + Edit connection |
+
+### Funcionalidades adicionadas (v0.6.0)
+1. **Editar Conexão** — Botão de edição com formulário preenchido
+2. **Database opcional** — Conexão sem DB = conecta no servidor inteiro
+3. **Descoberta de Databases** — Lupa lista todos os DBs, seleciona quais monitorar
+4. **Health Monitor** — Nova página com 5 tabs:
+   - Visão Geral (cards de resumo com semáforo)
+   - Tabelas (bloat, dead tuples, vacuum, scans)
+   - Queries Lentas (pg_stat_statements / DMVs)
+   - Índices (não usados + sugestões)
+   - Configurações (parâmetros críticos)
+5. **Suporte PG + MSSQL** — Ambos com health monitoring completo
+
+### Próximos passos opcionais:
 - Syntax highlight (CodeMirror / Monaco)
 - Temas claros
 - Notificações push (execuções pendentes)
 - Backup/restore management
 - Schema versioning (git-like)
 - ER Diagram visual
+- Alertas automáticos de saúde
