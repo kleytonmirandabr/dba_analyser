@@ -18,6 +18,8 @@ import executionRoutes from './routes/execution.routes';
 import compareRoutes from './routes/compare.routes';
 import auditRoutes from './routes/audit.routes';
 import healthRoutes from './routes/health.routes';
+import alertRoutes from './routes/alerts.routes';
+import { initAlertScheduler } from './services/alert.scheduler';
 import { initMonitorSocket } from './services/monitor.ws';
 
 dotenv.config();
@@ -41,6 +43,7 @@ app.get('/health', (_req, res) => {
 
 // API routes
 app.use('/api/connections', healthRoutes); // health sub-routes
+app.use('/api/alerts', alertRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/connections', connectionRoutes);
 app.use('/api/vpn', vpnRoutes);
@@ -78,6 +81,7 @@ AppDataSource.initialize()
   .then(async () => {
     console.log('[DB] Connected to PostgreSQL');
     await seedDefaultAdmin();
+    initAlertScheduler(io);
     
     httpServer.listen(PORT, '0.0.0.0', () => {
       console.log(`[DBA Analyser] Backend running on port ${PORT}`);

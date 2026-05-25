@@ -567,6 +567,24 @@ O sprint de 4 semanas foi completado + polish de deploy e VPN UX.
    - Configurações (parâmetros críticos)
 5. **Suporte PG + MSSQL** — Ambos com health monitoring completo
 
+### v0.7.0 — Alertas Configuráveis por Regras de Negócio (2026-05-25)
+
+| Versão | Commit | Descrição |
+|--------|--------|-----------|
+| 0.7.0 | (current) | Sistema completo de alertas com scheduler, wizard 3 passos, histórico |
+
+### Funcionalidades adicionadas (v0.7.0)
+1. **Alertas configuráveis** — Queries SQL customizadas que rodam periodicamente
+2. **Wizard 3 passos** — Conexão → Query (com teste) → Condição + Frequência
+3. **Tipos de avaliação** — has_rows, no_rows, threshold (>, <, =, !=, >=, <=)
+4. **Scheduler interno** — Timer por alerta com min 30s, timeout 10s
+5. **Validação de SQL** — Rejeita DML (INSERT/UPDATE/DELETE/DROP)
+6. **Histórico** — Timeline com status, valor, tempo de execução
+7. **Badge no header** — Contagem de alertas disparados com pulse animation
+8. **WebSocket push** — Notifica em tempo real quando alerta dispara
+9. **Severidade** — Info/Warning/Critical com cores distintas
+10. **Ações** — Testar, Pausar/Ativar, Editar, Excluir
+
 ### Próximos passos opcionais:
 - Syntax highlight (CodeMirror / Monaco)
 - Temas claros

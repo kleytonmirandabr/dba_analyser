@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Wifi, WifiOff, LogOut, Settings } from 'lucide-react'
+import { Wifi, WifiOff, LogOut, Settings, Bell } from 'lucide-react'
 import { useAuthStore } from '../../stores/auth.store'
 import { useNavigate } from 'react-router-dom'
 import api from '../../lib/api'
@@ -8,6 +8,7 @@ export default function Header() {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
   const [vpnStatus, setVpnStatus] = useState<{ connected: boolean; configUploaded: boolean }>({ connected: false, configUploaded: false })
+  const [alertCount, setAlertCount] = useState(0)
 
   useEffect(() => {
     const check = async () => {
@@ -17,14 +18,28 @@ export default function Header() {
       } catch {}
     }
     check()
-    const interval = setInterval(check, 30000) // Check every 30s
-    return () => clearInterval(interval)
+    const checkAlerts = async () => {
+      try { const { data } = await api.get('/api/alerts/summary'); setAlertCount(data.data.triggered || 0) } catch {}
+    }
+    checkAlerts()
+    const interval = setInterval(check, 30000)
+    const alertInterval = setInterval(checkAlerts, 15000)
+    return () => { clearInterval(interval); clearInterval(alertInterval) }
   }, [])
 
   return (
     <header className="h-14 bg-gray-900 border-b border-gray-800 flex items-center justify-between px-6">
       <div />
       <div className="flex items-center gap-4">
+        {/* Alert Badge */}
+        {alertCount > 0 && (
+          <button onClick={() => navigate('/alerts')}
+            className="relative flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-900/30 text-red-400 border border-red-800 animate-pulse">
+            <Bell className="w-3 h-3" />
+            {alertCount} {alertCount === 1 ? 'alerta' : 'alertas'}
+          </button>
+        )}
+
         {/* VPN Status */}
         <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
           vpnStatus.connected
