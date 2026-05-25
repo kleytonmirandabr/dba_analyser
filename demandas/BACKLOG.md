@@ -9,6 +9,7 @@
 - Health Monitor + Database Discovery (v0.6.0)
 - Alertas Configuráveis (v0.7.0)
 - Growth Tracker - Cron Diário (v0.8.0)
+- Comparador de Schema Completo (v0.9.0)
 
 ## 🔜 Próximas
 - [ ] Syntax highlight (CodeMirror / Monaco) no SQL Editor

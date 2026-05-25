@@ -585,7 +585,18 @@ O sprint de 4 semanas foi completado + polish de deploy e VPN UX.
 9. **Severidade** — Info/Warning/Critical com cores distintas
 10. **Ações** — Testar, Pausar/Ativar, Editar, Excluir
 
-### v0.8.0 — Growth Tracker (Cron Diário de Crescimento) (2026-05-25)
+### v0.9.0 — Comparador de Schema Completo
+- Comparação completa: tabelas, colunas (tipo/nullable/default/PK/FK), índices, triggers, procedures, functions, views
+- Diff de corpo/definição SQL para triggers, procedures, functions e views
+- UI side-by-side para código diferente (source vs target)
+- Summary cards com contagem por categoria
+- Tabs por tipo de objeto
+- Auto-detect schema (public PG / dbo MSSQL)
+- Fix: VPN network_mode para backend acessar bancos do cliente
+- Fix: Frontend proxy (VITE_API_URL vazio, proxy via docker gateway)
+- Fix: MSSQL arithmetic overflow (CAST BIGINT)
+
+## v0.8.0 — Growth Tracker (Cron Diário de Crescimento) (2026-05-25)
 
 | Versão | Commit | Descrição |
 |--------|--------|-----------|
