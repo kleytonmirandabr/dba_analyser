@@ -20,6 +20,7 @@ services:
     volumes:
       - ./backend/src:/app/src
       - vpn-data:/vpn
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - DATABASE_URL=postgresql://dba_app:dba_secret@postgres:5432/dba_analyser
       - DBA_MASTER_KEY=dev-master-key-change-in-prod-32ch

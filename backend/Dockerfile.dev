@@ -1,5 +1,8 @@
 FROM node:22-alpine
 
+# Install docker CLI for VPN container management
+RUN apk add --no-cache docker-cli
+
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
