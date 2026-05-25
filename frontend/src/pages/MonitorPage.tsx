@@ -19,6 +19,7 @@ export default function MonitorPage() {
   const [copied, setCopied] = useState(false)
   const [dbaStats, setDbaStats] = useState<any>({})
   const [queriesCollapsed, setQueriesCollapsed] = useState(false)
+  const [queryFilter, setQueryFilter] = useState('')
   const [dbaPanelsCollapsed, setDbaPanelsCollapsed] = useState(false)
   const [enabledPanels, setEnabledPanels] = useState<Set<string>>(new Set(['longQueries', 'waitStats', 'memory', 'idleSessions', 'sessionsByApp']))
   const [showPanelConfig, setShowPanelConfig] = useState(false)
@@ -192,13 +193,26 @@ export default function MonitorPage() {
       {/* Active queries */}
       {selectedConns.length > 0 && (
         <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-          <button onClick={() => setQueriesCollapsed(!queriesCollapsed)} className="w-full p-4 border-b border-gray-800 flex items-center gap-2 hover:bg-gray-800/50 transition">
-            {queriesCollapsed ? <ChevronRight className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
-            <Activity className="w-4 h-4 text-green-400" />
-            <h2 className="text-sm font-semibold text-white">Queries Ativas ({queries.length})</h2>
-          </button>
-          {!queriesCollapsed && (queries.length === 0 ? (
-            <p className="p-4 text-sm text-gray-500">Nenhuma query ativa</p>
+          <div className="p-4 border-b border-gray-800 flex items-center gap-2">
+            <button onClick={() => setQueriesCollapsed(!queriesCollapsed)} className="flex items-center gap-2 hover:opacity-80 transition">
+              {queriesCollapsed ? <ChevronRight className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
+              <Activity className="w-4 h-4 text-green-400" />
+              <h2 className="text-sm font-semibold text-white">Queries Ativas ({queries.length})</h2>
+            </button>
+            {!queriesCollapsed && (
+              <input type="text" value={queryFilter} onChange={e => setQueryFilter(e.target.value)}
+                placeholder="Filtrar por query, user, banco..."
+                className="ml-auto px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white w-64 placeholder-gray-600 focus:border-blue-500 outline-none" />
+            )}
+          </div>
+          {!queriesCollapsed && (() => {
+            const filtered = queries.filter(q => {
+              if (!queryFilter) return true
+              const f = queryFilter.toLowerCase()
+              return (q.query || '').toLowerCase().includes(f) || (q.username || '').toLowerCase().includes(f) || (q.connName || '').toLowerCase().includes(f) || String(q.pid).includes(f)
+            })
+            return filtered.length === 0 ? (
+            <p className="p-4 text-sm text-gray-500">{queryFilter ? `Nenhuma query com "${queryFilter}"` : 'Nenhuma query ativa'}</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
@@ -212,7 +226,7 @@ export default function MonitorPage() {
                   <th className="py-2 px-3"></th>
                 </tr></thead>
                 <tbody>
-                  {queries.sort((a, b) => b.durationMs - a.durationMs).map((q, i) => (
+                  {filtered.sort((a, b) => b.durationMs - a.durationMs).map((q, i) => (
                     <tr key={`${q.connId}-${q.pid}-${i}`} className={`border-b border-gray-900 ${q.durationMs > 30000 ? 'bg-red-900/10' : ''}`}>
                       {selectedConns.length > 1 && <td className="py-2 px-3 text-purple-400 text-[10px]">{q.connName}</td>}
                       <td className="py-2 px-3 text-gray-300 font-mono">{q.pid}</td>
@@ -230,7 +244,8 @@ export default function MonitorPage() {
                 </tbody>
               </table>
             </div>
-          ))}
+          )
+          })()}
         </div>
       )}
 
