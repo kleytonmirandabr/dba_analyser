@@ -35,14 +35,25 @@ router.delete('/config', authMiddleware, requireRole('admin'), async (_req: Requ
 // POST /api/vpn/connect - restart VPN container to apply config
 router.post('/connect', authMiddleware, requireRole('admin'), async (_req: Request, res: Response) => {
   try {
-    const { exec } = require('child_process');
-    await new Promise<void>((resolve, reject) => {
-      exec('docker restart dba_analyser-vpn-1 2>/dev/null || echo "no vpn container"', (err: any, stdout: string) => {
-        if (err && !stdout.includes('no vpn')) reject(err);
-        else resolve();
+    const { execSync } = require('child_process');
+    // Check if VPN container exists
+    try {
+      const result = execSync('docker ps -a --format "{{.Names}}" 2>/dev/null | grep vpn || echo ""', { encoding: 'utf8' }).trim();
+      if (!result) {
+        return res.status(400).json({ 
+          error: 'Container VPN não encontrado. Este ambiente está rodando sem VPN (docker-compose.dev.yml). Para usar VPN, rode com: docker compose up --build (compose principal com sidecar OpenVPN).',
+          code: 'NO_VPN_CONTAINER'
+        });
+      }
+      execSync(`docker restart ${result}`, { encoding: 'utf8' });
+      return res.json({ data: { message: 'Container VPN reiniciado. Aguarde conexão...' } });
+    } catch (cmdErr: any) {
+      // Docker not accessible from inside container — expected in most setups
+      return res.status(400).json({ 
+        error: 'Não foi possível controlar o container VPN a partir do backend. Para conectar, execute manualmente: docker compose restart vpn',
+        code: 'DOCKER_NOT_ACCESSIBLE'
       });
-    });
-    return res.json({ data: { message: 'VPN container reiniciado. Aguarde conexão...' } });
+    }
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }

@@ -36,16 +36,25 @@ export class VPNService {
     this.saveStatus({ connected: false, configUploaded: true });
   }
 
-  async getStatus(): Promise<VPNStatus> {
+  async getStatus(): Promise<VPNStatus & { vpnContainerAvailable?: boolean }> {
+    let vpnContainerAvailable = false;
+    try {
+      const { execSync } = require('child_process');
+      const result = execSync('docker ps --format "{{.Names}}" 2>/dev/null | grep vpn || echo ""', { encoding: 'utf8' }).trim();
+      vpnContainerAvailable = !!result;
+    } catch {}
+
     try {
       if (fs.existsSync(STATUS_FILE)) {
-        return JSON.parse(fs.readFileSync(STATUS_FILE, 'utf8'));
+        const status = JSON.parse(fs.readFileSync(STATUS_FILE, 'utf8'));
+        return { ...status, vpnContainerAvailable };
       }
     } catch {}
 
     return {
       connected: false,
       configUploaded: fs.existsSync(OVPN_FILE),
+      vpnContainerAvailable,
     };
   }
 

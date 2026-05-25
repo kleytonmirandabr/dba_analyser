@@ -7,6 +7,7 @@ interface VPNStatus {
   configUploaded: boolean
   ip?: string
   lastError?: string
+  vpnContainerAvailable?: boolean
 }
 
 export default function VPNPage() {
@@ -105,7 +106,12 @@ export default function VPNPage() {
       await api.post('/api/vpn/connect')
       startConnecting()
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.response?.data?.error || 'Erro ao conectar' })
+      const code = err.response?.data?.code
+      if (code === 'NO_VPN_CONTAINER' || code === 'DOCKER_NOT_ACCESSIBLE') {
+        setMessage({ type: 'error', text: err.response?.data?.error })
+      } else {
+        setMessage({ type: 'error', text: err.response?.data?.error || 'Erro ao conectar' })
+      }
     }
   }
 
@@ -135,6 +141,23 @@ export default function VPNPage() {
   return (
     <div className="max-w-2xl">
       <h1 className="text-2xl font-bold text-white mb-6">Configuração VPN</h1>
+
+      {/* No VPN container warning */}
+      {!status.vpnContainerAvailable && status.configUploaded && !connecting && (
+        <div className="p-4 rounded-xl border border-amber-800 bg-amber-900/10 mb-4">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-amber-400">Container VPN não disponível</p>
+              <p className="text-xs text-gray-400 mt-1">
+                Este ambiente está rodando sem o sidecar OpenVPN (<code className="bg-gray-800 px-1 py-0.5 rounded text-[10px]">docker-compose.dev.yml</code>).
+                Para usar VPN, rode na sua máquina com o compose principal:
+              </p>
+              <code className="block mt-2 text-[11px] bg-gray-800 text-green-400 px-3 py-2 rounded-lg">docker compose up --build</code>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Status card */}
       <div className={`p-5 rounded-xl border mb-6 ${status.connected ? 'bg-green-900/10 border-green-800' : status.configUploaded ? 'bg-amber-900/10 border-amber-800' : 'bg-red-900/10 border-red-800'}`}>
