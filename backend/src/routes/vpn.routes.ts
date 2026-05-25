@@ -69,4 +69,20 @@ router.post('/disconnect', authMiddleware, requireRole('admin'), async (_req: Re
   }
 });
 
+// GET /api/vpn/logs - get VPN container logs
+router.get('/logs', authMiddleware, requireRole('admin'), async (req: Request, res: Response) => {
+  try {
+    const { execSync } = require('child_process');
+    const lines = parseInt(req.query.lines as string) || 50;
+    const containerName = execSync('docker ps --format "{{.Names}}" 2>/dev/null | grep vpn || echo ""', { encoding: 'utf8' }).trim();
+    if (!containerName) {
+      return res.json({ data: { logs: ['Container VPN não encontrado'] } });
+    }
+    const logs = execSync(`docker logs --tail ${lines} ${containerName} 2>&1`, { encoding: 'utf8' });
+    return res.json({ data: { logs: logs.split('\n').filter(Boolean) } });
+  } catch (err: any) {
+    return res.json({ data: { logs: ['Erro ao obter logs: ' + err.message] } });
+  }
+});
+
 export default router;
