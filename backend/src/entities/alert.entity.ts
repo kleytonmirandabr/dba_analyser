@@ -25,10 +25,10 @@ export class Alert {
   @Column('text')
   query!: string;
 
-  @Column({ length: 20 })
+  @Column('varchar', { length: 20 })
   evaluationType!: EvaluationType;
 
-  @Column({ length: 5, nullable: true })
+  @Column('varchar', { length: 5, nullable: true })
   operator!: AlertOperator | null;
 
   @Column({ length: 100, nullable: true })
@@ -37,13 +37,13 @@ export class Alert {
   @Column('int', { default: 300 })
   intervalSeconds!: number;
 
-  @Column({ length: 20, default: 'warning' })
+  @Column('varchar', { length: 20, default: 'warning' })
   severity!: AlertSeverity;
 
   @Column({ default: true })
   enabled!: boolean;
 
-  @Column({ length: 20, default: 'unknown' })
+  @Column('varchar', { length: 20, default: 'unknown' })
   currentStatus!: AlertStatus;
 
   @Column('text', { nullable: true })

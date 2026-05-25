@@ -13,7 +13,7 @@ export class AlertHistory {
   @JoinColumn({ name: 'alertId' })
   alert!: Alert;
 
-  @Column({ length: 20 })
+  @Column('varchar', { length: 20 })
   status!: AlertStatus;
 
   @Column('text', { nullable: true })
