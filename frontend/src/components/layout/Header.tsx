@@ -1,8 +1,25 @@
-import { Shield, ShieldOff, Wifi, WifiOff } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Wifi, WifiOff, LogOut, Settings } from 'lucide-react'
+import { useAuthStore } from '../../stores/auth.store'
+import { useNavigate } from 'react-router-dom'
+import api from '../../lib/api'
 
 export default function Header() {
-  // TODO: real VPN status from API
-  const vpnConnected = false
+  const { user, logout } = useAuthStore()
+  const navigate = useNavigate()
+  const [vpnStatus, setVpnStatus] = useState<{ connected: boolean; configUploaded: boolean }>({ connected: false, configUploaded: false })
+
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const { data } = await api.get('/api/vpn/status')
+        setVpnStatus(data.data)
+      } catch {}
+    }
+    check()
+    const interval = setInterval(check, 30000) // Check every 30s
+    return () => clearInterval(interval)
+  }, [])
 
   return (
     <header className="h-14 bg-gray-900 border-b border-gray-800 flex items-center justify-between px-6">
@@ -10,17 +27,24 @@ export default function Header() {
       <div className="flex items-center gap-4">
         {/* VPN Status */}
         <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-          vpnConnected 
-            ? 'bg-green-900/30 text-green-400 border border-green-800' 
+          vpnStatus.connected
+            ? 'bg-green-900/30 text-green-400 border border-green-800'
+            : vpnStatus.configUploaded
+            ? 'bg-amber-900/30 text-amber-400 border border-amber-800'
             : 'bg-red-900/30 text-red-400 border border-red-800'
         }`}>
-          {vpnConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-          VPN {vpnConnected ? 'Conectada' : 'Desconectada'}
+          {vpnStatus.connected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+          VPN {vpnStatus.connected ? 'Conectada' : vpnStatus.configUploaded ? 'Configurada' : 'Não configurada'}
         </div>
+
         {/* User */}
-        <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
-          <span className="text-xs font-bold text-gray-300">KM</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-400">{user?.name}</span>
+          <span className="text-[10px] bg-gray-800 text-gray-500 px-1.5 py-0.5 rounded">{user?.role}</span>
         </div>
+        <button onClick={() => { logout(); navigate('/login') }} className="p-1.5 text-gray-500 hover:text-red-400 transition" title="Sair">
+          <LogOut className="w-4 h-4" />
+        </button>
       </div>
     </header>
   )

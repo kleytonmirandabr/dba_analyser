@@ -1,9 +1,29 @@
 import { useState } from 'react'
-import { Database } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Database, Loader2, AlertCircle } from 'lucide-react'
+import { useAuthStore } from '../stores/auth.store'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const { login } = useAuthStore()
+  const navigate = useNavigate()
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    try {
+      await login(email, password)
+      navigate('/')
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Erro ao fazer login')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
@@ -13,21 +33,32 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold text-white">DBA Analyser</h1>
           <p className="text-sm text-gray-400 mt-1">Análise e controle de banco de dados</p>
         </div>
-        <form className="space-y-4" onSubmit={e => { e.preventDefault(); /* TODO */ }}>
+        {error && (
+          <div className="mb-4 p-3 bg-red-900/30 border border-red-800 rounded-lg flex items-center gap-2 text-sm text-red-400">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            {error}
+          </div>
+        )}
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-1.5">Email</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-gray-900 border border-gray-700 rounded-lg text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none" />
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
+              className="w-full px-3.5 py-2.5 bg-gray-900 border border-gray-700 rounded-lg text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="admin@dba-analyser.local" />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-1.5">Senha</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-gray-900 border border-gray-700 rounded-lg text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none" />
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required
+              className="w-full px-3.5 py-2.5 bg-gray-900 border border-gray-700 rounded-lg text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="••••••••" />
           </div>
-          <button type="submit" className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition">
-            Entrar
+          <button type="submit" disabled={loading}
+            className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white text-sm font-semibold rounded-lg transition flex items-center justify-center gap-2">
+            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+            {loading ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
+        <p className="text-center text-[10px] text-gray-600 mt-6">Acesso padrão: admin@dba-analyser.local / admin123</p>
       </div>
     </div>
   )
