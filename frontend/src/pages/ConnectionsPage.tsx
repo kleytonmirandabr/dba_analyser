@@ -114,7 +114,7 @@ export default function ConnectionsPage() {
 
       {showForm && <ConnectionForm onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); load() }} />}
       {editingConn && <ConnectionForm connection={editingConn} onClose={() => setEditingConn(null)} onSaved={() => { setEditingConn(null); load() }} />}
-      {discoverConn && <DatabaseDiscovery connection={discoverConn} onClose={() => setDiscoverConn(null)} onSaved={() => { setDiscoverConn(null); load() }} />}
+      {discoverConn && <DatabaseDiscovery connection={discoverConn} existingDatabases={connections.filter(c => c.host === discoverConn.host && c.port === discoverConn.port && c.databaseName).map(c => c.databaseName)} onClose={() => setDiscoverConn(null)} onSaved={() => { setDiscoverConn(null); load() }} />}
     </div>
   )
 }
@@ -228,7 +228,7 @@ function ConnectionForm({ onClose, onSaved, connection }: { onClose: () => void;
 }
 
 
-function DatabaseDiscovery({ connection, onClose, onSaved }: { connection: Connection; onClose: () => void; onSaved: () => void }) {
+function DatabaseDiscovery({ connection, existingDatabases = [], onClose, onSaved }: { connection: Connection; existingDatabases?: string[]; onClose: () => void; onSaved: () => void }) {
   const [databases, setDatabases] = useState<{ name: string; sizeBytes?: number; encoding?: string }[]>([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -239,7 +239,8 @@ function DatabaseDiscovery({ connection, onClose, onSaved }: { connection: Conne
     const discover = async () => {
       try {
         const { data } = await api.post(`/api/connections/${connection.id}/databases`)
-        setDatabases(data.data || [])
+        const all = data.data || []
+        setDatabases(all.filter((db: any) => !existingDatabases.includes(db.name)))
         if (data.error) setError(data.error)
       } catch (err: any) {
         setError(err.message)
