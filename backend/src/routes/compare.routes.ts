@@ -19,7 +19,21 @@ interface FullSchemaDiff {
 
 function normalizeSql(sql: string | null | undefined): string {
   if (!sql) return '';
-  return sql.replace(/\s+/g, ' ').replace(/\r\n/g, '\n').trim().toLowerCase();
+  let s = sql;
+  // Remove block comments /* ... */
+  s = s.replace(/\/\*[\s\S]*?\*\//g, '');
+  // Remove line comments -- ...
+  s = s.replace(/--[^\r\n]*/g, '');
+  // Normalize line endings
+  s = s.replace(/\r\n/g, '\n');
+  // Collapse all whitespace (spaces, tabs, newlines) to single space
+  s = s.replace(/\s+/g, ' ');
+  // Remove square brackets [dbo].[name] -> dbo.name
+  s = s.replace(/\[([^\]]+)\]/g, '$1');
+  // Remove trailing semicolons
+  s = s.replace(/;\s*$/, '');
+  // Trim and lowercase
+  return s.trim().toLowerCase();
 }
 
 function compareObjects<T>(source: T[], target: T[], getName: (o: T) => string, getDef: (o: T) => string): ObjectDiff[] {
