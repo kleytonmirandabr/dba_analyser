@@ -1,7 +1,6 @@
 import { Router, Request, Response } from 'express';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
-import { z } from 'zod';
 import { AppDataSource } from '../config/database';
 import { User } from '../entities/user.entity';
 
@@ -11,27 +10,80 @@ const userRepo = () => AppDataSource.getRepository(User);
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 const JWT_EXPIRES = '24h';
 
-// POST /api/auth/login
-const loginSchema = z.object({ email: z.string().email(), password: z.string().min(6) });
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_MINUTES = 15;
 
+// In-memory rate limit (per IP)
+const loginAttempts = new Map<string, { count: number; firstAttempt: number }>();
+const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
+const RATE_LIMIT_MAX = 10; // max 10 attempts per minute per IP
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const record = loginAttempts.get(ip);
+  if (!record || now - record.firstAttempt > RATE_LIMIT_WINDOW_MS) {
+    loginAttempts.set(ip, { count: 1, firstAttempt: now });
+    return false;
+  }
+  record.count++;
+  return record.count > RATE_LIMIT_MAX;
+}
+
+// POST /api/auth/login
 router.post('/login', async (req: Request, res: Response) => {
   try {
-    const { email, password } = loginSchema.parse(req.body);
-    const user = await userRepo().findOne({ where: { email, isActive: true } });
-    if (!user) return res.status(401).json({ error: 'Credenciais inválidas' });
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+
+    // Rate limit check
+    if (isRateLimited(ip)) {
+      return res.status(429).json({ error: 'Muitas tentativas. Aguarde 1 minuto.' });
+    }
+
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Usuário e senha são obrigatórios' });
+    }
+
+    const user = await userRepo().findOne({ where: { username, isActive: true } });
+    if (!user) {
+      return res.status(401).json({ error: 'Credenciais inválidas' });
+    }
+
+    // Account lockout check
+    if (user.lockedUntil && new Date() < new Date(user.lockedUntil)) {
+      const remainingMin = Math.ceil((new Date(user.lockedUntil).getTime() - Date.now()) / 60000);
+      return res.status(423).json({ error: `Conta bloqueada. Tente novamente em ${remainingMin} minuto(s).` });
+    }
 
     const valid = await bcrypt.compare(password, user.passwordHash);
-    if (!valid) return res.status(401).json({ error: 'Credenciais inválidas' });
+    if (!valid) {
+      // Increment failed attempts
+      user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+      if (user.failedLoginAttempts >= MAX_FAILED_ATTEMPTS) {
+        user.lockedUntil = new Date(Date.now() + LOCKOUT_MINUTES * 60000);
+        await userRepo().save(user);
+        return res.status(423).json({ error: `Conta bloqueada por ${LOCKOUT_MINUTES} minutos após ${MAX_FAILED_ATTEMPTS} tentativas falhas.` });
+      }
+      await userRepo().save(user);
+      const remaining = MAX_FAILED_ATTEMPTS - user.failedLoginAttempts;
+      return res.status(401).json({ error: `Credenciais inválidas. ${remaining} tentativa(s) restante(s).` });
+    }
+
+    // Reset failed attempts on success
+    if (user.failedLoginAttempts > 0 || user.lockedUntil) {
+      user.failedLoginAttempts = 0;
+      user.lockedUntil = null;
+      await userRepo().save(user);
+    }
 
     const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role, name: user.name },
+      { userId: user.id, username: user.username, role: user.role, name: user.name },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES }
     );
 
-    return res.json({ data: { token, user: { id: user.id, name: user.name, email: user.email, role: user.role } } });
+    return res.json({ data: { token, user: { id: user.id, name: user.name, username: user.username, role: user.role } } });
   } catch (err: any) {
-    if (err.name === 'ZodError') return res.status(400).json({ error: 'Dados inválidos', details: err.errors });
     return res.status(500).json({ error: err.message });
   }
 });
@@ -45,12 +97,11 @@ router.get('/me', async (req: Request, res: Response) => {
     const payload = jwt.verify(authHeader.slice(7), JWT_SECRET) as any;
     const user = await userRepo().findOne({ where: { id: payload.userId, isActive: true } });
     if (!user) return res.status(401).json({ error: 'Usuário não encontrado' });
-    return res.json({ data: { id: user.id, name: user.name, email: user.email, role: user.role } });
+    return res.json({ data: { id: user.id, name: user.name, username: user.username, role: user.role } });
   } catch {
     return res.status(401).json({ error: 'Token inválido' });
   }
 });
-
 
 // POST /api/auth/change-password
 router.post('/change-password', async (req: Request, res: Response) => {
@@ -64,11 +115,15 @@ router.post('/change-password', async (req: Request, res: Response) => {
 
     const { currentPassword, newPassword } = req.body;
     if (!currentPassword || !newPassword) return res.status(400).json({ error: 'Campos obrigatórios' });
+    if (newPassword.length < 8) return res.status(400).json({ error: 'Senha deve ter no mínimo 8 caracteres' });
+    if (!/[A-Z]/.test(newPassword)) return res.status(400).json({ error: 'Senha deve conter letra maiúscula' });
+    if (!/[0-9]/.test(newPassword)) return res.status(400).json({ error: 'Senha deve conter número' });
+    if (!/[^A-Za-z0-9]/.test(newPassword)) return res.status(400).json({ error: 'Senha deve conter caractere especial' });
 
     const valid = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!valid) return res.status(401).json({ error: 'Senha atual incorreta' });
 
-    user.passwordHash = await bcrypt.hash(newPassword, 10);
+    user.passwordHash = await bcrypt.hash(newPassword, 12);
     await userRepo().save(user);
     return res.json({ data: { message: 'Senha alterada com sucesso' } });
   } catch {

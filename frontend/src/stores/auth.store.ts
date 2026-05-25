@@ -13,7 +13,7 @@ interface AuthState {
   token: string | null
   isAuthenticated: boolean
   isLoading: boolean
-  login: (email: string, password: string) => Promise<void>
+  login: (username: string, password: string) => Promise<void>
   logout: () => void
   loadUser: () => Promise<void>
 }
@@ -24,8 +24,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: !!localStorage.getItem('dba_token'),
   isLoading: false,
 
-  login: async (email, password) => {
-    const { data } = await api.post('/api/auth/login', { email, password })
+  login: async (username, password) => {
+    const { data } = await api.post('/api/auth/login', { username, password })
     localStorage.setItem('dba_token', data.data.token)
     set({ user: data.data.user, token: data.data.token, isAuthenticated: true })
   },

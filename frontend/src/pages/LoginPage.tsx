@@ -4,7 +4,7 @@ import { Database, Loader2, AlertCircle } from 'lucide-react'
 import { useAuthStore } from '../stores/auth.store'
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
+  const [username, setUsuário] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -16,7 +16,7 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
     try {
-      await login(email, password)
+      await login(username, password)
       navigate('/')
     } catch (err: any) {
       setError(err.response?.data?.error || 'Erro ao fazer login')
@@ -41,10 +41,10 @@ export default function LoginPage() {
         )}
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1.5">Email</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
+            <label className="block text-xs font-medium text-gray-400 mb-1.5">Usuário</label>
+            <input type="text" value={username} onChange={e => setUsuário(e.target.value)} required
               className="w-full px-3.5 py-2.5 bg-gray-900 border border-gray-700 rounded-lg text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="admin@dba-analyser.local" />
+              placeholder="admin" />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-1.5">Senha</label>
@@ -58,7 +58,7 @@ export default function LoginPage() {
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
-        <p className="text-center text-[10px] text-gray-600 mt-6">Acesso padrão: admin@dba-analyser.local / admin123</p>
+        <p className="text-center text-[10px] text-gray-600 mt-6">Acesso padrão: admin / Dba@2025!Secure</p>
       </div>
     </div>
   )

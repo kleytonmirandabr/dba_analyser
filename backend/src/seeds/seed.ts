@@ -4,17 +4,18 @@ import { User } from '../entities/user.entity';
 
 export async function seedDefaultAdmin() {
   const userRepo = AppDataSource.getRepository(User);
-  const existing = await userRepo.findOne({ where: { email: 'admin@dba-analyser.local' } });
+  const existing = await userRepo.findOne({ where: { username: 'admin' } });
   
   if (!existing) {
-    const hash = await bcrypt.hash('admin123', 10);
+    const hash = await bcrypt.hash('Dba@2025!Secure', 12);
     await userRepo.save({
       name: 'Administrador',
-      email: 'admin@dba-analyser.local',
+      username: 'admin',
+      email: null,
       passwordHash: hash,
       role: 'admin',
       isActive: true,
     });
-    console.log('[Seed] Admin padrão criado: admin@dba-analyser.local / admin123');
+    console.log('[Seed] Admin padrão criado: admin / Dba@2025!Secure');
   }
 }
