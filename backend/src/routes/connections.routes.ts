@@ -22,7 +22,7 @@ const createSchema = z.object({
   name: z.string().min(1).max(100),
   host: z.string().min(1),
   port: z.number().int().min(1).max(65535),
-  databaseName: z.string().min(1),
+  databaseName: z.string().optional().default(''),
   username: z.string().min(1),
   password: z.string().min(1),
   dbType: z.enum(['postgresql', 'mssql', 'mysql']),
@@ -77,6 +77,44 @@ router.post('/:id/test', authMiddleware, async (req: Request, res: Response) => 
     return res.json({ data: result });
   } catch (err: any) {
     return res.json({ data: { ok: false, version: '', error: err.message } });
+  }
+});
+
+// PUT /api/connections/:id
+const updateSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  host: z.string().min(1).optional(),
+  port: z.number().int().min(1).max(65535).optional(),
+  databaseName: z.string().optional(),
+  username: z.string().min(1).optional(),
+  password: z.string().min(1).optional(),
+  dbType: z.enum(['postgresql', 'mssql', 'mysql']).optional(),
+  environment: z.enum(['dev', 'hml', 'prod']).optional(),
+  mode: z.enum(['readonly', 'execute']).optional(),
+  autoApprove: z.boolean().optional(),
+  groupName: z.string().optional(),
+});
+
+router.put('/:id', authMiddleware, requireRole('admin'), async (req: Request, res: Response) => {
+  try {
+    const conn = await connRepo().findOne({ where: { id: req.params.id } });
+    if (!conn) return res.status(404).json({ error: 'Conexão não encontrada' });
+
+    const data = updateSchema.parse(req.body);
+
+    if (data.password) {
+      const { encrypted, salt } = encrypt(data.password);
+      conn.passwordEncrypted = encrypted;
+      conn.passwordSalt = salt;
+    }
+    delete (data as any).password;
+
+    Object.assign(conn, data);
+    const saved = await connRepo().save(conn);
+    return res.json({ data: { ...saved, passwordEncrypted: undefined, passwordSalt: undefined } });
+  } catch (err: any) {
+    if (err.name === 'ZodError') return res.status(400).json({ error: 'Dados inválidos', details: err.errors });
+    return res.status(500).json({ error: err.message });
   }
 });
 

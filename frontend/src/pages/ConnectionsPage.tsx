@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plug, Plus, Trash2, CheckCircle2, XCircle, Loader2, Database, Server } from 'lucide-react'
+import { Plug, Plus, Trash2, Pencil, CheckCircle2, XCircle, Loader2, Database, Server } from 'lucide-react'
 import api from '../lib/api'
 
 interface Connection {
@@ -13,6 +13,7 @@ export default function ConnectionsPage() {
   const [showForm, setShowForm] = useState(false)
   const [testing, setTesting] = useState<string | null>(null)
   const [testResult, setTestResult] = useState<Record<string, { ok: boolean; version?: string; error?: string }>>({})
+  const [editingConn, setEditingConn] = useState<Connection | null>(null)
 
   const load = async () => {
     try {
@@ -92,6 +93,10 @@ export default function ConnectionsPage() {
                   className="px-3 py-1.5 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition">
                   {testing === conn.id ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Testar'}
                 </button>
+                <button onClick={() => setEditingConn(conn)}
+                  className="p-1.5 text-gray-500 hover:text-blue-400 transition">
+                  <Pencil className="w-4 h-4" />
+                </button>
                 <button onClick={() => deleteConnection(conn.id)}
                   className="p-1.5 text-gray-500 hover:text-red-400 transition">
                   <Trash2 className="w-4 h-4" />
@@ -103,14 +108,17 @@ export default function ConnectionsPage() {
       )}
 
       {showForm && <ConnectionForm onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); load() }} />}
+      {editingConn && <ConnectionForm connection={editingConn} onClose={() => setEditingConn(null)} onSaved={() => { setEditingConn(null); load() }} />}
     </div>
   )
 }
 
-function ConnectionForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+function ConnectionForm({ onClose, onSaved, connection }: { onClose: () => void; onSaved: () => void; connection?: Connection }) {
   const [form, setForm] = useState({
-    name: '', host: '', port: 5432, databaseName: '', username: '', password: '',
-    dbType: 'postgresql', environment: 'dev', mode: 'readonly', autoApprove: false, groupName: ''
+    name: connection?.name || '', host: connection?.host || '', port: connection?.port || 5432,
+    databaseName: connection?.databaseName || '', username: connection?.username || '', password: '',
+    dbType: connection?.dbType || 'postgresql', environment: connection?.environment || 'dev',
+    mode: connection?.mode || 'readonly', autoApprove: false, groupName: connection?.groupName || ''
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -119,7 +127,13 @@ function ConnectionForm({ onClose, onSaved }: { onClose: () => void; onSaved: ()
     e.preventDefault()
     setSaving(true); setError('')
     try {
-      await api.post('/api/connections', { ...form, port: Number(form.port) })
+      const payload = { ...form, port: Number(form.port) }
+      if (!payload.password) delete (payload as any).password
+      if (connection) {
+        await api.put(`/api/connections/${connection.id}`, payload)
+      } else {
+        await api.post('/api/connections', payload)
+      }
       onSaved()
     } catch (err: any) {
       setError(err.response?.data?.error || 'Erro ao salvar')
@@ -133,7 +147,7 @@ function ConnectionForm({ onClose, onSaved }: { onClose: () => void; onSaved: ()
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div className="bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-lg font-bold text-white mb-4">Nova Conexão</h2>
+        <h2 className="text-lg font-bold text-white mb-4">{connection ? 'Editar Conexão' : 'Nova Conexão'}</h2>
         {error && <div className="mb-3 p-2 bg-red-900/30 border border-red-800 rounded text-xs text-red-400">{error}</div>}
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
@@ -151,8 +165,8 @@ function ConnectionForm({ onClose, onSaved }: { onClose: () => void; onSaved: ()
             </div>
           </div>
           <div>
-            <label className={labelCls}>Database</label>
-            <input className={inputCls} value={form.databaseName} onChange={e => setForm(f => ({ ...f, databaseName: e.target.value }))} placeholder="photocoat_prod" required />
+            <label className={labelCls}>Database <span className="text-gray-600">(opcional)</span></label>
+            <input className={inputCls} value={form.databaseName} onChange={e => setForm(f => ({ ...f, databaseName: e.target.value }))} placeholder="Deixe vazio para listar todos" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>

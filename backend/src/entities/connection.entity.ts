@@ -19,7 +19,7 @@ export class Connection {
   @Column('int')
   port!: number;
 
-  @Column({ length: 100 })
+  @Column({ length: 100, nullable: true, default: '' })
   databaseName!: string;
 
   @Column({ length: 100 })
