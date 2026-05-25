@@ -9,6 +9,8 @@ import dotenv from 'dotenv';
 import { AppDataSource } from './config/database';
 import { seedDefaultAdmin } from './seeds/seed';
 import authRoutes from './routes/auth.routes';
+import connectionRoutes from './routes/connections.routes';
+import vpnRoutes from './routes/vpn.routes';
 
 dotenv.config();
 
@@ -31,6 +33,8 @@ app.get('/health', (_req, res) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/connections', connectionRoutes);
+app.use('/api/vpn', vpnRoutes);
 
 // Status (no auth - used by frontend to check API)
 app.get('/api/status', (_req, res) => {
