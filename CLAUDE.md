@@ -585,6 +585,10 @@ O sprint de 4 semanas foi completado + polish de deploy e VPN UX.
 9. **Severidade** — Info/Warning/Critical com cores distintas
 10. **Ações** — Testar, Pausar/Ativar, Editar, Excluir
 
+### v1.0.1 — Fixes criptografia de conexões (2026-05-25)
+- Fix: Criação de conexão passa usernameEncrypted corretamente (não mais NULL)
+- Fix: select-databases cria filhos com username criptografado (salt único por conexão)
+
 ### v1.0.0 — Security Hardening + UX Monitor (2026-05-25) — Security Hardening + UX Monitor (2026-05-25)
 - **BREAKING:** Login agora é por username (não email). Default: admin / Dba@2025!Secure
 - **BREAKING:** DBA_MASTER_KEY obrigatória (app não inicia sem ela)

@@ -1,6 +1,7 @@
 # Backlog - DBA Analyser
 
 ## ✅ Concluídas
+- Fixes criptografia de conexões (v1.0.1)
 - Semana 1: Fundação (v0.1.x)
 - Semana 2: Explorer + Monitor (v0.2.x)
 - Semana 3: Query + Execução + Comparador (v0.3.x)
