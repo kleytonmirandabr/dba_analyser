@@ -41,13 +41,23 @@ export default function VPNPage() {
     if (!ovpnContent) { setMessage({ type: 'error', text: 'Selecione um arquivo .ovpn' }); return }
     setUploading(true); setMessage(null)
     try {
-      const { data } = await api.post('/api/vpn/upload', {
+      await api.post('/api/vpn/upload', {
         ovpnContent,
         username: vpnUser || undefined,
         password: vpnPass || undefined,
       })
-      setMessage({ type: 'success', text: data.data.message })
+      // Auto-connect after upload
+      try {
+        await api.post('/api/vpn/connect')
+        setMessage({ type: 'success', text: 'Configuração salva e VPN conectando automaticamente...' })
+      } catch {
+        setMessage({ type: 'success', text: 'Configuração salva. Conectando...' })
+      }
       setOvpnContent(''); setOvpnFilename(''); setVpnUser(''); setVpnPass('')
+      // Poll status more frequently for a bit
+      setTimeout(loadStatus, 3000)
+      setTimeout(loadStatus, 8000)
+      setTimeout(loadStatus, 15000)
       loadStatus()
     } catch (err: any) {
       setMessage({ type: 'error', text: err.response?.data?.error || 'Erro ao enviar configuração' })
@@ -86,6 +96,22 @@ export default function VPNPage() {
           </div>
         </div>
         {status.lastError && <p className="text-xs text-red-400 mt-2 ml-9">Último erro: {status.lastError}</p>}
+        {status.configUploaded && (
+          <div className="mt-3 ml-9 flex gap-2">
+            {!status.connected && (
+              <button onClick={async () => { setMessage(null); try { await api.post('/api/vpn/connect'); setMessage({ type: 'success', text: 'Conectando VPN...' }); setTimeout(loadStatus, 5000) } catch(e:any) { setMessage({ type: 'error', text: e.response?.data?.error || 'Erro' }) } }}
+                className="px-3 py-1.5 text-xs bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
+                Conectar VPN
+              </button>
+            )}
+            {status.connected && (
+              <button onClick={async () => { try { await api.post('/api/vpn/disconnect'); setMessage({ type: 'success', text: 'VPN desconectada' }); setTimeout(loadStatus, 3000) } catch(e:any) { setMessage({ type: 'error', text: e.response?.data?.error || 'Erro' }) } }}
+                className="px-3 py-1.5 text-xs bg-red-600 hover:bg-red-700 text-white rounded-lg transition">
+                Desconectar
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Messages */}
@@ -155,7 +181,7 @@ export default function VPNPage() {
         <ol className="space-y-2 text-xs text-gray-500">
           <li className="flex gap-2"><span className="text-blue-400 font-bold">1.</span> Faça upload do arquivo .ovpn fornecido pelo administrador da rede</li>
           <li className="flex gap-2"><span className="text-blue-400 font-bold">2.</span> Se necessário, informe as credenciais de autenticação da VPN</li>
-          <li className="flex gap-2"><span className="text-blue-400 font-bold">3.</span> Reinicie o container VPN: <code className="bg-gray-800 px-1.5 py-0.5 rounded">docker compose restart vpn</code></li>
+          <li className="flex gap-2"><span className="text-blue-400 font-bold">3.</span> A VPN conecta automaticamente após salvar (ou clique "Conectar VPN")</li>
           <li className="flex gap-2"><span className="text-blue-400 font-bold">4.</span> O status acima será atualizado automaticamente quando a VPN conectar</li>
           <li className="flex gap-2"><span className="text-blue-400 font-bold">5.</span> Após conectado, cadastre conexões que acessam a rede interna via VPN</li>
         </ol>
