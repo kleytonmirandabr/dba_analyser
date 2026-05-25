@@ -5,30 +5,39 @@ services:
       - NET_ADMIN
     devices:
       - /dev/net/tun
+    ports:
+      - "3030:3030"
     volumes:
       - vpn-data:/vpn
     environment:
       - FIREWALL=
+    healthcheck:
+      test: ["CMD", "ip", "link", "show", "tun0"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     restart: unless-stopped
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile.dev
-    ports:
-      - "3030:3030"
+    network_mode: "service:vpn"
     volumes:
       - ./backend/src:/app/src
       - vpn-data:/vpn
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      - DATABASE_URL=postgresql://dba_app:dba_secret@postgres:5432/dba_analyser
+      - DATABASE_URL=postgresql://dba_app:dba_secret@172.18.0.1:5433/dba_analyser
       - DBA_MASTER_KEY=dev-master-key-change-in-prod-32ch
       - JWT_SECRET=dev-jwt-secret-change-in-prod
       - NODE_ENV=development
       - VPN_CONFIG_PATH=/vpn
       - FRONTEND_URL=http://localhost:5173
     depends_on:
+      vpn:
+        condition: service_healthy
       postgres:
         condition: service_healthy
 
@@ -42,8 +51,10 @@ services:
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
       - ./frontend/index.html:/app/index.html
+    environment:
+      - VITE_API_URL=http://localhost:3030
     depends_on:
-      - backend
+      - vpn
 
   postgres:
     image: postgres:16-alpine
