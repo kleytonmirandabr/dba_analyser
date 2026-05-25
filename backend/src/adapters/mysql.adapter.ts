@@ -46,6 +46,9 @@ export class MySQLAdapter implements DatabaseAdapter {
     return rows;
   }
 
+  async listAllColumns(schema?: string): Promise<any[]> { return []; }
+  async listAllIndexes(schema?: string): Promise<any[]> { return []; }
+
   async listIndexes(schema: string, table: string): Promise<IndexInfo[]> {
     return this.query(`SELECT INDEX_NAME as name, TABLE_NAME as \`table\`, NOT NON_UNIQUE as \`unique\`,
       GROUP_CONCAT(COLUMN_NAME) as columns, '' as definition

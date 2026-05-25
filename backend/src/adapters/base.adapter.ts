@@ -113,6 +113,10 @@ export interface DatabaseAdapter {
   listFunctions(schema?: string): Promise<FunctionInfo[]>;
   listViews(schema?: string): Promise<ViewInfo[]>;
 
+  // Bulk fetch for compare (all columns/indexes in one query)
+  listAllColumns(schema?: string): Promise<(ColumnInfo & { tableName: string })[]>;
+  listAllIndexes(schema?: string): Promise<(IndexInfo & { tableName: string })[]>;
+
   // Monitor
   getActiveQueries(): Promise<ActiveQuery[]>;
   getLocks(): Promise<LockInfo[]>;

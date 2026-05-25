@@ -60,6 +60,35 @@ export class MSSQLAdapter implements DatabaseAdapter {
       WHERE c.TABLE_SCHEMA = '${schema}' AND c.TABLE_NAME = '${table}' ORDER BY c.ORDINAL_POSITION`);
   }
 
+  async listAllColumns(schema = 'dbo'): Promise<(ColumnInfo & { tableName: string })[]> {
+    return this.query(`SELECT c.TABLE_NAME as tableName, c.COLUMN_NAME as name, c.DATA_TYPE as type,
+      CASE c.IS_NULLABLE WHEN 'YES' THEN 1 ELSE 0 END as nullable,
+      c.COLUMN_DEFAULT as defaultValue,
+      CASE WHEN pk.COLUMN_NAME IS NOT NULL THEN 1 ELSE 0 END as isPrimaryKey,
+      CASE WHEN fk.COLUMN_NAME IS NOT NULL THEN 1 ELSE 0 END as isForeignKey
+      FROM INFORMATION_SCHEMA.COLUMNS c
+      LEFT JOIN (SELECT tc.TABLE_NAME, ku.COLUMN_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+        JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE ku ON tc.CONSTRAINT_NAME = ku.CONSTRAINT_NAME
+        WHERE tc.TABLE_SCHEMA = '${schema}' AND tc.CONSTRAINT_TYPE = 'PRIMARY KEY') pk
+        ON pk.TABLE_NAME = c.TABLE_NAME AND pk.COLUMN_NAME = c.COLUMN_NAME
+      LEFT JOIN (SELECT tc.TABLE_NAME, ku.COLUMN_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+        JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE ku ON tc.CONSTRAINT_NAME = ku.CONSTRAINT_NAME
+        WHERE tc.TABLE_SCHEMA = '${schema}' AND tc.CONSTRAINT_TYPE = 'FOREIGN KEY') fk
+        ON fk.TABLE_NAME = c.TABLE_NAME AND fk.COLUMN_NAME = c.COLUMN_NAME
+      WHERE c.TABLE_SCHEMA = '${schema}' ORDER BY c.TABLE_NAME, c.ORDINAL_POSITION`);
+  }
+
+  async listAllIndexes(schema = 'dbo'): Promise<(IndexInfo & { tableName: string })[]> {
+    return this.query(`SELECT t.name as tableName, i.name, t.name as [table], i.is_unique as [unique],
+      STRING_AGG(c.name, ',') as columns, '' as definition
+      FROM sys.indexes i JOIN sys.tables t ON i.object_id = t.object_id
+      JOIN sys.schemas s ON t.schema_id = s.schema_id
+      JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+      JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+      WHERE s.name = '${schema}' AND i.name IS NOT NULL
+      GROUP BY t.name, i.name, i.is_unique`);
+  }
+
   async listIndexes(schema: string, table: string): Promise<IndexInfo[]> {
     return this.query(`SELECT i.name, t.name as [table], i.is_unique as [unique],
       STRING_AGG(c.name, ',') as columns, '' as definition

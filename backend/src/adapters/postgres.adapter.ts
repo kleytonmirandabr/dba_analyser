@@ -74,6 +74,39 @@ export class PostgresAdapter implements DatabaseAdapter {
     return rows;
   }
 
+  async listAllColumns(schema = 'public'): Promise<(import('./base.adapter').ColumnInfo & { tableName: string })[]> {
+    const { rows } = await this.pool!.query(`
+      SELECT c.table_name as "tableName", c.column_name as name, c.data_type as type,
+        CASE c.is_nullable WHEN 'YES' THEN true ELSE false END as nullable,
+        c.column_default as "defaultValue",
+        CASE WHEN pk.column_name IS NOT NULL THEN true ELSE false END as "isPrimaryKey",
+        CASE WHEN fk.column_name IS NOT NULL THEN true ELSE false END as "isForeignKey"
+      FROM information_schema.columns c
+      LEFT JOIN (SELECT kcu.table_name, kcu.column_name FROM information_schema.table_constraints tc
+        JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
+        WHERE tc.table_schema = $1 AND tc.constraint_type = 'PRIMARY KEY') pk
+        ON pk.table_name = c.table_name AND pk.column_name = c.column_name
+      LEFT JOIN (SELECT kcu.table_name, kcu.column_name FROM information_schema.table_constraints tc
+        JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
+        WHERE tc.table_schema = $1 AND tc.constraint_type = 'FOREIGN KEY') fk
+        ON fk.table_name = c.table_name AND fk.column_name = c.column_name
+      WHERE c.table_schema = $1 ORDER BY c.table_name, c.ordinal_position`, [schema]);
+    return rows;
+  }
+
+  async listAllIndexes(schema = 'public'): Promise<(import('./base.adapter').IndexInfo & { tableName: string })[]> {
+    const { rows } = await this.pool!.query(`
+      SELECT t.relname as "tableName", i.relname as name, t.relname as "table",
+        ix.indisunique as "unique", pg_get_indexdef(ix.indexrelid) as definition,
+        ARRAY(SELECT a.attname FROM pg_attribute a WHERE a.attrelid = ix.indexrelid ORDER BY a.attnum)::text as columns
+      FROM pg_index ix
+      JOIN pg_class i ON ix.indexrelid = i.oid
+      JOIN pg_class t ON ix.indrelid = t.oid
+      JOIN pg_namespace n ON t.relnamespace = n.oid
+      WHERE n.nspname = $1 AND t.relkind = 'r'`, [schema]);
+    return rows;
+  }
+
   async listIndexes(schema: string, table: string): Promise<IndexInfo[]> {
     const rows = await this.query(`
       SELECT indexname as name, tablename as table, indexdef as definition,
