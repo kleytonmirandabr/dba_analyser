@@ -4,6 +4,8 @@ import { useAuthStore } from './stores/auth.store'
 import AppLayout from './components/layout/AppLayout'
 import DashboardPage from './pages/DashboardPage'
 import ConnectionsPage from './pages/ConnectionsPage'
+import ExplorerPage from './pages/ExplorerPage'
+import MonitorPage from './pages/MonitorPage'
 import LoginPage from './pages/LoginPage'
 import VPNSetupWizard from './components/wizard/VPNSetupWizard'
 import { Loader2 } from 'lucide-react'
@@ -40,6 +42,8 @@ export default function App() {
         <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
           <Route index element={<DashboardPage />} />
           <Route path="connections" element={<ConnectionsPage />} />
+          <Route path="explorer" element={<ExplorerPage />} />
+          <Route path="monitor" element={<MonitorPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
