@@ -135,7 +135,9 @@ export class MSSQLAdapter implements DatabaseAdapter {
       DATEDIFF(MILLISECOND, r.start_time, GETDATE()) as durationMs, r.wait_type as waitEvent
       FROM sys.dm_exec_requests r JOIN sys.dm_exec_sessions s ON r.session_id = s.session_id
       CROSS APPLY sys.dm_exec_sql_text(r.sql_handle) t
-      WHERE r.session_id > 50 AND r.session_id != @@SPID ORDER BY r.start_time`);
+      WHERE r.session_id > 50 AND r.session_id != @@SPID
+        AND r.database_id = DB_ID()
+      ORDER BY r.start_time`);
   }
 
   async getLocks(): Promise<LockInfo[]> {
@@ -147,7 +149,7 @@ export class MSSQLAdapter implements DatabaseAdapter {
       CROSS APPLY sys.dm_exec_sql_text(blocked.sql_handle) bt
       LEFT JOIN sys.dm_exec_connections bc ON blocked.blocking_session_id = bc.session_id
       OUTER APPLY sys.dm_exec_sql_text(bc.most_recent_sql_handle) blt
-      WHERE blocked.blocking_session_id > 0`);
+      WHERE blocked.blocking_session_id > 0 AND blocked.database_id = DB_ID()`);
   }
 
   async killQuery(pid: number): Promise<{ success: boolean; error?: string }> {

@@ -77,7 +77,7 @@ router.get('/:connId/stats', authMiddleware, async (req: Request, res: Response)
       const query = (adapter as any).query.bind(adapter);
       const [sizeResult, connResult] = await Promise.all([
         query("SELECT SUM(CAST(size AS BIGINT) * 8 * 1024) as size FROM sys.database_files"),
-        query("SELECT count(*) as total, SUM(CASE WHEN status = 'running' THEN 1 ELSE 0 END) as active FROM sys.dm_exec_sessions WHERE is_user_process = 1"),
+        query("SELECT count(*) as total, SUM(CASE WHEN status = 'running' THEN 1 ELSE 0 END) as active FROM sys.dm_exec_sessions WHERE is_user_process = 1 AND database_id = DB_ID()"),
       ]);
       data = {
         databaseSize: parseInt(sizeResult[0]?.size || '0'),
