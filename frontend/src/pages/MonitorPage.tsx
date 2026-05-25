@@ -65,8 +65,7 @@ export default function MonitorPage() {
 
       // Fetch DBA stats for first selected connection (server-level metrics)
       if (ids.length > 0 && enabledPanels.size > 0) {
-        const panels = [...enabledPanels].join(',')
-        api.get(`/api/monitor/${ids[0]}/dba-stats?panels=${panels}`).then(r => setDbaStats(r.data.data)).catch(() => {})
+        api.get(`/api/monitor/${ids[0]}/dba-stats?panels=all`).then(r => setDbaStats(r.data.data)).catch(() => {})
       }
     } catch {}
     setLoading(false)
@@ -89,7 +88,7 @@ export default function MonitorPage() {
   useEffect(() => {
     if (selectedConns.length > 0 && enabledPanels.size > 0) {
       const panels = [...enabledPanels].join(',')
-      api.get(`/api/monitor/${selectedConns[0]}/dba-stats?panels=${panels}`).then(r => setDbaStats(r.data.data)).catch(() => {})
+      api.get(`/api/monitor/${selectedConns[0]}/dba-stats?panels=${panels}`).then(r => setDbaStats((prev: any) => ({ ...prev, ...r.data.data }))).catch(() => {})
     }
   }, [enabledPanels])
 
