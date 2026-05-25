@@ -214,17 +214,32 @@ function TablesSection({ tables }: { tables: TableDiff[] }) {
   )
 }
 
+function CodeWithLines({ code, color }: { code: string; color: 'green' | 'red' }) {
+  const lines = code.split('\n')
+  const bg = color === 'green' ? 'bg-green-900/10 border-green-900/20' : 'bg-red-900/10 border-red-900/20'
+  return (
+    <div className={`font-mono text-[11px] rounded border ${bg} max-h-60 overflow-auto`}>
+      {lines.map((line, i) => (
+        <div key={i} className="flex">
+          <span className="w-8 text-right pr-2 select-none shrink-0 text-gray-600 border-r border-gray-800/50 bg-black/20">{i + 1}</span>
+          <pre className="px-2 py-0 whitespace-pre-wrap text-gray-300">{line}</pre>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function DiffView({ source, target }: { source?: string; target?: string }) {
   const srcLines = (source || '').split('\n')
   const tgtLines = (target || '').split('\n')
 
-  // Simple LCS-based line diff
   const diff = computeLineDiff(srcLines, tgtLines)
 
   return (
     <div className="font-mono text-[11px] max-h-80 overflow-auto rounded border border-gray-800 bg-gray-950">
       {diff.map((line, i) => (
         <div key={i} className={`flex ${line.type === 'add' ? 'bg-green-900/20' : line.type === 'remove' ? 'bg-red-900/20' : line.type === 'changed' ? 'bg-yellow-900/15' : ''}`}>
+          <span className="w-8 text-right pr-1 select-none shrink-0 text-gray-600 border-r border-gray-800 bg-gray-900/50">{line.lineNum || ''}</span>
           <span className={`w-5 text-center select-none shrink-0 border-r border-gray-800 ${line.type === 'add' ? 'text-green-500 bg-green-900/30' : line.type === 'remove' ? 'text-red-500 bg-red-900/30' : line.type === 'changed' ? 'text-yellow-500 bg-yellow-900/20' : 'text-gray-600'}`}>
             {line.type === 'add' ? '+' : line.type === 'remove' ? '-' : line.type === 'changed' ? '~' : ' '}
           </span>
@@ -235,32 +250,29 @@ function DiffView({ source, target }: { source?: string; target?: string }) {
   )
 }
 
-interface DiffLine { type: 'same' | 'add' | 'remove' | 'changed'; text: string; }
+interface DiffLine { type: 'same' | 'add' | 'remove' | 'changed'; text: string; lineNum?: number; }
 
 function computeLineDiff(src: string[], tgt: string[]): DiffLine[] {
   const result: DiffLine[] = []
-  const maxLen = Math.max(src.length, tgt.length)
-  
-  // Use simple sequential comparison with context
-  // For each line: if same -> same, if different -> show both
   const srcSet = new Set(src.map(s => s.trim().toLowerCase()))
   const tgtSet = new Set(tgt.map(s => s.trim().toLowerCase()))
   
-  // Mark lines unique to source (removed) and target (added)
-  for (const line of src) {
+  // Lines only in source (with original line number)
+  src.forEach((line, i) => {
     const norm = line.trim().toLowerCase()
-    if (!norm) continue
+    if (!norm) return
     if (!tgtSet.has(norm)) {
-      result.push({ type: 'remove', text: line })
+      result.push({ type: 'remove', text: line, lineNum: i + 1 })
     }
-  }
-  for (const line of tgt) {
+  })
+  // Lines only in target (with original line number)
+  tgt.forEach((line, i) => {
     const norm = line.trim().toLowerCase()
-    if (!norm) continue
+    if (!norm) return
     if (!srcSet.has(norm)) {
-      result.push({ type: 'add', text: line })
+      result.push({ type: 'add', text: line, lineNum: i + 1 })
     }
-  }
+  })
 
   if (result.length === 0) {
     result.push({ type: 'same', text: '(nenhuma diferença significativa)' })
@@ -310,11 +322,11 @@ function ObjectsSection({ objects, type }: { objects: ObjectDiff[]; type: string
                       <div className="grid grid-cols-2 gap-3 mt-2">
                         <div>
                           <p className="text-[10px] text-green-400 font-medium mb-1 uppercase">Source</p>
-                          <pre className="text-[11px] text-gray-300 font-mono bg-green-900/10 border border-green-900/20 rounded p-2 max-h-60 overflow-auto whitespace-pre-wrap">{obj.sourceDefinition || '(vazio)'}</pre>
+                          <CodeWithLines code={obj.sourceDefinition || '(vazio)'} color="green" />
                         </div>
                         <div>
                           <p className="text-[10px] text-red-400 font-medium mb-1 uppercase">Target</p>
-                          <pre className="text-[11px] text-gray-300 font-mono bg-red-900/10 border border-red-900/20 rounded p-2 max-h-60 overflow-auto whitespace-pre-wrap">{obj.targetDefinition || '(vazio)'}</pre>
+                          <CodeWithLines code={obj.targetDefinition || '(vazio)'} color="red" />
                         </div>
                       </div>
                     </details>
