@@ -42,15 +42,35 @@ export default function VPNPage() {
     reader.readAsText(file)
   }
 
+  const stopConnecting = (error?: string) => {
+    setConnecting(false)
+    setConnectStep('')
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
+    if (error) setMessage({ type: 'error', text: error })
+  }
+
   const startConnecting = () => {
     setConnecting(true)
+    setMessage(null)
     setConnectStep('Iniciando container VPN...')
-    setTimeout(() => setConnectStep('Autenticando com servidor...'), 3000)
-    setTimeout(() => setConnectStep('Estabelecendo túnel...'), 6000)
-    setTimeout(() => setConnectStep('Verificando conectividade...'), 10000)
+    setTimeout(() => { if (connecting) setConnectStep('Autenticando com servidor...') }, 3000)
+    setTimeout(() => { if (connecting) setConnectStep('Estabelecendo túnel...') }, 6000)
+    setTimeout(() => { if (connecting) setConnectStep('Verificando conectividade...') }, 10000)
     // Poll faster during connection
     pollRef.current = setInterval(loadStatus, 3000)
-    setTimeout(() => { if (pollRef.current) clearInterval(pollRef.current) }, 30000)
+    // Timeout after 30s
+    setTimeout(() => {
+      if (!status.connected && connecting) {
+        stopConnecting('Tempo esgotado (30s). Verifique o arquivo .ovpn e credenciais.')
+      }
+    }, 30000)
+  }
+
+  const cancelConnection = async () => {
+    stopConnecting()
+    try { await api.post('/api/vpn/disconnect') } catch {}
+    setMessage({ type: 'error', text: 'Conexão cancelada pelo usuário.' })
+    setTimeout(loadStatus, 2000)
   }
 
   const handleUpload = async () => {
@@ -154,6 +174,10 @@ export default function VPNPage() {
               <div className="flex-1 h-1.5 bg-gray-800 rounded-full overflow-hidden">
                 <div className="h-full bg-amber-500 rounded-full animate-pulse" style={{ width: '60%' }} />
               </div>
+              <button onClick={cancelConnection}
+                className="px-3 py-1 text-[11px] bg-gray-800 hover:bg-red-900/30 text-gray-400 hover:text-red-400 border border-gray-700 hover:border-red-800 rounded-lg transition">
+                Cancelar
+              </button>
             </div>
             <div className="space-y-1">
               {['Iniciando container VPN...', 'Autenticando com servidor...', 'Estabelecendo túnel...', 'Verificando conectividade...'].map((step, i) => {
