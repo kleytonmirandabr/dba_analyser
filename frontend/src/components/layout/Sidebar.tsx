@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Database, LayoutDashboard, Plug, FolderTree, Activity, HeartPulse, Bell, Terminal, GitCompareArrows, Play, Shield, Settings, Wifi } from 'lucide-react'
+import { Database, LayoutDashboard, Plug, FolderTree, Activity, HeartPulse, Bell, TrendingUp, Terminal, GitCompareArrows, Play, Shield, Settings, Wifi } from 'lucide-react'
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -10,6 +10,7 @@ const navItems = [
   { to: '/monitor', icon: Activity, label: 'Monitor' },
   { to: '/health', icon: HeartPulse, label: 'Health' },
   { to: '/alerts', icon: Bell, label: 'Alertas' },
+  { to: '/growth', icon: TrendingUp, label: 'Crescimento' },
   { to: '/executions', icon: Play, label: 'Execuções' },
   { to: '/compare', icon: GitCompareArrows, label: 'Comparador' },
   { to: '/audit', icon: Shield, label: 'Audit Log' },
@@ -33,7 +34,7 @@ export default function Sidebar() {
         ))}
       </nav>
       <div className="p-3 border-t border-gray-800">
-        <p className="text-[10px] text-gray-600 text-center">DBA Analyser v0.7.0</p>
+        <p className="text-[10px] text-gray-600 text-center">DBA Analyser v0.8.0</p>
       </div>
     </aside>
   )

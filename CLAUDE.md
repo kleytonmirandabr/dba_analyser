@@ -585,6 +585,22 @@ O sprint de 4 semanas foi completado + polish de deploy e VPN UX.
 9. **Severidade** — Info/Warning/Critical com cores distintas
 10. **Ações** — Testar, Pausar/Ativar, Editar, Excluir
 
+### v0.8.0 — Growth Tracker (Cron Diário de Crescimento) (2026-05-25)
+
+| Versão | Commit | Descrição |
+|--------|--------|-----------|
+| 0.8.0 | (current) | Monitoramento de crescimento de tabelas com cron diário, detecção de anomalias, sparklines |
+
+### Funcionalidades adicionadas (v0.8.0)
+1. **Snapshot diário** — Cron à meia-noite UTC coleta row count e tamanho de todas as tabelas
+2. **Detecção de anomalias** — Spike (>3x média), Parou (0 vs esperado), Perda (encolheu >10%)
+3. **Baseline 7 dias** — Média de crescimento calculada automaticamente
+4. **Regras customizáveis por tabela** — max growth %, max rows, min rows, max shrink %
+5. **Sparklines** — Mini gráfico de tendência na tabela
+6. **Snapshot manual** — Botão para forçar coleta imediata
+7. **WebSocket push** — Notifica anomalias em tempo real
+8. **Zero impacto** — Usa pg_stat_user_tables (metadado), não faz COUNT real
+
 ### Próximos passos opcionais:
 - Syntax highlight (CodeMirror / Monaco)
 - Temas claros

@@ -14,6 +14,7 @@ import SettingsPage from './pages/SettingsPage'
 import VPNPage from './pages/VPNPage'
 import HealthPage from './pages/HealthPage'
 import AlertsPage from './pages/AlertsPage'
+import GrowthPage from './pages/GrowthPage'
 import LoginPage from './pages/LoginPage'
 import VPNSetupWizard from './components/wizard/VPNSetupWizard'
 import { Loader2 } from 'lucide-react'
@@ -55,6 +56,7 @@ export default function App() {
           <Route path="monitor" element={<MonitorPage />} />
           <Route path="health" element={<HealthPage />} />
           <Route path="alerts" element={<AlertsPage />} />
+          <Route path="growth" element={<GrowthPage />} />
           <Route path="executions" element={<ExecutionPage />} />
           <Route path="compare" element={<ComparePage />} />
           <Route path="audit" element={<AuditPage />} />
