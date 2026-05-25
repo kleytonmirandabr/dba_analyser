@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Database, LayoutDashboard, Plug, FolderTree, Activity, Terminal, GitCompareArrows, Play, Shield, Settings, Wifi } from 'lucide-react'
+import { Database, LayoutDashboard, Plug, FolderTree, Activity, HeartPulse, Terminal, GitCompareArrows, Play, Shield, Settings, Wifi } from 'lucide-react'
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -8,6 +8,7 @@ const navItems = [
   { to: '/explorer', icon: FolderTree, label: 'Explorer' },
   { to: '/query', icon: Terminal, label: 'Query' },
   { to: '/monitor', icon: Activity, label: 'Monitor' },
+  { to: '/health', icon: HeartPulse, label: 'Health' },
   { to: '/executions', icon: Play, label: 'Execuções' },
   { to: '/compare', icon: GitCompareArrows, label: 'Comparador' },
   { to: '/audit', icon: Shield, label: 'Audit Log' },

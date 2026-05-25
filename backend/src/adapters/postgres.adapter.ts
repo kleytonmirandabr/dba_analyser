@@ -167,6 +167,142 @@ export class PostgresAdapter implements DatabaseAdapter {
     }
   }
 
+
+
+  // === HEALTH MONITORING ===
+
+  async getHealthOverview(): Promise<import('./base.adapter').HealthOverview> {
+    const version = (await this.query("SELECT version()"))[0].version;
+    const tables = await this.query("SELECT count(*) as cnt FROM pg_stat_user_tables");
+    const size = await this.query("SELECT pg_database_size(current_database()) as size");
+    const bloated = await this.query("SELECT count(*) as cnt FROM pg_stat_user_tables WHERE n_dead_tup > n_live_tup * 0.2 AND n_live_tup > 100");
+    const unusedIdx = await this.query("SELECT count(*) as cnt FROM pg_stat_user_indexes WHERE idx_scan = 0 AND schemaname NOT IN ('pg_toast')");
+    const longTx = await this.query("SELECT count(*) as cnt FROM pg_stat_activity WHERE state != 'idle' AND xact_start < now() - interval '5 minutes' AND pid != pg_backend_pid()");
+    const conns = await this.query("SELECT count(*) as active FROM pg_stat_activity");
+    const maxConns = await this.query("SELECT setting::int as max FROM pg_settings WHERE name = 'max_connections'");
+    const cacheHit = await this.query("SELECT CASE WHEN (blks_hit + blks_read) = 0 THEN 1 ELSE blks_hit::float / (blks_hit + blks_read) END as ratio FROM pg_stat_database WHERE datname = current_database()");
+    const uptime = await this.query("SELECT now() - pg_postmaster_start_time() as uptime");
+
+    return {
+      version: version.split(',')[0],
+      totalTables: parseInt(tables[0].cnt),
+      totalSizeBytes: parseInt(size[0].size),
+      bloatedTables: parseInt(bloated[0].cnt),
+      unusedIndexes: parseInt(unusedIdx[0].cnt),
+      longTransactions: parseInt(longTx[0].cnt),
+      activeConnections: parseInt(conns[0].active),
+      maxConnections: parseInt(maxConns[0].max),
+      cacheHitRatio: parseFloat(cacheHit[0]?.ratio || '0'),
+      uptime: uptime[0]?.uptime?.toString() || '',
+    };
+  }
+
+  async getTableHealth(): Promise<import('./base.adapter').TableHealth[]> {
+    const rows = await this.query(`
+      SELECT schemaname as schema, relname as name,
+             pg_total_relation_size(relid) as "sizeBytes",
+             n_live_tup as "liveTuples", n_dead_tup as "deadTuples",
+             n_live_tup as "rowEstimate",
+             CASE WHEN (n_live_tup + n_dead_tup) = 0 THEN 0
+               ELSE n_dead_tup::float / (n_live_tup + n_dead_tup) END as "bloatRatio",
+             last_vacuum::text as "lastVacuum",
+             last_analyze::text as "lastAnalyze",
+             last_autovacuum::text as "lastAutoVacuum",
+             seq_scan as "seqScans", idx_scan as "idxScans"
+      FROM pg_stat_user_tables
+      ORDER BY n_dead_tup DESC
+    `);
+    return rows;
+  }
+
+  async getSlowQueries(limit = 20): Promise<import('./base.adapter').SlowQuery[]> {
+    try {
+      // Try pg_stat_statements first
+      const rows = await this.query(`
+        SELECT query, calls, total_exec_time as "totalTimeMs",
+               mean_exec_time as "meanTimeMs", max_exec_time as "maxTimeMs",
+               rows, shared_blks_hit as "sharedBlksHit", shared_blks_read as "sharedBlksRead"
+        FROM pg_stat_statements
+        WHERE userid != 10 AND query NOT LIKE '%pg_stat%'
+        ORDER BY total_exec_time DESC LIMIT ${limit}
+      `);
+      return rows;
+    } catch {
+      // Fallback: use pg_stat_activity recent
+      const rows = await this.query(`
+        SELECT query, 1 as calls,
+               EXTRACT(EPOCH FROM (now() - query_start)) * 1000 as "totalTimeMs",
+               EXTRACT(EPOCH FROM (now() - query_start)) * 1000 as "meanTimeMs",
+               EXTRACT(EPOCH FROM (now() - query_start)) * 1000 as "maxTimeMs",
+               0 as rows
+        FROM pg_stat_activity
+        WHERE state = 'active' AND pid != pg_backend_pid()
+        ORDER BY query_start ASC LIMIT ${limit}
+      `);
+      return rows;
+    }
+  }
+
+  async getUnusedIndexes(): Promise<import('./base.adapter').UnusedIndex[]> {
+    const rows = await this.query(`
+      SELECT s.schemaname as schema, s.relname as table, s.indexrelname as "indexName",
+             pg_relation_size(s.indexrelid) as "indexSizeBytes",
+             s.idx_scan as "indexScans",
+             pg_get_indexdef(s.indexrelid) as definition
+      FROM pg_stat_user_indexes s
+      JOIN pg_index i ON s.indexrelid = i.indexrelid
+      WHERE s.idx_scan = 0
+        AND NOT i.indisunique
+        AND NOT i.indisprimary
+        AND s.schemaname NOT IN ('pg_toast')
+      ORDER BY pg_relation_size(s.indexrelid) DESC
+    `);
+    return rows;
+  }
+
+  async getMissingIndexes(): Promise<import('./base.adapter').MissingIndex[]> {
+    const rows = await this.query(`
+      SELECT schemaname as schema, relname as table,
+             seq_scan as "seqScans", n_live_tup as "rowEstimate",
+             'Alto número de sequential scans em tabela grande' as reason
+      FROM pg_stat_user_tables
+      WHERE seq_scan > 1000 AND n_live_tup > 10000
+        AND (idx_scan = 0 OR seq_scan > idx_scan * 10)
+      ORDER BY seq_scan DESC LIMIT 20
+    `);
+    return rows;
+  }
+
+  async getDbConfig(): Promise<import('./base.adapter').DbConfigParam[]> {
+    const rows = await this.query(`
+      SELECT name, setting as "currentValue", unit, category, short_desc as description
+      FROM pg_settings
+      WHERE name IN (
+        'shared_buffers', 'effective_cache_size', 'work_mem', 'maintenance_work_mem',
+        'max_connections', 'max_wal_size', 'min_wal_size', 'checkpoint_completion_target',
+        'random_page_cost', 'effective_io_concurrency', 'max_worker_processes',
+        'max_parallel_workers_per_gather', 'wal_level', 'archive_mode',
+        'log_min_duration_statement', 'autovacuum', 'track_counts', 'track_activities'
+      )
+      ORDER BY name
+    `);
+    return rows.map((r: any) => ({ ...r, status: 'ok' as const }));
+  }
+
+  async getLongTransactions(minDurationMs = 300000): Promise<import('./base.adapter').LongTransaction[]> {
+    const rows = await this.query(`
+      SELECT pid, usename as username, datname as database, state,
+             EXTRACT(EPOCH FROM (now() - xact_start)) * 1000 as "durationMs",
+             query, xact_start::text as "xactStart"
+      FROM pg_stat_activity
+      WHERE xact_start IS NOT NULL
+        AND EXTRACT(EPOCH FROM (now() - xact_start)) * 1000 > ${minDurationMs}
+        AND pid != pg_backend_pid()
+      ORDER BY xact_start ASC
+    `);
+    return rows;
+  }
+
   async executeSQL(sql: string): Promise<ExecutionResult> {
     const start = Date.now();
     try {
