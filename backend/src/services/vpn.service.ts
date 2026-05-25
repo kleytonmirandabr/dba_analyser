@@ -38,22 +38,34 @@ export class VPNService {
 
   async getStatus(): Promise<VPNStatus & { vpnContainerAvailable?: boolean }> {
     let vpnContainerAvailable = false;
-    try {
-      const { execSync } = require('child_process');
-      const result = execSync('docker ps --format "{{.Names}}" 2>/dev/null | grep vpn || echo ""', { encoding: 'utf8' }).trim();
-      vpnContainerAvailable = !!result;
-    } catch {}
+    let connected = false;
+    let ip: string | undefined;
 
     try {
-      if (fs.existsSync(STATUS_FILE)) {
-        const status = JSON.parse(fs.readFileSync(STATUS_FILE, 'utf8'));
-        return { ...status, vpnContainerAvailable };
+      const { execSync } = require('child_process');
+      // Check if VPN container is running
+      const containerName = execSync('docker ps --format "{{.Names}}" 2>/dev/null | grep vpn || echo ""', { encoding: 'utf8' }).trim();
+      vpnContainerAvailable = !!containerName;
+
+      if (containerName) {
+        // Check container health status
+        const health = execSync(`docker inspect --format="{{.State.Health.Status}}" ${containerName} 2>/dev/null || echo "none"`, { encoding: 'utf8' }).trim();
+        connected = health === 'healthy';
+
+        // Get VPN IP from container (tun0 interface)
+        if (connected) {
+          try {
+            const ipResult = execSync(`docker exec ${containerName} ip addr show tun0 2>/dev/null | grep 'inet ' | awk '{print $2}' | cut -d/ -f1`, { encoding: 'utf8' }).trim();
+            if (ipResult) ip = ipResult;
+          } catch {}
+        }
       }
     } catch {}
 
     return {
-      connected: false,
+      connected,
       configUploaded: fs.existsSync(OVPN_FILE),
+      ip,
       vpnContainerAvailable,
     };
   }
