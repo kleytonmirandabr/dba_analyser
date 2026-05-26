@@ -10,8 +10,25 @@ if (!MASTER_KEY || MASTER_KEY.length < 16) {
   process.exit(1);
 }
 
+// Cache derived keys — same salt always produces the same key (PBKDF2 is deterministic)
+// This eliminates the ~70ms per-call PBKDF2 cost for repeated decryptions
+const keyCache = new Map<string, Buffer>();
+const KEY_CACHE_MAX = 500;
+
 function deriveKey(salt: Buffer): Buffer {
-  return crypto.pbkdf2Sync(MASTER_KEY!, salt, PBKDF2_ITERATIONS, KEY_LENGTH, 'sha512');
+  const saltHex = salt.toString('hex');
+  const cached = keyCache.get(saltHex);
+  if (cached) return cached;
+
+  const key = crypto.pbkdf2Sync(MASTER_KEY!, salt, PBKDF2_ITERATIONS, KEY_LENGTH, 'sha512');
+  
+  // Evict oldest if cache is full
+  if (keyCache.size >= KEY_CACHE_MAX) {
+    const firstKey = keyCache.keys().next().value;
+    if (firstKey) keyCache.delete(firstKey);
+  }
+  keyCache.set(saltHex, key);
+  return key;
 }
 
 export function encrypt(plainText: string): { encrypted: string; salt: string } {

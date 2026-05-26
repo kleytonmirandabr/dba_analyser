@@ -1,13 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
 import { io, Socket } from 'socket.io-client'
 
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:3030'
-
+// Connect via same origin — Vite proxies /socket.io to backend
 export function useSocket() {
   const socketRef = useRef<Socket | null>(null)
 
   useEffect(() => {
-    socketRef.current = io(SOCKET_URL, { transports: ['websocket'] })
+    const url = import.meta.env.VITE_API_URL || window.location.origin
+    socketRef.current = io(url, { 
+      transports: ['polling', 'websocket'],
+      path: '/socket.io',
+      reconnectionAttempts: 3,
+      reconnectionDelay: 5000,
+      timeout: 10000,
+    })
     return () => { socketRef.current?.disconnect() }
   }, [])
 

@@ -49,8 +49,8 @@ router.post('/:connId/capture', async (req: Request, res: Response) => {
 
       for (const table of tables) {
         const tableName = typeof table === 'string' ? table : table.name;
-        const columns = await adapter.listColumns(tableName, schemaName);
-        const indexes = await adapter.listIndexes(tableName, schemaName);
+        const columns = await adapter.listColumns(schemaName, tableName);
+        const indexes = await adapter.listIndexes(schemaName, tableName);
         tablesData[tableName] = { columns, indexes };
       }
 
@@ -81,7 +81,7 @@ router.post('/:connId/capture', async (req: Request, res: Response) => {
 
       const newSnap = snapRepo.create({
         connectionId: connId,
-        database: conn.database,
+        database: conn.databaseName || 'default',
         schema: schemaName,
         snapshot,
         diff,

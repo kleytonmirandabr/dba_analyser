@@ -12,8 +12,12 @@ const connRepo = () => AppDataSource.getRepository(Connection);
 // GET /api/connections
 router.get('/', authMiddleware, async (req: Request, res: Response) => {
   const connections = await connRepo().find({ order: { name: 'ASC' } });
-  // NEVER return password
-  const safe = connections.map(c => ({ ...c, passwordEncrypted: undefined, passwordSalt: undefined, usernameEncrypted: undefined, usernameSalt: undefined, username: decrypt(c.usernameEncrypted, c.usernameSalt) }));
+  // Decrypt usernames in parallel and strip secrets
+  const safe = await Promise.all(connections.map(async c => {
+    let username = '';
+    try { username = decrypt(c.usernameEncrypted, c.usernameSalt); } catch {}
+    return { ...c, passwordEncrypted: undefined, passwordSalt: undefined, usernameEncrypted: undefined, usernameSalt: undefined, username };
+  }));
   return res.json({ data: safe });
 });
 

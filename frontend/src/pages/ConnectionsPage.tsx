@@ -1,10 +1,15 @@
-import { useState, useEffect } from 'react'
-import { Plug, Plus, Trash2, Pencil, CheckCircle2, XCircle, Loader2, Database, Server, Search } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { Plug, Plus, Trash2, Pencil, CheckCircle2, XCircle, Loader2, Database, Server, Search, ChevronDown, ChevronRight, FolderOpen } from 'lucide-react'
 import api from '../lib/api'
 
 interface Connection {
   id: string; name: string; host: string; port: number; databaseName: string; username: string;
   dbType: string; environment: string; mode: string; isActive: boolean; groupName?: string;
+}
+
+interface ConnectionGroup {
+  parent: Connection;
+  children: Connection[];
 }
 
 export default function ConnectionsPage() {
@@ -15,6 +20,7 @@ export default function ConnectionsPage() {
   const [testResult, setTestResult] = useState<Record<string, { ok: boolean; version?: string; error?: string }>>({})
   const [editingConn, setEditingConn] = useState<Connection | null>(null)
   const [discoverConn, setDiscoverConn] = useState<Connection | null>(null)
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
 
   const load = async () => {
     try {
@@ -24,6 +30,45 @@ export default function ConnectionsPage() {
   }
 
   useEffect(() => { load() }, [])
+
+  // Group connections: parent = connection without databaseName (server-level) or first in group
+  // Children = connections with same host:port that have a databaseName
+  const { groups, ungrouped } = useMemo(() => {
+    const byServer = new Map<string, Connection[]>()
+    
+    connections.forEach(conn => {
+      const key = `${conn.host}:${conn.port}`
+      if (!byServer.has(key)) byServer.set(key, [])
+      byServer.get(key)!.push(conn)
+    })
+
+    const groups: ConnectionGroup[] = []
+    const ungrouped: Connection[] = []
+
+    byServer.forEach((conns) => {
+      // Find the parent: the one without a databaseName, or with the shortest name
+      const parent = conns.find(c => !c.databaseName || c.databaseName === '') 
+        || conns.reduce((a, b) => a.name.length <= b.name.length ? a : b)
+      
+      const children = conns.filter(c => c.id !== parent.id)
+
+      if (children.length > 0) {
+        groups.push({ parent, children })
+      } else {
+        ungrouped.push(parent)
+      }
+    })
+
+    return { groups, ungrouped }
+  }, [connections])
+
+  const toggleGroup = (parentId: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev)
+      next.has(parentId) ? next.delete(parentId) : next.add(parentId)
+      return next
+    })
+  }
 
   const testConnection = async (id: string) => {
     setTesting(id)
@@ -48,6 +93,50 @@ export default function ConnectionsPage() {
     prod: 'bg-red-900/30 text-red-400 border-red-800',
   }
 
+  const renderConnectionRow = (conn: Connection, isChild = false) => (
+    <div key={conn.id} className={`p-4 bg-gray-900 border border-gray-800 rounded-xl flex items-center gap-4 ${isChild ? 'ml-8 border-l-2 border-l-blue-800/40' : ''}`}>
+      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isChild ? 'bg-gray-800/60' : 'bg-gray-800'}`}>
+        <Database className={`w-5 h-5 ${isChild ? 'text-blue-300' : 'text-blue-400'}`} />
+      </div>
+      <div className="flex-1">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-white">
+            {isChild ? conn.databaseName || conn.name : conn.name}
+          </h3>
+          <span className={`text-[10px] px-1.5 py-0.5 rounded border font-medium ${envColors[conn.environment] || ''}`}>{conn.environment.toUpperCase()}</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700">{conn.mode}</span>
+        </div>
+        <p className="text-xs text-gray-500 mt-0.5">
+          <Server className="w-3 h-3 inline mr-1" />{conn.host}:{conn.port}/{conn.databaseName} ({conn.dbType})
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        {testResult[conn.id] && (
+          <span className={`text-xs flex items-center gap-1 ${testResult[conn.id].ok ? 'text-green-400' : 'text-red-400'}`}>
+            {testResult[conn.id].ok ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+            {testResult[conn.id].ok ? 'OK' : 'Falha'}
+          </span>
+        )}
+        <button onClick={() => testConnection(conn.id)} disabled={testing === conn.id}
+          className="px-3 py-1.5 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition">
+          {testing === conn.id ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Testar'}
+        </button>
+        <button onClick={() => setDiscoverConn(conn)} title="Descobrir databases"
+          className="p-1.5 text-gray-500 hover:text-green-400 transition">
+          <Search className="w-4 h-4" />
+        </button>
+        <button onClick={() => setEditingConn(conn)}
+          className="p-1.5 text-gray-500 hover:text-blue-400 transition">
+          <Pencil className="w-4 h-4" />
+        </button>
+        <button onClick={() => deleteConnection(conn.id)}
+          className="p-1.5 text-gray-500 hover:text-red-400 transition">
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  )
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -67,48 +156,75 @@ export default function ConnectionsPage() {
           <button onClick={() => setShowForm(true)} className="mt-3 text-sm text-blue-400 hover:text-blue-300">+ Adicionar primeira conexão</button>
         </div>
       ) : (
-        <div className="grid gap-4">
-          {connections.map(conn => (
-            <div key={conn.id} className="p-4 bg-gray-900 border border-gray-800 rounded-xl flex items-center gap-4">
-              <div className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center">
-                <Database className="w-5 h-5 text-blue-400" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-semibold text-white">{conn.name}</h3>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded border font-medium ${envColors[conn.environment] || ''}`}>{conn.environment.toUpperCase()}</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700">{conn.mode}</span>
+        <div className="space-y-3">
+          {/* Grouped connections */}
+          {groups.map(({ parent, children }) => {
+            const isCollapsed = collapsedGroups.has(parent.id)
+            return (
+              <div key={parent.id} className="space-y-2">
+                {/* Group header (parent connection) */}
+                <div className="p-4 bg-gray-900 border border-gray-800 rounded-xl flex items-center gap-4">
+                  <button onClick={() => toggleGroup(parent.id)} 
+                    className="w-10 h-10 bg-blue-900/30 border border-blue-800/50 rounded-lg flex items-center justify-center hover:bg-blue-900/50 transition">
+                    {isCollapsed 
+                      ? <ChevronRight className="w-5 h-5 text-blue-400" />
+                      : <ChevronDown className="w-5 h-5 text-blue-400" />
+                    }
+                  </button>
+                  <div className="w-10 h-10 bg-blue-900/20 rounded-lg flex items-center justify-center">
+                    <FolderOpen className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-bold text-white">{parent.name}</h3>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded border font-medium ${envColors[parent.environment] || ''}`}>{parent.environment.toUpperCase()}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700">{parent.mode}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-900/40 text-blue-300 border border-blue-800/50 font-medium">
+                        {children.length} database{children.length > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      <Server className="w-3 h-3 inline mr-1" />{parent.host}:{parent.port} ({parent.dbType})
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {testResult[parent.id] && (
+                      <span className={`text-xs flex items-center gap-1 ${testResult[parent.id].ok ? 'text-green-400' : 'text-red-400'}`}>
+                        {testResult[parent.id].ok ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                        {testResult[parent.id].ok ? 'OK' : 'Falha'}
+                      </span>
+                    )}
+                    <button onClick={() => testConnection(parent.id)} disabled={testing === parent.id}
+                      className="px-3 py-1.5 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition">
+                      {testing === parent.id ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Testar'}
+                    </button>
+                    <button onClick={() => setDiscoverConn(parent)} title="Descobrir databases"
+                      className="p-1.5 text-gray-500 hover:text-green-400 transition">
+                      <Search className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => setEditingConn(parent)}
+                      className="p-1.5 text-gray-500 hover:text-blue-400 transition">
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => deleteConnection(parent.id)}
+                      className="p-1.5 text-gray-500 hover:text-red-400 transition">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  <Server className="w-3 h-3 inline mr-1" />{conn.host}:{conn.port}/{conn.databaseName} ({conn.dbType})
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                {testResult[conn.id] && (
-                  <span className={`text-xs flex items-center gap-1 ${testResult[conn.id].ok ? 'text-green-400' : 'text-red-400'}`}>
-                    {testResult[conn.id].ok ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
-                    {testResult[conn.id].ok ? 'OK' : 'Falha'}
-                  </span>
+
+                {/* Children */}
+                {!isCollapsed && (
+                  <div className="space-y-2 pl-2">
+                    {children.map(child => renderConnectionRow(child, true))}
+                  </div>
                 )}
-                <button onClick={() => testConnection(conn.id)} disabled={testing === conn.id}
-                  className="px-3 py-1.5 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition">
-                  {testing === conn.id ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Testar'}
-                </button>
-                <button onClick={() => setDiscoverConn(conn)} title="Descobrir databases"
-                  className="p-1.5 text-gray-500 hover:text-green-400 transition">
-                  <Search className="w-4 h-4" />
-                </button>
-                <button onClick={() => setEditingConn(conn)}
-                  className="p-1.5 text-gray-500 hover:text-blue-400 transition">
-                  <Pencil className="w-4 h-4" />
-                </button>
-                <button onClick={() => deleteConnection(conn.id)}
-                  className="p-1.5 text-gray-500 hover:text-red-400 transition">
-                  <Trash2 className="w-4 h-4" />
-                </button>
               </div>
-            </div>
-          ))}
+            )
+          })}
+
+          {/* Ungrouped connections (standalone) */}
+          {ungrouped.map(conn => renderConnectionRow(conn, false))}
         </div>
       )}
 
