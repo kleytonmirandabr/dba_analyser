@@ -58,7 +58,7 @@ export default function LoginPage() {
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
-        <p className="text-center text-[10px] text-gray-600 mt-6">Acesso padrão: admin / Dba@2025!Secure</p>
+        {/* credentials hint removed for security */}
       </div>
     </div>
   )
