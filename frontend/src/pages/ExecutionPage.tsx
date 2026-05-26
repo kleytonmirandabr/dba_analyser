@@ -35,11 +35,11 @@ export default function ExecutionPage() {
 
   const statusBadge = (s: string) => {
     const map: Record<string, { color: string; icon: any }> = {
-      pending: { color: 'bg-amber-900/30 text-amber-400 border-amber-800', icon: Clock },
-      approved: { color: 'bg-blue-900/30 text-blue-400 border-blue-800', icon: CheckCircle2 },
-      rejected: { color: 'bg-red-900/30 text-red-400 border-red-800', icon: XCircle },
-      executed: { color: 'bg-green-900/30 text-green-400 border-green-800', icon: CheckCircle2 },
-      failed: { color: 'bg-red-900/30 text-red-400 border-red-800', icon: AlertTriangle },
+      pending: { color: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800', icon: Clock },
+      approved: { color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800', icon: CheckCircle2 },
+      rejected: { color: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800', icon: XCircle },
+      executed: { color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800', icon: CheckCircle2 },
+      failed: { color: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800', icon: AlertTriangle },
     }
     const { color, icon: Icon } = map[s] || map.pending
     return <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-medium ${color}`}><Icon className="w-3 h-3" />{s.toUpperCase()}</span>
@@ -54,7 +54,7 @@ export default function ExecutionPage() {
         <div className="flex gap-2">
           {['', 'pending', 'approved', 'executed', 'failed'].map(f => (
             <button key={f} onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 text-xs rounded-lg transition ${filter === f ? 'bg-blue-600 text-text-primary' : 'bg-surface-elevated text-text-secondary hover:bg-surface-active'}`}>
+              className={`px-3 py-1.5 text-xs rounded-lg transition ${filter === f ? 'bg-blue-600 text-white' : 'bg-surface-elevated text-text-secondary hover:bg-surface-active'}`}>
               {f || 'Todos'}
             </button>
           ))}

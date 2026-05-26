@@ -58,7 +58,7 @@ export default function NotificationBell() {
       >
         <Bell className="w-4 h-4" />
         {pending.length > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 flex items-center justify-center text-[10px] font-bold bg-red-500 text-text-primary rounded-full">
+          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 flex items-center justify-center text-[10px] font-bold bg-red-500 text-white rounded-full">
             {pending.length > 9 ? '9+' : pending.length}
           </span>
         )}

@@ -91,13 +91,13 @@ export default function ConnectionsPage() {
   }
 
   const envColors: Record<string, string> = {
-    dev: 'bg-green-900/30 text-green-400 border-green-800',
-    hml: 'bg-amber-900/30 text-amber-400 border-amber-800',
-    prod: 'bg-red-900/30 text-red-400 border-red-800',
+    dev: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800',
+    hml: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800',
+    prod: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800',
   }
 
   const renderConnectionRow = (conn: Connection, isChild = false) => (
-    <div key={conn.id} className={`p-4 bg-surface border border-border rounded-xl flex items-center gap-4 ${isChild ? 'ml-8 border-l-2 border-l-blue-800/40' : ''}`}>
+    <div key={conn.id} className={`p-4 bg-surface border border-border rounded-xl shadow-sm hover:shadow-md transition-shadow flex items-center gap-4 ${isChild ? 'ml-8 border-l-2 border-l-blue-800/40' : ''}`}>
       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isChild ? 'bg-gray-100/60 dark:bg-gray-800/60' : 'bg-surface-elevated'}`}>
         <Database className={`w-5 h-5 ${isChild ? 'text-blue-300' : 'text-blue-400'}`} />
       </div>
@@ -145,7 +145,7 @@ export default function ConnectionsPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-text-primary">{t('connections.title')}</h1>
         <button onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-text-primary text-sm font-medium rounded-lg transition">
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition">
           <Plus className="w-4 h-4" />{t('connections.newConnectionTitle')}
         </button>
       </div>
@@ -153,7 +153,7 @@ export default function ConnectionsPage() {
       {loading ? (
         <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-blue-500" /></div>
       ) : connections.length === 0 ? (
-        <div className="p-8 bg-surface border border-border rounded-xl text-center">
+        <div className="p-8 bg-surface border border-border rounded-xl shadow-sm hover:shadow-md transition-shadow text-center">
           <Plug className="w-12 h-12 text-gray-600 mx-auto mb-3" />
           <p className="text-text-secondary">{t('connections.noConnections')}</p>
           <button onClick={() => setShowForm(true)} className="mt-3 text-sm text-blue-400 hover:text-blue-300">{t('connections.addFirst')}</button>
@@ -166,7 +166,7 @@ export default function ConnectionsPage() {
             return (
               <div key={parent.id} className="space-y-2">
                 {/* Group header (parent connection) */}
-                <div className="p-4 bg-surface border border-border rounded-xl flex items-center gap-4">
+                <div className="p-4 bg-surface border border-border rounded-xl shadow-sm hover:shadow-md transition-shadow flex items-center gap-4">
                   <button onClick={() => toggleGroup(parent.id)} 
                     className="w-10 h-10 bg-blue-900/30 border border-blue-800/50 rounded-lg flex items-center justify-center hover:bg-blue-900/50 transition">
                     {isCollapsed 
@@ -273,7 +273,7 @@ function ConnectionForm({ onClose, onSaved, connection }: { onClose: () => void;
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div className="bg-surface border border-border rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
         <h2 className="text-lg font-bold text-text-primary mb-4">{connection ? t('connections.editConnection') : t('connections.newConnectionTitle')}</h2>
-        {error && <div className="mb-3 p-2 bg-red-900/30 border border-red-800 rounded text-xs text-red-400">{error}</div>}
+        {error && <div className="mb-3 p-2 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded text-xs text-red-400">{error}</div>}
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
             <label className={labelCls}>{t('connections.name')}</label>
@@ -351,7 +351,7 @@ function ConnectionForm({ onClose, onSaved, connection }: { onClose: () => void;
           )}
           <div className="flex gap-3 pt-3">
             <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 text-sm text-text-secondary hover:bg-surface-elevated rounded-lg transition">Cancelar</button>
-            <button type="submit" disabled={saving} className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-text-primary text-sm font-medium rounded-lg transition flex items-center justify-center gap-2">
+            <button type="submit" disabled={saving} className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white text-sm font-medium rounded-lg transition flex items-center justify-center gap-2">
               {saving && <Loader2 className="w-4 h-4 animate-spin" />} Salvar
             </button>
           </div>
@@ -425,7 +425,7 @@ function DatabaseDiscovery({ connection, existingDatabases = [], onClose, onSave
         <h2 className="text-lg font-bold text-text-primary mb-1">Descobrir Databases</h2>
         <p className="text-xs text-text-secondary mb-4">Servidor: {connection.host}:{connection.port} ({connection.dbType})</p>
 
-        {error && <div className="mb-3 p-2 bg-red-900/30 border border-red-800 rounded text-xs text-red-400">{error}</div>}
+        {error && <div className="mb-3 p-2 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded text-xs text-red-400">{error}</div>}
 
         {loading ? (
           <div className="flex items-center justify-center py-12">
@@ -465,7 +465,7 @@ function DatabaseDiscovery({ connection, existingDatabases = [], onClose, onSave
         <div className="flex gap-3 pt-4 mt-4 border-t border-border">
           <button onClick={onClose} className="flex-1 px-4 py-2.5 text-sm text-text-secondary hover:bg-surface-elevated rounded-lg transition">Cancelar</button>
           <button onClick={handleSave} disabled={saving || selected.size === 0}
-            className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:text-gray-500 text-text-primary text-sm font-medium rounded-lg transition flex items-center justify-center gap-2">
+            className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-lg transition flex items-center justify-center gap-2">
             {saving && <Loader2 className="w-4 h-4 animate-spin" />}
             Monitorar {selected.size > 0 ? `(${selected.size})` : ''}
           </button>

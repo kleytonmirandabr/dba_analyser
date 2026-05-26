@@ -61,7 +61,7 @@ export default function ReportsPage() {
             ]}
           />
           <button onClick={generateReport} disabled={generating}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-text-primary rounded-lg text-sm font-medium transition">
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg text-sm font-medium transition">
             {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
             Gerar Agora
           </button>
@@ -218,7 +218,7 @@ function ScheduleModal({ onClose }: { onClose: () => void }) {
         <div className="flex justify-end gap-3 mt-6">
           <button onClick={onClose} className="px-4 py-2 text-sm text-text-tertiary hover:text-gray-700 dark:hover:text-text-secondary">Cancelar</button>
           <button onClick={save} disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-text-primary rounded-lg text-sm font-medium transition">
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg text-sm font-medium transition">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
             Salvar
           </button>

@@ -49,7 +49,7 @@ export default function HealthPage() {
       <div className="flex gap-1 mb-6 bg-surface p-1 rounded-lg border border-border">
         {tabs.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 text-sm rounded-md transition ${activeTab === tab.id ? 'bg-blue-600 text-text-primary' : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated'}`}>
+            className={`flex items-center gap-2 px-4 py-2 text-sm rounded-md transition ${activeTab === tab.id ? 'bg-blue-600 text-white' : 'text-text-secondary hover:text-white hover:bg-surface-elevated'}`}>
             <tab.icon className="w-4 h-4" /> {tab.label}
           </button>
         ))}
@@ -96,11 +96,11 @@ function OverviewTab({ connId }: { connId: string }) {
   ]
 
   const colorMap: Record<string, string> = {
-    blue: 'bg-blue-900/30 border-blue-800 text-blue-400',
-    green: 'bg-green-900/30 border-green-800 text-green-400',
+    blue: 'bg-blue-100 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400',
+    green: 'bg-green-100 dark:bg-green-900/30 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400',
     yellow: 'bg-yellow-900/30 border-yellow-800 text-yellow-400',
-    red: 'bg-red-900/30 border-red-800 text-red-400',
-    purple: 'bg-purple-900/30 border-purple-800 text-purple-400',
+    red: 'bg-red-100 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400',
+    purple: 'bg-purple-100 dark:bg-purple-900/30 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-400',
   }
 
   return (

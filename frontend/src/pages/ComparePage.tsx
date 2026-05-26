@@ -82,7 +82,7 @@ export default function ComparePage() {
             value={schema} onChange={e => setSchema(e.target.value)} placeholder="auto" />
         </div>
         <button onClick={compare} disabled={loading || !sourceId || !targetId}
-          className="px-5 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 text-text-primary text-sm font-medium rounded-lg transition flex items-center gap-2">
+          className="px-5 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 text-white text-sm font-medium rounded-lg transition flex items-center gap-2">
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <GitCompareArrows className="w-4 h-4" />}
           Comparar
         </button>
@@ -120,7 +120,7 @@ export default function ComparePage() {
               <div className="flex gap-1 mb-4 bg-surface p-1 rounded-lg border border-border">
                 {tabs.map(tab => (
                   <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-4 py-2 text-sm rounded-md transition ${activeTab === tab.id ? 'bg-purple-600 text-text-primary' : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated'}`}>
+                    className={`flex items-center gap-2 px-4 py-2 text-sm rounded-md transition ${activeTab === tab.id ? 'bg-purple-600 text-white' : 'text-text-secondary hover:text-white hover:bg-surface-elevated'}`}>
                     <tab.icon className="w-4 h-4" /> {tab.label}
                     {tab.count > 0 && <span className="text-[10px] bg-red-900/50 text-red-400 px-1.5 py-0.5 rounded-full">{tab.count}</span>}
                   </button>
@@ -154,8 +154,8 @@ function TablesSection({ tables }: { tables: TableDiff[] }) {
 
   const statusLabel = (s: string) => {
     switch (s) {
-      case 'only_source': return { text: t('compare.onlySource'), cls: 'bg-green-900/30 text-green-400 border-green-800' }
-      case 'only_target': return { text: t('compare.onlyTarget'), cls: 'bg-red-900/30 text-red-400 border-red-800' }
+      case 'only_source': return { text: t('compare.onlySource'), cls: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800' }
+      case 'only_target': return { text: t('compare.onlyTarget'), cls: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800' }
       case 'different': return { text: 'Diferente', cls: 'bg-yellow-900/30 text-yellow-400 border-yellow-800' }
       default: return { text: s, cls: 'bg-surface-elevated text-text-secondary border-border' }
     }
@@ -295,8 +295,8 @@ function ObjectsSection({ objects, type }: { objects: ObjectDiff[]; type: string
 
   const statusLabel = (s: string) => {
     switch (s) {
-      case 'only_source': return { text: t('compare.onlySource'), cls: 'bg-green-900/30 text-green-400 border-green-800' }
-      case 'only_target': return { text: t('compare.onlyTarget'), cls: 'bg-red-900/30 text-red-400 border-red-800' }
+      case 'only_source': return { text: t('compare.onlySource'), cls: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800' }
+      case 'only_target': return { text: t('compare.onlyTarget'), cls: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800' }
       case 'different': return { text: t('compare.differentCode'), cls: 'bg-yellow-900/30 text-yellow-400 border-yellow-800' }
       default: return { text: s, cls: '' }
     }

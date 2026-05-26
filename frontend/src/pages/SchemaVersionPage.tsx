@@ -131,11 +131,11 @@ export default function SchemaVersionPage() {
         {selectedConn && (
           <>
             <button onClick={() => setShowCapture(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-text-primary text-sm font-medium rounded-lg transition">
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition">
               <Camera className="w-4 h-4" /> Capturar Snapshot
             </button>
             <button onClick={() => { setCompareMode(!compareMode); setCompareResult(null); }}
-              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition border ${compareMode ? 'bg-indigo-600 text-text-primary border-indigo-600' : 'text-text-secondary border-border hover:bg-gray-100 dark:hover:bg-surface-elevated'}`}>
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition border ${compareMode ? 'bg-indigo-600 text-white border-indigo-600' : 'text-text-secondary border-border hover:bg-gray-100 dark:hover:bg-surface-elevated'}`}>
               <GitCompareArrows className="w-4 h-4" /> Comparar
             </button>
           </>
@@ -161,7 +161,7 @@ export default function SchemaVersionPage() {
               options={snapshots.map(s => ({ value: s.id, label: s.label || new Date(s.capturedAt).toLocaleString() }))}
             />
             <button onClick={runCompare} disabled={!compareFrom || !compareTo}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-text-primary text-sm font-medium rounded-lg disabled:opacity-50 transition">
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg disabled:opacity-50 transition">
               Comparar
             </button>
           </div>
@@ -268,7 +268,7 @@ export default function SchemaVersionPage() {
             <div className="flex justify-end gap-3 mt-6">
               <button onClick={() => setShowCapture(false)} className="px-4 py-2 text-sm text-text-secondary hover:text-gray-900 dark:hover:text-text-primary transition">Cancelar</button>
               <button onClick={captureSnapshot} disabled={capturing}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-text-primary text-sm font-medium rounded-lg disabled:opacity-50 transition">
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg disabled:opacity-50 transition">
                 {capturing && <Loader2 className="w-4 h-4 animate-spin" />} Capturar
               </button>
             </div>
@@ -278,7 +278,7 @@ export default function SchemaVersionPage() {
 
       {/* Toast */}
       {toast && (
-        <div className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium ${toast.type === 'success' ? 'bg-emerald-600 text-text-primary' : 'bg-red-600 text-text-primary'}`}>
+        <div className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium ${toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`}>
           {toast.msg}
         </div>
       )}

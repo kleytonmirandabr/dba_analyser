@@ -212,12 +212,12 @@ export default function VPNPage() {
             {status.configUploaded && !connecting && (
               <div className="flex gap-2">
                 {!status.connected && (
-                  <button onClick={handleConnect} className="px-4 py-2 text-xs bg-green-600 hover:bg-green-700 text-text-primary font-medium rounded-lg transition flex items-center gap-1.5">
+                  <button onClick={handleConnect} className="px-4 py-2 text-xs bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition flex items-center gap-1.5">
                     <Wifi className="w-3.5 h-3.5" /> Conectar
                   </button>
                 )}
                 {status.connected && (
-                  <button onClick={handleDisconnect} className="px-4 py-2 text-xs bg-red-600/80 hover:bg-red-600 text-text-primary font-medium rounded-lg transition flex items-center gap-1.5">
+                  <button onClick={handleDisconnect} className="px-4 py-2 text-xs bg-red-600/80 hover:bg-red-600 text-white font-medium rounded-lg transition flex items-center gap-1.5">
                     <WifiOff className="w-3.5 h-3.5" /> Desconectar
                   </button>
                 )}
@@ -303,7 +303,7 @@ export default function VPNPage() {
 
           <div className="flex gap-3">
             <button onClick={handleUpload} disabled={uploading || !ovpnContent}
-              className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-text-primary text-sm font-medium rounded-lg transition flex items-center justify-center gap-2">
+              className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-lg transition flex items-center justify-center gap-2">
               {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
               {uploading ? 'Enviando...' : 'Salvar e Conectar'}
             </button>

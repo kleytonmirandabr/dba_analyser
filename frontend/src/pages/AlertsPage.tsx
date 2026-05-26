@@ -110,16 +110,16 @@ export default function AlertsPage() {
           {/* View toggle */}
           <div className="flex bg-surface-elevated rounded-lg p-0.5 border border-border">
             <button onClick={() => setView('dashboard')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition ${view === 'dashboard' ? 'bg-blue-600 text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}>
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition ${view === 'dashboard' ? 'bg-blue-600 text-white' : 'text-text-secondary hover:text-white'}`}>
               <BarChart3 className="w-3.5 h-3.5" /> Dashboard
             </button>
             <button onClick={() => setView('list')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition ${view === 'list' ? 'bg-blue-600 text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}>
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition ${view === 'list' ? 'bg-blue-600 text-white' : 'text-text-secondary hover:text-white'}`}>
               <List className="w-3.5 h-3.5" /> Lista
             </button>
           </div>
           <button onClick={() => { setEditAlert(null); setFormOpen(true) }}
-            className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-text-primary text-sm font-medium rounded-lg transition">
+            className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition">
             <Plus className="w-4 h-4" /> Novo Alerta
           </button>
         </div>
@@ -341,7 +341,7 @@ function HistoryPanel({ history, loading }: { history: any[]; loading: boolean }
         <p className="text-xs text-text-tertiary font-medium">Histórico recente</p>
         <div className="flex bg-surface-elevated rounded-lg p-0.5 border border-border">
           <button onClick={() => setFilter('problems')}
-            className={`px-2.5 py-1 text-[10px] rounded-md transition ${filter === 'problems' ? 'bg-red-600/80 text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}>
+            className={`px-2.5 py-1 text-[10px] rounded-md transition ${filter === 'problems' ? 'bg-red-600/80 text-white' : 'text-text-secondary hover:text-white'}`}>
             Problemas ({problemCount})
           </button>
           <button onClick={() => setFilter('all')}
@@ -552,7 +552,7 @@ function AlertFormModal({ alert, onClose, onSaved }: { alert: Alert | null; onCl
                 ]}
               />
             </div>
-            <button onClick={() => setStep(2)} className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-text-primary text-sm font-medium rounded-lg transition">Próximo →</button>
+            <button onClick={() => setStep(2)} className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition">Próximo →</button>
           </div>
         )}
 
@@ -578,7 +578,7 @@ function AlertFormModal({ alert, onClose, onSaved }: { alert: Alert | null; onCl
             )}
             <div className="flex gap-2">
               <button onClick={() => setStep(1)} className="flex-1 py-2 bg-surface-elevated hover:bg-surface-active text-text-secondary text-sm rounded-lg transition">← Voltar</button>
-              <button onClick={() => setStep(3)} disabled={!form.query} className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-text-primary text-sm font-medium rounded-lg transition">Próximo →</button>
+              <button onClick={() => setStep(3)} disabled={!form.query} className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition">Próximo →</button>
             </div>
           </div>
         )}
@@ -621,7 +621,7 @@ function AlertFormModal({ alert, onClose, onSaved }: { alert: Alert | null; onCl
             <div className="flex gap-2">
               <button onClick={() => setStep(2)} className="flex-1 py-2 bg-surface-elevated hover:bg-surface-active text-text-secondary text-sm rounded-lg transition">← Voltar</button>
               <button onClick={handleSubmit} disabled={saving}
-                className="flex-1 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-50 text-text-primary text-sm font-medium rounded-lg transition">
+                className="flex-1 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition">
                 {saving ? t('alerts.saving') : alert ? t('alerts.saveChanges') : t('alerts.createAlert')}
               </button>
             </div>

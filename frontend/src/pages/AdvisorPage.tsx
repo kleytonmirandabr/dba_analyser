@@ -110,7 +110,7 @@ export default function AdvisorPage() {
             {runAnalyze ? t('advisor.runAnalyze') : t('advisor.estimatedMode')}
           </p>
           <button onClick={analyzeQuery} disabled={!selectedConn || !query.trim() || loading}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-text-primary rounded-lg text-sm font-medium transition">
+            className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white rounded-lg text-sm font-medium transition">
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
             Analisar
           </button>

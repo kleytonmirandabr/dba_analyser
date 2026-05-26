@@ -182,7 +182,7 @@ export default function GrowthPage() {
               </span>
             )}
             <button onClick={triggerSnapshot} disabled={snapshotting}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-sm text-text-primary font-medium rounded-lg transition shadow-lg shadow-blue-900/20">
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-sm text-white font-medium rounded-lg transition shadow-lg shadow-blue-900/20">
               {snapshotting ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               {snapshotting ? 'Capturando...' : 'Snapshot Agora'}
             </button>
@@ -359,7 +359,7 @@ export default function GrowthPage() {
                             className="w-full px-3 py-2 text-xs bg-surface border border-border rounded-lg text-text-primary placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
                           />
                           <div className="flex items-center gap-2 mt-2.5">
-                            <button onClick={() => setActiveFilter(null)} className="flex-1 px-3 py-1.5 text-[11px] font-medium bg-blue-600 hover:bg-blue-500 text-text-primary rounded-lg transition">
+                            <button onClick={() => setActiveFilter(null)} className="flex-1 px-3 py-1.5 text-[11px] font-medium bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition">
                               Aplicar
                             </button>
                             <button onClick={() => { setFilterInputs(f => { const n = {...f}; delete n[col.key]; return n }); setActiveFilter(null) }}
@@ -587,7 +587,7 @@ function RuleModal({ table, connectionId, onClose }: { table: GrowthTable; conne
         </div>
         <div className="flex gap-2 p-5 border-t border-border">
           <button onClick={onClose} className="flex-1 px-4 py-2 text-sm bg-surface-elevated hover:bg-surface-active text-text-secondary rounded-lg transition">Cancelar</button>
-          <button onClick={save} disabled={saving} className="flex-1 px-4 py-2 text-sm bg-blue-600 hover:bg-blue-500 text-text-primary font-medium rounded-lg transition disabled:opacity-50">
+          <button onClick={save} disabled={saving} className="flex-1 px-4 py-2 text-sm bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg transition disabled:opacity-50">
             {saving ? 'Salvando...' : 'Salvar'}
           </button>
         </div>

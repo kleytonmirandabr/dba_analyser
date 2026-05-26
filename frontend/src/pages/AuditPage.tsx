@@ -67,7 +67,7 @@ export default function AuditPage() {
                 <tr key={log.id} className="border-b border-gray-200 dark:border-gray-900/50 hover:bg-gray-100/30 dark:bg-gray-900/30">
                   <td className="py-2 px-3 text-text-secondary whitespace-nowrap">{new Date(log.createdAt).toLocaleString('pt-BR')}</td>
                   <td className={`py-2 px-3 font-medium ${actionColors[log.action] || 'text-text-secondary'}`}>{log.action}</td>
-                  <td className="py-2 px-3"><span className={`px-1.5 py-0.5 rounded text-[10px] ${log.result === 'SUCCESS' ? 'bg-green-900/30 text-green-400' : log.result === 'ERROR' ? 'bg-red-900/30 text-red-400' : 'bg-surface-elevated text-text-secondary'}`}>{log.result || '-'}</span></td>
+                  <td className="py-2 px-3"><span className={`px-1.5 py-0.5 rounded text-[10px] ${log.result === 'SUCCESS' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : log.result === 'ERROR' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' : 'bg-surface-elevated text-text-secondary'}`}>{log.result || '-'}</span></td>
                   <td className="py-2 px-3 text-text-tertiary font-mono">{log.durationMs ? `${log.durationMs}ms` : '-'}</td>
                   <td className="py-2 px-3 text-gray-600 font-mono">{log.ipAddress || '-'}</td>
                   <td className="py-2 px-3 text-text-tertiary font-mono max-w-xs truncate">{log.sqlText?.slice(0, 60) || '-'}</td>

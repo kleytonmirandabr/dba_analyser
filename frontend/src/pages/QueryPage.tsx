@@ -272,7 +272,7 @@ export default function QueryPage() {
   return (
     <div className="flex flex-col h-[calc(100vh-3.5rem)]">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-toolbar-bg backdrop-blur">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-white dark:bg-gray-900 shadow-sm overflow-visible relative z-50">
         {/* Connection selector */}
         <SearchableSelect
           value={selectedConn}
@@ -281,20 +281,20 @@ export default function QueryPage() {
           options={connections.map(c => ({ value: c.id, label: `${c.name} (${c.environment})` }))}
           className="min-w-[200px]"
         />
-        {connMode && <span className={`text-[10px] px-2 py-0.5 rounded border ${connMode === 'readonly' ? 'bg-amber-900/20 text-amber-400 border-amber-800' : 'bg-green-900/20 text-green-400 border-green-800'}`}>{connMode}</span>}
+        {connMode && <span className={`text-[10px] px-2 py-0.5 rounded border ${connMode === 'readonly' ? 'bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800' : 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800'}`}>{connMode}</span>}
         
         <div className="w-px h-6 bg-gray-700 mx-1" />
 
         {/* Execute / Stop button */}
         {loading ? (
           <button onClick={stopExecution}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-500 text-text-primary text-sm font-medium rounded-lg transition active:scale-95">
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white text-sm font-medium rounded-lg transition active:scale-95">
             <Square className="w-3.5 h-3.5 fill-current" />
             Parar{elapsed > 0 ? ` (${elapsed}s)` : ''}
           </button>
         ) : (
           <button onClick={execute} disabled={!selectedConn}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:text-gray-500 text-text-primary text-sm font-medium rounded-lg transition active:scale-95">
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-lg transition active:scale-95">
             <Play className="w-3.5 h-3.5" />
             Executar
           </button>

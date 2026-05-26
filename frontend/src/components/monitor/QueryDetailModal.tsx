@@ -42,7 +42,7 @@ export default function QueryDetailModal({ query, onClose, formatMs }: Props) {
               {copied ? 'Copiado!' : 'Copiar'}
             </button>
             <button onClick={openInQueryEditor}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-xs text-text-primary transition">
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-xs text-white transition">
               <ExternalLink className="w-3.5 h-3.5" />
               Abrir no Editor
             </button>

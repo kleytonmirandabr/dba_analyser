@@ -54,8 +54,10 @@ services:
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
       - ./frontend/index.html:/app/index.html
+      - ./frontend/tailwind.config.ts:/app/tailwind.config.ts
+      - ./frontend/postcss.config.js:/app/postcss.config.js
     environment:
-      - VITE_API_URL=http://localhost:3030
+      - VITE_API_URL=
     depends_on:
       - backend
 

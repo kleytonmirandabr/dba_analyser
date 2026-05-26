@@ -36,7 +36,7 @@ export default function LoginPage() {
           <p className="text-sm text-gray-400 mt-1">Análise e controle de banco de dados</p>
         </div>
         {error && (
-          <div className="mb-4 p-3 bg-red-900/30 border border-red-800 rounded-lg flex items-center gap-2 text-sm text-red-400">
+          <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2 text-sm text-red-400">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             {error}
           </div>

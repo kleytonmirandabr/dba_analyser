@@ -76,7 +76,7 @@ export default function DiagnosticsPage() {
         </h1>
         {selectedConns.length > 0 && (
           <button onClick={analyzeAll} disabled={Object.values(loading).some(Boolean)}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-700 text-text-primary text-sm rounded-lg transition">
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-700 text-white text-sm rounded-lg transition">
             {Object.values(loading).some(Boolean) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
             Analisar {selectedConns.length} banco(s)
           </button>

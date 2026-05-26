@@ -1,0 +1,9 @@
+@layer components {
+  .btn-primary { @apply px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition active:scale-[0.98] shadow-sm; }
+  .btn-secondary { @apply px-4 py-2 bg-surface-elevated hover:bg-surface-hover text-text-secondary text-sm font-medium rounded-lg border border-border transition; }
+  .btn-danger { @apply px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition active:scale-[0.98]; }
+  .btn-success { @apply px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition active:scale-[0.98]; }
+  .btn-ghost { @apply px-3 py-1.5 text-text-secondary hover:bg-surface-hover hover:text-text-primary text-sm rounded-lg transition; }
+  .btn-sm { @apply px-3 py-1.5 text-xs; }
+  .btn-xs { @apply px-2 py-1 text-[11px]; }
+}

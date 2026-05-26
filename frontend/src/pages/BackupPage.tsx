@@ -143,7 +143,7 @@ export default function BackupPage() {
         />
         {selectedConn && (
           <button onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-text-primary text-sm font-medium rounded-lg transition">
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition">
             <Plus className="w-4 h-4" /> Novo Backup
           </button>
         )}
@@ -239,7 +239,7 @@ export default function BackupPage() {
             <div className="flex justify-end gap-3 mt-6">
               <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-text-secondary hover:text-gray-900 dark:hover:text-text-primary transition">Cancelar</button>
               <button onClick={createBackup} disabled={creating}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-text-primary text-sm font-medium rounded-lg disabled:opacity-50 transition">
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg disabled:opacity-50 transition">
                 {creating && <Loader2 className="w-4 h-4 animate-spin" />} Criar Backup
               </button>
             </div>
@@ -280,7 +280,7 @@ export default function BackupPage() {
 
       {/* Toast */}
       {toast && (
-        <div className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium ${toast.type === 'success' ? 'bg-emerald-600 text-text-primary' : 'bg-red-600 text-text-primary'}`}>
+        <div className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium ${toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`}>
           {toast.msg}
         </div>
       )}
