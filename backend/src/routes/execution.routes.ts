@@ -53,6 +53,20 @@ router.post('/submit', authMiddleware, async (req: Request, res: Response) => {
     });
     const saved = await execRepo().save(request);
 
+    // Emit WebSocket event for pending executions
+    if (saved.status === 'pending') {
+      const io = req.app.get('io');
+      if (io) {
+        io.emit('execution:pending', {
+          id: saved.id,
+          sql: data.sqlText,
+          connectionName: conn.name,
+          requestedBy: req.user!.userId,
+          createdAt: saved.requestedAt || new Date().toISOString(),
+        });
+      }
+    }
+
     // Audit
     AppDataSource.getRepository(AuditLog).save({
       userId: req.user!.userId, action: 'EXECUTE', connectionId: conn.id,

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   ReactFlow,
   MiniMap,
@@ -13,7 +13,8 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import dagre from '@dagrejs/dagre'
-import { Key, Link2, Loader2 } from 'lucide-react'
+import { Key, Link2, Loader2, Download, Image } from 'lucide-react'
+import { toPng, toSvg } from 'html-to-image'
 import api from '../lib/api'
 import { useThemeStore } from '../stores/theme.store'
 
@@ -103,6 +104,21 @@ export default function ERDiagramPage() {
   const [nodes, setNodes, onNodesChange] = useNodesState([] as Node[])
   const [edges, setEdges, onEdgesChange] = useEdgesState([] as Edge[])
   const theme = useThemeStore(s => s.theme)
+  const flowRef = useRef<HTMLDivElement>(null)
+
+  const exportImage = useCallback(async (format: 'png' | 'svg') => {
+    if (!flowRef.current) return
+    const fn = format === 'png' ? toPng : toSvg
+    const dataUrl = await fn(flowRef.current, {
+      backgroundColor: theme === 'dark' ? '#111827' : '#ffffff',
+      quality: 1,
+    })
+    const a = document.createElement('a')
+    a.href = dataUrl
+    const connName = connections.find(c => c.id === selectedConn)?.name || 'diagram'
+    a.download = `er-diagram-${connName}-${selectedSchema}.${format}`
+    a.click()
+  }, [theme, selectedConn, selectedSchema, connections])
 
   useEffect(() => {
     api.get('/api/connections').then(r => setConnections(r.data.data)).catch(() => {})
@@ -157,8 +173,18 @@ export default function ERDiagramPage() {
         </select>
         {loading && <Loader2 className="w-4 h-4 animate-spin text-blue-500" />}
         {error && <span className="text-xs text-red-400">{error}</span>}
+        <div className="ml-auto flex items-center gap-2">
+          <button onClick={() => exportImage('png')} disabled={!nodes.length}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-40 disabled:cursor-not-allowed transition">
+            <Image className="w-3.5 h-3.5" /> PNG
+          </button>
+          <button onClick={() => exportImage('svg')} disabled={!nodes.length}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-40 disabled:cursor-not-allowed transition">
+            <Download className="w-3.5 h-3.5" /> SVG
+          </button>
+        </div>
       </div>
-      <div className="flex-1">
+      <div className="flex-1" ref={flowRef}>
         <ReactFlow
           nodes={nodes}
           edges={edges}

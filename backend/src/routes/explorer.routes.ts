@@ -262,4 +262,22 @@ router.get('/:connId/relationships', authMiddleware, async (req: Request, res: R
   } catch (err: any) { return res.status(500).json({ error: err.message }); }
 });
 
+
+// GET /api/explorer/:connId/completions?schema=public - lightweight autocomplete payload
+router.get('/:connId/completions', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const schema = (req.query.schema as string) || 'public';
+    const { adapter, error } = await getAdapter(req.params.connId);
+    if (error) return res.status(404).json({ error });
+    const tables = await adapter.listTables(schema);
+    const result: { name: string; columns: string[] }[] = [];
+    for (const t of tables) {
+      const cols = await adapter.listColumns(t.name, schema);
+      result.push({ name: t.name, columns: cols.map((c: any) => c.name) });
+    }
+    await adapter.disconnect();
+    return res.json({ data: { tables: result } });
+  } catch (err: any) { return res.status(500).json({ error: err.message }); }
+});
+
 export default router;

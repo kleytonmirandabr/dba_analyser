@@ -13,6 +13,7 @@ export default function QueryPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [history, setHistory] = useState<{ sql: string; time: string; duration: number }[]>([])
+  const [completions, setCompletions] = useState<{ tables: { name: string; columns: string[] }[] } | undefined>(undefined)
 
   useEffect(() => {
     api.get('/api/connections').then(r => {
@@ -24,12 +25,21 @@ export default function QueryPage() {
         sessionStorage.removeItem('dba_prefill_connId')
       }
     }).catch(() => {})
+    const prefillConn2 = sessionStorage.getItem('dba_prefill_connId') || ''
+    if (prefillConn2) {
+      api.get(`/api/explorer/${prefillConn2}/completions?schema=public`).then(r => setCompletions(r.data.data)).catch(() => {})
+    }
     const prefillQuery = sessionStorage.getItem('dba_prefill_query')
     if (prefillQuery) {
       setSql(prefillQuery)
       sessionStorage.removeItem('dba_prefill_query')
     }
   }, [])
+
+  useEffect(() => {
+    if (!selectedConn) { setCompletions(undefined); return }
+    api.get(`/api/explorer/${selectedConn}/completions?schema=public`).then(r => setCompletions(r.data.data)).catch(() => {})
+  }, [selectedConn])
 
   const execute = async () => {
     if (!selectedConn || !sql.trim()) return
@@ -86,7 +96,7 @@ export default function QueryPage() {
       {/* Editor */}
       <div className="flex-1 flex flex-col min-h-0">
         <div className="h-1/3 min-h-[120px] border-b border-gray-800">
-          <SqlEditor value={sql} onChange={setSql} onExecute={execute} placeholder="SELECT * FROM tabela LIMIT 100;" />
+          <SqlEditor value={sql} onChange={setSql} onExecute={execute} placeholder="SELECT * FROM tabela LIMIT 100;" completions={completions} />
         </div>
 
         {/* Results */}

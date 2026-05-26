@@ -4,6 +4,7 @@ import { useAuthStore } from '../../stores/auth.store'
 import { useThemeStore } from '../../stores/theme.store'
 import { useNavigate } from 'react-router-dom'
 import api from '../../lib/api'
+import NotificationBell from './NotificationBell'
 
 export default function Header() {
   const { user, logout } = useAuthStore()
@@ -33,6 +34,9 @@ export default function Header() {
     <header className="h-14 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-6 transition-colors">
       <div />
       <div className="flex items-center gap-4">
+        {/* Notification Bell */}
+        <NotificationBell />
+
         {/* Theme Toggle */}
         <button
           onClick={toggle}

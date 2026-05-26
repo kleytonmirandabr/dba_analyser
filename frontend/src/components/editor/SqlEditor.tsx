@@ -2,15 +2,18 @@ import { useEffect, useRef } from 'react'
 import { EditorView, keymap, placeholder as phPlugin } from '@codemirror/view'
 import { EditorState } from '@codemirror/state'
 import { sql } from '@codemirror/lang-sql'
-import { autocompletion } from '@codemirror/autocomplete'
+import { autocompletion, CompletionContext, CompletionResult } from '@codemirror/autocomplete'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { useThemeStore } from '../../stores/theme.store'
+
+interface TableCompletion { name: string; columns: string[] }
 
 interface SqlEditorProps {
   value: string
   onChange: (val: string) => void
   onExecute?: () => void
   placeholder?: string
+  completions?: { tables: TableCompletion[] }
 }
 
 const lightTheme = EditorView.theme({
@@ -23,7 +26,35 @@ const lightTheme = EditorView.theme({
   '&.cm-focused .cm-selectionBackground': { backgroundColor: '#bfdbfe !important' },
 })
 
-export default function SqlEditor({ value, onChange, onExecute, placeholder }: SqlEditorProps) {
+function buildCompletionSource(completions?: { tables: TableCompletion[] }) {
+  return (context: CompletionContext): CompletionResult | null => {
+    if (!completions?.tables?.length) return null
+
+    const word = context.matchBefore(/[\w.]*/)
+    if (!word || (word.from === word.to && !context.explicit)) return null
+    const text = word.text
+
+    // If text contains a dot, suggest columns for that table
+    if (text.includes('.')) {
+      const [tablePart] = text.split('.')
+      const table = completions.tables.find(t => t.name.toLowerCase() === tablePart.toLowerCase())
+      if (!table) return null
+      return {
+        from: word.from + tablePart.length + 1,
+        options: table.columns.map(col => ({ label: col, type: 'property' })),
+      }
+    }
+
+    // Otherwise suggest table names + all columns
+    const options = [
+      ...completions.tables.map(t => ({ label: t.name, type: 'class' })),
+      ...completions.tables.flatMap(t => t.columns.map(c => ({ label: c, type: 'property', detail: t.name }))),
+    ]
+    return { from: word.from, options }
+  }
+}
+
+export default function SqlEditor({ value, onChange, onExecute, placeholder, completions }: SqlEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   const theme = useThemeStore(s => s.theme)
@@ -45,7 +76,7 @@ export default function SqlEditor({ value, onChange, onExecute, placeholder }: S
       doc: value,
       extensions: [
         sql(),
-        autocompletion(),
+        autocompletion({ override: [buildCompletionSource(completions)] }),
         executeKeymap,
         EditorView.updateListener.of(update => {
           if (update.docChanged) {
@@ -62,7 +93,7 @@ export default function SqlEditor({ value, onChange, onExecute, placeholder }: S
     viewRef.current = view
 
     return () => { view.destroy() }
-  }, [theme]) // recreate on theme change
+  }, [theme, completions]) // recreate on theme or completions change
 
   // Sync external value changes
   useEffect(() => {
