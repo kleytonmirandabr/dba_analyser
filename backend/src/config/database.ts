@@ -10,7 +10,8 @@ import { QueryAdvice } from '../entities/query-advice.entity';
 import { ReportSchedule } from '../entities/report-schedule.entity';
 import { HealthSnapshot } from '../entities/health-snapshot.entity';
 import { TableGrowthRule } from '../entities/table-growth-rule.entity';
-import { HealthSnapshot } from '../entities/health-snapshot.entity';
+import { BackupJob } from '../entities/backup-job.entity';
+import { SchemaSnapshot } from '../entities/schema-snapshot.entity';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -19,6 +20,6 @@ export const AppDataSource = new DataSource({
   logging: process.env.NODE_ENV === 'development' ? ['error'] : false,
   entities: [User, Connection, ExecutionRequest, AuditLog, Alert, AlertHistory, TableSnapshot,
     QueryAdvice,
-    ReportSchedule, TableGrowthRule, HealthSnapshot],
+    ReportSchedule, TableGrowthRule, HealthSnapshot, BackupJob, SchemaSnapshot],
   migrations: ['dist/migrations/*.js'],
 });

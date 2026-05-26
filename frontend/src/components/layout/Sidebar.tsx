@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Database, LayoutDashboard, Plug, FolderTree, Activity, HeartPulse, Bell, TrendingUp, Terminal, GitCompareArrows, Play, Shield, Settings, Wifi, Stethoscope, Brain, FileText, GitBranch } from 'lucide-react'
+import { Database, LayoutDashboard, Plug, FolderTree, Activity, HeartPulse, Bell, TrendingUp, Terminal, GitCompareArrows, Play, Shield, Settings, Wifi, Stethoscope, Brain, FileText, GitBranch, HardDrive, History } from 'lucide-react'
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -13,10 +13,12 @@ const navItems = [
   { to: '/health', icon: HeartPulse, label: 'Health' },
   { to: '/alerts', icon: Bell, label: 'Alertas' },
   { to: '/growth', icon: TrendingUp, label: 'Crescimento' },
+  { to: '/backup', icon: HardDrive, label: 'Backup' },
   { to: '/advisor', icon: Brain, label: 'AI Advisor' },
   { to: '/reports', icon: FileText, label: 'Relatórios' },
   { to: '/executions', icon: Play, label: 'Execuções' },
   { to: '/compare', icon: GitCompareArrows, label: 'Comparador' },
+  { to: '/schema-versions', icon: History, label: 'Versioning' },
   { to: '/audit', icon: Shield, label: 'Audit Log' },
   { to: '/settings', icon: Settings, label: 'Configurações' },
 ]
@@ -38,7 +40,7 @@ export default function Sidebar() {
         ))}
       </nav>
       <div className="p-3 border-t border-gray-200 dark:border-gray-800">
-        <p className="text-[10px] text-gray-600 text-center">DBA Analyser v1.4.0</p>
+        <p className="text-[10px] text-gray-600 text-center">DBA Analyser v1.5.0</p>
       </div>
     </aside>
   )

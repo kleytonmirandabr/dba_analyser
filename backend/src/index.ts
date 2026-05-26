@@ -27,6 +27,8 @@ import { initGrowthScheduler } from './services/growth.scheduler';
 import { initHealthCollector } from './services/health.collector';
 import diagnosticsRoutes from './routes/diagnostics.routes';
 import growthRoutes from './routes/growth.routes';
+import backupRoutes from './routes/backup.routes';
+import schemaVersionRoutes from './routes/schema-version.routes';
 import { initMonitorSocket } from './services/monitor.ws';
 
 dotenv.config();
@@ -86,6 +88,8 @@ app.use('/api/execution', executionRoutes);
 app.use('/api/compare', compareRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/diagnostics', diagnosticsRoutes);
+app.use('/api/backup', backupRoutes);
+app.use('/api/schema-versions', schemaVersionRoutes);
 
 // Status (no auth - used by frontend to check API)
 app.get('/api/status', (_req, res) => {
