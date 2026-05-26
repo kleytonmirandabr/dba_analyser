@@ -31,6 +31,7 @@ services:
     volumes:
       - ./backend/src:/app/src
       - vpn-data:/vpn:ro         # Lê configs VPN para status
+      - /var/run/docker.sock:/var/run/docker.sock  # Acesso ao Docker para gerenciar VPN
     environment:
       - DATABASE_URL=postgresql://dba_app:dba_secret@postgres:5432/dba_analyser
       - DBA_MASTER_KEY=${DBA_MASTER_KEY:-dev-master-key-change-in-prod}
