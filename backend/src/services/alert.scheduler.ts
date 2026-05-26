@@ -165,17 +165,36 @@ function evaluateResult(alert: Alert, result: { rows?: any[]; rowsAffected?: num
   const rowCount = rows.length;
 
   switch (alert.evaluationType) {
-    case 'has_rows':
-      if (rowCount === 0) {
-        return { status: 'triggered', message: `Esperava linhas mas retornou 0`, value: '0' };
+    case 'has_rows': {
+      // Smart: if COUNT(*) returns 1 row with single numeric value, check the value
+      if (rowCount === 1 && rows[0]) {
+        const cols = Object.keys(rows[0]);
+        if (cols.length === 1) {
+          const numVal = Number(Object.values(rows[0])[0]);
+          if (!isNaN(numVal)) {
+            if (numVal === 0) return { status: 'triggered', message: `0 registros encontrados`, value: '0' };
+            return { status: 'ok', message: `${numVal.toLocaleString()} registros`, value: String(numVal) };
+          }
+        }
       }
-      return { status: 'ok', message: `OK — ${rowCount} linhas retornadas`, value: String(rowCount) };
+      if (rowCount === 0) return { status: 'triggered', message: `0 linhas retornadas`, value: '0' };
+      return { status: 'ok', message: `${rowCount} linhas`, value: String(rowCount) };
+    }
 
-    case 'no_rows':
-      if (rowCount > 0) {
-        return { status: 'triggered', message: `Esperava 0 linhas mas retornou ${rowCount}`, value: String(rowCount) };
+    case 'no_rows': {
+      if (rowCount === 1 && rows[0]) {
+        const cols = Object.keys(rows[0]);
+        if (cols.length === 1) {
+          const numVal = Number(Object.values(rows[0])[0]);
+          if (!isNaN(numVal)) {
+            if (numVal > 0) return { status: 'triggered', message: `${numVal.toLocaleString()} registros (esperava 0)`, value: String(numVal) };
+            return { status: 'ok', message: '0 registros (esperado)', value: '0' };
+          }
+        }
       }
-      return { status: 'ok', message: 'OK — 0 linhas (esperado)', value: '0' };
+      if (rowCount > 0) return { status: 'triggered', message: `${rowCount} linhas (esperava 0)`, value: String(rowCount) };
+      return { status: 'ok', message: '0 linhas (esperado)', value: '0' };
+    }
 
     case 'row_count': {
       const threshold = parseFloat(alert.threshold || '0');
