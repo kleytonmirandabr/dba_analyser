@@ -192,16 +192,17 @@ function AlertForm({ alert, onClose, onSaved }: { alert: AlertItem | null; onClo
   const testQuery = async () => {
     setTesting(true); setTestResult(null)
     try {
-      const { data } = await api.post('/api/alerts/validate-query', { query: form.query })
+      // Validate with real syntax check against the database
+      const { data } = await api.post('/api/alerts/validate-query', { query: form.query, connectionId: form.connectionId })
       if (!data.data.valid) { setTestResult({ error: data.data.error }); setTesting(false); return }
-      // If we have connectionId and it's an edit, test against the connection
+      // If editing, also run a real test
       if (alert?.id) {
         const { data: testData } = await api.post(`/api/alerts/${alert.id}/test`)
         setTestResult(testData.data)
       } else {
-        setTestResult({ valid: true, message: 'SQL validado ✅' })
+        setTestResult({ valid: true, message: data.data.message || 'SQL validado ✅' })
       }
-    } catch (err: any) { setTestResult({ error: err.message }) }
+    } catch (err: any) { setTestResult({ error: err.response?.data?.error || err.message }) }
     setTesting(false)
   }
 
@@ -215,7 +216,9 @@ function AlertForm({ alert, onClose, onSaved }: { alert: AlertItem | null; onClo
       }
       onSaved()
     } catch (err: any) {
-      setError(err.response?.data?.error || err.message)
+      const msg = err.response?.data?.error || err.message
+      const isSyntax = err.response?.data?.syntaxError
+      setError(isSyntax ? `🛡️ Erro de sintaxe SQL — a query não foi salva:\n\n${msg}` : msg)
     }
     setSaving(false)
   }

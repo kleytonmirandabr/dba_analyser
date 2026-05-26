@@ -5,6 +5,9 @@ import { AppDataSource } from '../config/database';
 import { Alert } from '../entities/alert.entity';
 import { AlertHistory } from '../entities/alert-history.entity';
 import { validateAlertQuery, scheduleAlert, unscheduleAlert, loadAndScheduleAll } from '../services/alert.scheduler';
+import { Connection } from '../entities/connection.entity';
+import { getConnCredentials } from '../utils/credentials';
+import { createAdapter } from '../adapters/adapter.factory';
 
 const router = Router();
 const alertRepo = () => AppDataSource.getRepository(Alert);
@@ -62,9 +65,40 @@ router.post('/', authMiddleware, requireRole('admin'), async (req: Request, res:
   try {
     const data = createSchema.parse(req.body);
 
-    // Validate SQL
+    // Validate SQL - static
     const validation = validateAlertQuery(data.query);
     if (!validation.valid) return res.status(400).json({ error: validation.error });
+
+    // Validate SQL - real syntax check against the database
+    const connRepo = AppDataSource.getRepository(Connection);
+    const conn = await connRepo.findOne({ where: { id: data.connectionId } });
+    if (!conn) return res.status(400).json({ error: 'Conexão não encontrada' });
+
+    let adapter: any = null;
+    try {
+      adapter = createAdapter(conn.dbType);
+      await adapter.connect({
+        host: conn.host,
+        port: conn.port,
+        database: conn.databaseName || (conn.dbType === 'postgresql' ? 'postgres' : 'master'),
+        ...getConnCredentials(conn),
+        timeoutMs: 10000,
+      });
+
+      const validateSql = conn.dbType === 'mssql'
+        ? `SET NOEXEC ON; ${data.query}; SET NOEXEC OFF;`
+        : `EXPLAIN ${data.query}`;
+
+      const testResult = await adapter.executeSQL(validateSql);
+      await adapter.disconnect();
+
+      if (!testResult.success) {
+        return res.status(400).json({ error: `Query com erro de sintaxe: ${testResult.error}`, syntaxError: true });
+      }
+    } catch (err: any) {
+      if (adapter) try { await adapter.disconnect(); } catch {}
+      return res.status(400).json({ error: `Erro ao validar query no banco: ${err.message}`, syntaxError: true });
+    }
 
     const alert = alertRepo().create({
       ...data,
@@ -93,6 +127,33 @@ router.put('/:id', authMiddleware, requireRole('admin'), async (req: Request, re
     if (query) {
       const validation = validateAlertQuery(query);
       if (!validation.valid) return res.status(400).json({ error: validation.error });
+
+      // Real syntax check
+      const connRepo = AppDataSource.getRepository(Connection);
+      const conn = await connRepo.findOne({ where: { id: alert.connectionId } });
+      if (conn) {
+        let adapter: any = null;
+        try {
+          adapter = createAdapter(conn.dbType);
+          await adapter.connect({
+            host: conn.host, port: conn.port,
+            database: conn.databaseName || (conn.dbType === 'postgresql' ? 'postgres' : 'master'),
+            ...getConnCredentials(conn), timeoutMs: 10000,
+          });
+          const validateSql = conn.dbType === 'mssql'
+            ? `SET NOEXEC ON; ${query}; SET NOEXEC OFF;`
+            : `EXPLAIN ${query}`;
+          const testResult = await adapter.executeSQL(validateSql);
+          await adapter.disconnect();
+          if (!testResult.success) {
+            return res.status(400).json({ error: `Query com erro de sintaxe: ${testResult.error}`, syntaxError: true });
+          }
+        } catch (err: any) {
+          if (adapter) try { await adapter.disconnect(); } catch {}
+          return res.status(400).json({ error: `Erro ao validar query: ${err.message}`, syntaxError: true });
+        }
+      }
+
       alert.query = query;
     }
     if (name !== undefined) alert.name = name;
@@ -157,10 +218,56 @@ router.post('/:id/test', authMiddleware, async (req: Request, res: Response) => 
 
 // POST /api/alerts/validate-query — validate SQL before saving
 router.post('/validate-query', authMiddleware, async (req: Request, res: Response) => {
-  const { query } = req.body;
+  const { query, connectionId } = req.body;
   if (!query) return res.status(400).json({ error: 'Query obrigatória' });
+
+  // Step 1: Static validation (keywords check)
   const result = validateAlertQuery(query);
-  return res.json({ data: result });
+  if (!result.valid) return res.json({ data: result });
+
+  // Step 2: If connectionId provided, do real syntax check against the database
+  if (connectionId) {
+    const connRepo = AppDataSource.getRepository(Connection);
+    const conn = await connRepo.findOne({ where: { id: connectionId } });
+    if (!conn) return res.json({ data: { valid: false, error: 'Conexão não encontrada para validação.' } });
+
+    let adapter: any = null;
+    try {
+      adapter = createAdapter(conn.dbType);
+      await adapter.connect({
+        host: conn.host,
+        port: conn.port,
+        database: conn.databaseName || (conn.dbType === 'postgresql' ? 'postgres' : 'master'),
+        ...getConnCredentials(conn),
+        timeoutMs: 10000,
+      });
+
+      // Use SET NOEXEC ON for MSSQL (parses but doesn't execute)
+      // Use EXPLAIN for PostgreSQL/MySQL (validates syntax + plan)
+      let validateSql: string;
+      if (conn.dbType === 'mssql') {
+        validateSql = `SET NOEXEC ON; ${query}; SET NOEXEC OFF;`;
+      } else if (conn.dbType === 'postgresql') {
+        validateSql = `EXPLAIN ${query}`;
+      } else {
+        validateSql = `EXPLAIN ${query}`;
+      }
+
+      const testResult = await adapter.executeSQL(validateSql);
+      await adapter.disconnect();
+
+      if (!testResult.success) {
+        return res.json({ data: { valid: false, error: `Erro de sintaxe SQL: ${testResult.error}` } });
+      }
+
+      return res.json({ data: { valid: true, message: '✅ Query válida — sintaxe verificada no banco de dados.' } });
+    } catch (err: any) {
+      if (adapter) try { await adapter.disconnect(); } catch {}
+      return res.json({ data: { valid: false, error: `Erro ao validar: ${err.message}` } });
+    }
+  }
+
+  return res.json({ data: { ...result, message: result.valid ? '✅ Validação estática OK (conecte a uma database para validar sintaxe completa).' : undefined } });
 });
 
 export default router;
