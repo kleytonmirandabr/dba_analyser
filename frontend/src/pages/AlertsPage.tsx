@@ -291,20 +291,7 @@ export default function AlertsPage() {
               {/* Expanded history */}
               {expandedId === a.id && (
                 <div className="px-4 pb-4 border-t border-gray-800/50 pt-3">
-                  <p className="text-xs text-gray-500 font-medium mb-2">Histórico recente</p>
-                  {histLoading ? <Loader2 className="w-4 h-4 animate-spin text-blue-500" /> : (
-                    <div className="space-y-1 max-h-[200px] overflow-y-auto">
-                      {history.slice(0, 20).map((h: any, i: number) => (
-                        <div key={i} className="flex items-center gap-2 text-xs">
-                          <span className={`w-2 h-2 rounded-full ${h.status === 'ok' ? 'bg-green-400' : h.status === 'triggered' ? 'bg-amber-400' : 'bg-red-400'}`} />
-                          <span className="text-gray-500 font-mono w-32">{new Date(h.checkedAt).toLocaleString()}</span>
-                          <span className={`font-medium ${statusColor(h.status)}`}>{h.message}</span>
-                          <span className="text-gray-600 ml-auto">{h.executionMs}ms</span>
-                        </div>
-                      ))}
-                      {history.length === 0 && <p className="text-xs text-gray-600">Sem histórico ainda</p>}
-                    </div>
-                  )}
+                  <HistoryPanel history={history} loading={histLoading} />
                 </div>
               )}
             </div>
@@ -333,6 +320,51 @@ export default function AlertsPage() {
 }
 
 // ─── Alert Form Modal ─────────────────────────────────────────────────────────
+// ─── History Panel with filter ───────────────────────────────────────────────
+function HistoryPanel({ history, loading }: { history: any[]; loading: boolean }) {
+  const [filter, setFilter] = useState<'problems' | 'all'>('problems')
+
+  if (loading) return <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+
+  const filtered = filter === 'problems'
+    ? history.filter((h: any) => h.status !== 'ok')
+    : history
+
+  const problemCount = history.filter(h => h.status !== 'ok').length
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs text-gray-500 font-medium">Histórico recente</p>
+        <div className="flex bg-gray-800 rounded-lg p-0.5 border border-gray-700">
+          <button onClick={() => setFilter('problems')}
+            className={`px-2.5 py-1 text-[10px] rounded-md transition ${filter === 'problems' ? 'bg-red-600/80 text-white' : 'text-gray-400 hover:text-white'}`}>
+            Problemas ({problemCount})
+          </button>
+          <button onClick={() => setFilter('all')}
+            className={`px-2.5 py-1 text-[10px] rounded-md transition ${filter === 'all' ? 'bg-gray-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+            Todos ({history.length})
+          </button>
+        </div>
+      </div>
+      {filtered.length === 0 ? (
+        <p className="text-xs text-green-400/70 py-3">✅ Nenhum problema encontrado no histórico recente.</p>
+      ) : (
+        <div className="space-y-1 max-h-[250px] overflow-y-auto">
+          {filtered.slice(0, 50).map((h: any, i: number) => (
+            <div key={i} className={`flex items-center gap-2 text-xs px-2 py-1 rounded ${h.status !== 'ok' ? 'bg-red-950/20' : ''}`}>
+              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${h.status === 'ok' ? 'bg-green-400' : h.status === 'triggered' ? 'bg-amber-400' : 'bg-red-400'}`} />
+              <span className="text-gray-500 font-mono w-28 flex-shrink-0">{new Date(h.checkedAt).toLocaleString()}</span>
+              <span className={`font-medium truncate ${h.status === 'ok' ? 'text-green-400/70' : h.status === 'triggered' ? 'text-amber-400' : 'text-red-400'}`}>{h.message}</span>
+              <span className="text-gray-600 ml-auto flex-shrink-0">{h.executionMs}ms</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Alert Message Component (shows ONLY problems) ──────────────────────────
 function AlertMessage({ message, lastChecked }: { message: string | null | undefined; lastChecked?: string | null }) {
   if (!message) return <p className="text-[11px] text-gray-500">Aguardando primeira verificação...</p>
