@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Play, Download, Clock, AlertCircle, Database, Loader2, FileText, MessageSquareCode, Search, CaseUpper, CaseLower, Undo2, Redo2, FoldVertical, UnfoldVertical, Copy, Table2, FileSpreadsheet, FileJson, FileType, ChevronDown, RotateCcw, Columns3, Hash, WrapText, Maximize2, Minimize2 } from 'lucide-react'
+import { Play, Square, Download, Clock, AlertCircle, Database, Loader2, FileText, MessageSquareCode, Search, CaseUpper, CaseLower, Undo2, Redo2, FoldVertical, UnfoldVertical, Copy, Table2, FileSpreadsheet, FileJson, FileType, ChevronDown, RotateCcw, Columns3, Hash, WrapText, Maximize2, Minimize2 } from 'lucide-react'
 import api from '../lib/api'
 import SqlEditor, { EditorCommands } from '../components/editor/SqlEditor'
 
@@ -190,6 +190,8 @@ export default function QueryPage() {
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [abortController, setAbortController] = useState<AbortController | null>(null)
+  const [elapsed, setElapsed] = useState(0)
   const [history, setHistory] = useState<{ sql: string; time: string; duration: number }[]>([])
   const [completions, setCompletions] = useState<{ tables: { name: string; columns: string[] }[] } | undefined>(undefined)
   const [editorCmds, setEditorCmds] = useState<EditorCommands | null>(null)
@@ -219,38 +221,44 @@ export default function QueryPage() {
     api.get(`/api/explorer/${selectedConn}/completions?schema=public`).then(r => setCompletions(r.data.data)).catch(() => {})
   }, [selectedConn])
 
-  const execute = async () => {
-    if (!selectedConn || !sql.trim()) return
-    setLoading(true); setError(''); setResult(null)
+  const runQuery = async (querySql: string) => {
+    if (!selectedConn || !querySql.trim()) return
+    const controller = new AbortController()
+    setAbortController(controller)
+    setLoading(true); setError(''); setResult(null); setElapsed(0)
+
+    // Timer to show elapsed time
+    const startTime = Date.now()
+    const timer = setInterval(() => setElapsed(Math.floor((Date.now() - startTime) / 1000)), 1000)
+
     try {
-      const { data } = await api.post(`/api/query/${selectedConn}/execute`, { sql, limit: 500 })
+      const { data } = await api.post(`/api/query/${selectedConn}/execute`, { sql: querySql, limit: 500 }, { signal: controller.signal })
       if (data.data.success) {
         setResult(data.data)
-        setHistory(h => [{ sql: sql.trim(), time: new Date().toLocaleTimeString(), duration: data.data.durationMs }, ...h.slice(0, 19)])
+        setHistory(h => [{ sql: querySql.trim(), time: new Date().toLocaleTimeString(), duration: data.data.durationMs }, ...h.slice(0, 19)])
       } else {
         setError(data.data.error || 'Erro desconhecido')
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || err.message)
+      if (err.code === 'ERR_CANCELED' || err.name === 'CanceledError') {
+        setError('⏹️ Execução cancelada pelo usuário.')
+      } else {
+        setError(err.response?.data?.error || err.message)
+      }
     }
+    clearInterval(timer)
     setLoading(false)
+    setAbortController(null)
   }
 
-  const executeSelected = async (selectedSql: string) => {
-    if (!selectedConn || !selectedSql.trim()) return
-    setLoading(true); setError(''); setResult(null)
-    try {
-      const { data } = await api.post(`/api/query/${selectedConn}/execute`, { sql: selectedSql, limit: 500 })
-      if (data.data.success) {
-        setResult(data.data)
-        setHistory(h => [{ sql: selectedSql.trim(), time: new Date().toLocaleTimeString(), duration: data.data.durationMs }, ...h.slice(0, 19)])
-      } else {
-        setError(data.data.error || 'Erro desconhecido')
-      }
-    } catch (err: any) {
-      setError(err.response?.data?.error || err.message)
+  const execute = () => runQuery(sql)
+  const executeSelected = (selectedSql: string) => runQuery(selectedSql)
+
+  const stopExecution = () => {
+    if (abortController) {
+      abortController.abort()
+      setAbortController(null)
     }
-    setLoading(false)
   }
 
   const connObj = connections.find(c => c.id === selectedConn)
@@ -272,12 +280,20 @@ export default function QueryPage() {
         
         <div className="w-px h-6 bg-gray-700 mx-1" />
 
-        {/* Execute button */}
-        <button onClick={execute} disabled={loading || !selectedConn}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-lg transition active:scale-95">
-          {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
-          Executar
-        </button>
+        {/* Execute / Stop button */}
+        {loading ? (
+          <button onClick={stopExecution}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white text-sm font-medium rounded-lg transition active:scale-95">
+            <Square className="w-3.5 h-3.5 fill-current" />
+            Parar{elapsed > 0 ? ` (${elapsed}s)` : ''}
+          </button>
+        ) : (
+          <button onClick={execute} disabled={!selectedConn}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-lg transition active:scale-95">
+            <Play className="w-3.5 h-3.5" />
+            Executar
+          </button>
+        )}
 
         <div className="w-px h-6 bg-gray-700 mx-1" />
 
