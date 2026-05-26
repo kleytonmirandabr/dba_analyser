@@ -12,16 +12,18 @@
 - Growth Tracker - Cron Diário (v0.8.0)
 - Comparador de Schema Completo (v0.9.0)
 - Fixes MSSQL + Monitor DB filter + Compare diff view (v0.9.1)
+- Dark/Light Mode + Dashboard Indicadores Gráficos (v1.1.0)
 
 ## 🔜 Próximas
 - [ ] Syntax highlight (CodeMirror / Monaco) no SQL Editor
-- [ ] Tema claro (light mode)
+- [x] ~~Tema claro (light mode)~~ ✅ v1.1.0
 - [ ] Notificações push (execuções pendentes)
 - [ ] Backup/restore management
 - [ ] Schema versioning (git-like history)
 - [ ] ER Diagram visual
 - [ ] Rate limit interno no health monitor
 - [ ] Horário de coleta configurável (queries pesadas fora do pico)
-- [ ] Dashboard de tendências (crescimento de tabelas ao longo do tempo)
+- [x] ~~Dashboard de tendências (crescimento de tabelas ao longo do tempo)~~ ✅ v1.1.0 (sparklines)
 - [ ] Alertas automáticos (bloat > X%, cache hit < Y%)
 - [ ] Export de relatório de saúde (PDF)
+- [ ] Endpoint /api/metrics/history para dados reais nos sparklines

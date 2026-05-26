@@ -5,3 +5,9 @@
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
+
+@layer base {
+  html {
+    @apply transition-colors duration-200;
+  }
+}
