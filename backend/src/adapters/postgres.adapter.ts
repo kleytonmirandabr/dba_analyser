@@ -336,6 +336,67 @@ export class PostgresAdapter implements DatabaseAdapter {
     return rows;
   }
 
+  async getExplainPlan(sql: string, analyze = false): Promise<import('./base.adapter').ExplainResult> {
+    const explainSql = analyze
+      ? `EXPLAIN (ANALYZE, FORMAT JSON, BUFFERS, TIMING) ${sql}`
+      : `EXPLAIN (FORMAT JSON, COSTS) ${sql}`;
+    
+    const rows = await this.query(explainSql);
+    const rawPlan = rows[0]['QUERY PLAN'] || rows[0];
+    const planJson = Array.isArray(rawPlan) ? rawPlan[0] : rawPlan;
+    
+    const warnings: string[] = [];
+    const plan = this.parseExplainNode(planJson.Plan || planJson, warnings);
+    
+    return {
+      plan,
+      executionTimeMs: planJson['Execution Time'],
+      planningTimeMs: planJson['Planning Time'],
+      rawPlan: planJson,
+      warnings,
+    };
+  }
+
+  private parseExplainNode(node: any, warnings: string[]): import('./base.adapter').ExplainNode {
+    // Detect problematic patterns
+    if (node['Node Type'] === 'Seq Scan' && (node['Plan Rows'] || 0) > 10000) {
+      warnings.push(`Sequential Scan em ${node['Relation Name'] || 'tabela'} com ~${node['Plan Rows']} rows — considere criar índice`);
+    }
+    if (node['Node Type'] === 'Sort' && node['Sort Method']?.includes('external')) {
+      warnings.push('Sort em disco (work_mem insuficiente)');
+    }
+    if (node['Node Type'] === 'Nested Loop' && (node['Plan Rows'] || 0) > 100000) {
+      warnings.push('Nested Loop com alta cardinalidade — pode ser mais eficiente como Hash Join');
+    }
+
+    const result: import('./base.adapter').ExplainNode = {
+      nodeType: node['Node Type'] || 'Unknown',
+      relation: node['Relation Name'],
+      alias: node['Alias'],
+      startupCost: node['Startup Cost'] || 0,
+      totalCost: node['Total Cost'] || 0,
+      planRows: node['Plan Rows'] || 0,
+      actualRows: node['Actual Rows'],
+      actualTime: node['Actual Total Time'],
+      loops: node['Actual Loops'],
+      filter: node['Filter'],
+      indexName: node['Index Name'],
+      indexCond: node['Index Cond'],
+      sortKey: node['Sort Key'],
+      joinType: node['Join Type'],
+      children: (node['Plans'] || []).map((child: any) => this.parseExplainNode(child, warnings)),
+      extra: {},
+    };
+
+    // Capture useful extra fields
+    if (node['Shared Hit Blocks']) result.extra!.sharedHitBlocks = node['Shared Hit Blocks'];
+    if (node['Shared Read Blocks']) result.extra!.sharedReadBlocks = node['Shared Read Blocks'];
+    if (node['Rows Removed by Filter']) result.extra!.rowsRemovedByFilter = node['Rows Removed by Filter'];
+    if (node['Hash Cond']) result.extra!.hashCond = node['Hash Cond'];
+
+    return result;
+  }
+
   async executeSQL(sql: string): Promise<ExecutionResult> {
     const start = Date.now();
     try {

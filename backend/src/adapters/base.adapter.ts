@@ -98,6 +98,33 @@ export interface HealthOverview {
   version: string;
 }
 
+export interface ExplainNode {
+  nodeType: string;
+  relation?: string;
+  alias?: string;
+  startupCost: number;
+  totalCost: number;
+  planRows: number;
+  actualRows?: number;
+  actualTime?: number;
+  loops?: number;
+  filter?: string;
+  indexName?: string;
+  indexCond?: string;
+  sortKey?: string[];
+  joinType?: string;
+  children?: ExplainNode[];
+  extra?: Record<string, any>;
+}
+
+export interface ExplainResult {
+  plan: ExplainNode;
+  executionTimeMs?: number;
+  planningTimeMs?: number;
+  rawPlan: any; // original JSON/XML
+  warnings: string[];
+}
+
 export interface DatabaseAdapter {
   connect(config: ConnectionConfig): Promise<void>;
   disconnect(): Promise<void>;
@@ -133,4 +160,5 @@ export interface DatabaseAdapter {
   getMissingIndexes?(): Promise<MissingIndex[]>;
   getDbConfig?(): Promise<DbConfigParam[]>;
   getLongTransactions?(minDurationMs?: number): Promise<LongTransaction[]>;
+  getExplainPlan?(sql: string, analyze?: boolean): Promise<ExplainResult>;
 }

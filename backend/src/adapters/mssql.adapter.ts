@@ -286,6 +286,79 @@ export class MSSQLAdapter implements DatabaseAdapter {
     return rows;
   }
 
+  async getExplainPlan(sql: string, analyze = false): Promise<import('./base.adapter').ExplainResult> {
+    const warnings: string[] = [];
+    
+    // MSSQL: use SET SHOWPLAN_ALL for estimated plan, or SET STATISTICS PROFILE for actual
+    const request = this.pool!.request();
+    let rawPlan: any;
+
+    if (analyze) {
+      // Get actual execution plan via XML
+      await request.query('SET STATISTICS XML ON');
+      const result = await request.query(sql);
+      await request.query('SET STATISTICS XML OFF');
+      // The XML plan is in a separate recordset
+      const xmlSet = result.recordsets[result.recordsets.length - 1];
+      rawPlan = xmlSet?.[0] ? Object.values(xmlSet[0])[0] : null;
+    } else {
+      // Estimated plan
+      await request.query('SET SHOWPLAN_ALL ON');
+      const result = await request.query(sql);
+      await request.query('SET SHOWPLAN_ALL OFF');
+      rawPlan = result.recordset;
+    }
+
+    // Parse SHOWPLAN_ALL rows into tree
+    const plan = this.parseMssqlPlan(rawPlan, warnings);
+
+    return { plan, rawPlan, warnings };
+  }
+
+  private parseMssqlPlan(rawPlan: any, warnings: string[]): import('./base.adapter').ExplainNode {
+    if (Array.isArray(rawPlan) && rawPlan.length > 0) {
+      // SHOWPLAN_ALL returns flat rows — build tree from StmtText + indentation
+      const root = rawPlan[0];
+      const nodeType = root.PhysicalOp || root.LogicalOp || 'Statement';
+      
+      if (nodeType === 'Table Scan' || nodeType === 'Clustered Index Scan') {
+        const rows = root.EstimateRows || 0;
+        if (rows > 10000) warnings.push(`${nodeType} com ~${Math.round(rows)} rows — considere adicionar índice`);
+      }
+      if (nodeType === 'Sort' && (root.EstimateRows || 0) > 50000) {
+        warnings.push('Sort de alta cardinalidade — pode causar spill para TempDB');
+      }
+
+      const children: import('./base.adapter').ExplainNode[] = rawPlan.slice(1)
+        .filter((r: any) => r.PhysicalOp)
+        .map((r: any) => ({
+          nodeType: r.PhysicalOp || r.LogicalOp || 'Unknown',
+          relation: r.Argument?.match(/OBJECT:\(\[.*?\]\.\[.*?\]\.\[(.*?)\]/)?.[1],
+          startupCost: 0,
+          totalCost: r.TotalSubtreeCost || 0,
+          planRows: Math.round(r.EstimateRows || 0),
+          actualRows: r.Rows,
+          indexName: r.Argument?.match(/INDEX:\(\[(.*?)\]/)?.[1],
+          filter: r.Argument?.match(/WHERE:\((.*?)\)/)?.[1],
+          children: [],
+          extra: { estimateIO: r.EstimateIO, estimateCPU: r.EstimateCPU },
+        }));
+
+      return {
+        nodeType,
+        relation: root.Argument?.match(/OBJECT:\(.*?\.\.\[(.*?)\]/)?.[1],
+        startupCost: 0,
+        totalCost: root.TotalSubtreeCost || 0,
+        planRows: Math.round(root.EstimateRows || 0),
+        children,
+        extra: { estimateIO: root.EstimateIO, estimateCPU: root.EstimateCPU },
+      };
+    }
+
+    // Fallback for XML plan — return raw
+    return { nodeType: 'Statement', startupCost: 0, totalCost: 0, planRows: 0, children: [], extra: { xml: rawPlan } };
+  }
+
   async executeSQL(sql: string): Promise<ExecutionResult> {
     const start = Date.now();
     try {
