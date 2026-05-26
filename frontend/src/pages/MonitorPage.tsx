@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Activity, Skull, Lock, RefreshCw, AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react'
 import api from '../lib/api'
 import DbSelector from '../components/monitor/DbSelector'
@@ -12,6 +13,7 @@ interface LockInfo { blockedPid: number; blockedQuery: string; blockingPid: numb
 interface ConnStats { connId: string; connName: string; databaseSize: number; activeConnections: number; totalConnections: number; cacheHitRatio: number }
 
 export default function MonitorPage() {
+  const { t } = useTranslation()
   const [connections, setConnections] = useState<Connection[]>([])
   const [selectedConns, setSelectedConns] = useState<string[]>([])
   const [queries, setQueries] = useState<ActiveQuery[]>([])
@@ -110,13 +112,13 @@ export default function MonitorPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Monitor</h1>
+        <h1 className="text-2xl font-bold text-text-primary">Monitor</h1>
         <div className="flex items-center gap-3">
-          <label className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+          <label className="flex items-center gap-1.5 text-xs text-text-secondary">
             <input type="checkbox" checked={autoRefresh} onChange={e => setAutoRefresh(e.target.checked)} className="rounded" />
             Auto (5s)
           </label>
-          <button onClick={() => refresh()} className="p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition">
+          <button onClick={() => refresh()} className="p-2 bg-surface-elevated hover:bg-surface-active rounded-lg transition">
             <RefreshCw className={`w-4 h-4 text-gray-500 dark:text-gray-400 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
@@ -128,42 +130,42 @@ export default function MonitorPage() {
 
       {/* Active queries */}
       {selectedConns.length > 0 && (
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
-          <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-2">
+        <div className="bg-surface border border-border rounded-xl overflow-hidden">
+          <div className="p-4 border-b border-border flex items-center gap-2">
             <button onClick={() => setQueriesCollapsed(!queriesCollapsed)} className="flex items-center gap-2 hover:opacity-80 transition">
-              {queriesCollapsed ? <ChevronRight className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
+              {queriesCollapsed ? <ChevronRight className="w-4 h-4 text-text-tertiary" /> : <ChevronDown className="w-4 h-4 text-text-tertiary" />}
               <Activity className="w-4 h-4 text-green-400" />
-              <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Queries Ativas ({queries.length})</h2>
+              <h2 className="text-sm font-semibold text-text-primary">Queries Ativas ({queries.length})</h2>
             </button>
             {!queriesCollapsed && (
               <input type="text" value={queryFilter} onChange={e => setQueryFilter(e.target.value)}
                 placeholder="Filtrar por query, user, banco..."
-                className="ml-auto px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white w-64 placeholder-gray-400 dark:placeholder-gray-600 focus:border-blue-500 outline-none" />
+                className="ml-auto px-3 py-1.5 bg-surface-elevated border border-border rounded-lg text-xs text-text-primary w-64 placeholder-gray-400 dark:placeholder-gray-600 focus:border-blue-500 outline-none" />
             )}
           </div>
           {!queriesCollapsed && (filteredQueries.length === 0 ? (
-            <p className="p-4 text-sm text-gray-500">{queryFilter ? `Nenhuma query com "${queryFilter}"` : 'Nenhuma query ativa'}</p>
+            <p className="p-4 text-sm text-text-tertiary">{queryFilter ? `${t('monitor.noQueryMatch')} "${queryFilter}"` : t('monitor.noQueries')}</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
-                <thead><tr className="border-b border-gray-200 dark:border-gray-800">
-                  {selectedConns.length > 1 && <th className="text-left py-2 px-3 text-gray-500">Banco</th>}
-                  <th className="text-left py-2 px-3 text-gray-500">PID</th>
-                  <th className="text-left py-2 px-3 text-gray-500">User</th>
-                  <th className="text-left py-2 px-3 text-gray-500">Estado</th>
-                  <th className="text-left py-2 px-3 text-gray-500">Duração</th>
-                  <th className="text-left py-2 px-3 text-gray-500">Query</th>
+                <thead><tr className="border-b border-border">
+                  {selectedConns.length > 1 && <th className="text-left py-2 px-3 text-text-tertiary">Banco</th>}
+                  <th className="text-left py-2 px-3 text-text-tertiary">PID</th>
+                  <th className="text-left py-2 px-3 text-text-tertiary">User</th>
+                  <th className="text-left py-2 px-3 text-text-tertiary">Estado</th>
+                  <th className="text-left py-2 px-3 text-text-tertiary">Duração</th>
+                  <th className="text-left py-2 px-3 text-text-tertiary">Query</th>
                   <th className="py-2 px-3"></th>
                 </tr></thead>
                 <tbody>
                   {filteredQueries.sort((a, b) => b.durationMs - a.durationMs).map((q, i) => (
                     <tr key={`${q.connId}-${q.pid}-${i}`} className={`border-b border-gray-100 dark:border-gray-900 ${q.durationMs > 30000 ? 'bg-red-50 dark:bg-red-900/10' : ''}`}>
                       {selectedConns.length > 1 && <td className="py-2 px-3 text-purple-500 dark:text-purple-400 text-[10px]">{q.connName}</td>}
-                      <td className="py-2 px-3 text-gray-700 dark:text-gray-300 font-mono">{q.pid}</td>
+                      <td className="py-2 px-3 text-text-secondary font-mono">{q.pid}</td>
                       <td className="py-2 px-3 text-gray-500 dark:text-gray-400">{q.username}</td>
-                      <td className="py-2 px-3"><span className={`px-1.5 py-0.5 rounded text-[10px] ${q.state === 'active' || q.state === 'running' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}>{q.state}</span></td>
-                      <td className={`py-2 px-3 font-mono ${q.durationMs > 10000 ? 'text-red-500 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'}`}>{formatMs(q.durationMs)}</td>
-                      <td className="py-2 px-3 text-gray-500 dark:text-gray-400 font-mono max-w-md truncate cursor-pointer hover:text-gray-900 dark:hover:text-white" onClick={() => setSelectedQuery(q)} title="Clique para ver completa">{q.query}</td>
+                      <td className="py-2 px-3"><span className={`px-1.5 py-0.5 rounded text-[10px] ${q.state === 'active' || q.state === 'running' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-surface-elevated text-gray-500 dark:text-gray-400'}`}>{q.state}</span></td>
+                      <td className={`py-2 px-3 font-mono ${q.durationMs > 10000 ? 'text-red-500 dark:text-red-400' : 'text-text-secondary'}`}>{formatMs(q.durationMs)}</td>
+                      <td className="py-2 px-3 text-gray-500 dark:text-gray-400 font-mono max-w-md truncate cursor-pointer hover:text-gray-900 dark:hover:text-text-primary" onClick={() => setSelectedQuery(q)} title="Clique para ver completa">{q.query}</td>
                       <td className="py-2 px-3">
                         <button onClick={() => killQuery(q.connId!, q.pid)} className="p-1 text-gray-400 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400" title="Kill">
                           <Skull className="w-3.5 h-3.5" />
@@ -180,21 +182,21 @@ export default function MonitorPage() {
 
       {/* Locks */}
       {locks.length > 0 && (
-        <div className="bg-white dark:bg-gray-900 border border-red-200 dark:border-red-900/30 rounded-xl overflow-hidden">
-          <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-2">
+        <div className="bg-surface border border-red-200 dark:border-red-900/30 rounded-xl overflow-hidden">
+          <div className="p-4 border-b border-border flex items-center gap-2">
             <Lock className="w-4 h-4 text-red-400" />
-            <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Locks Detectados ({locks.length})</h2>
+            <h2 className="text-sm font-semibold text-text-primary">Locks Detectados ({locks.length})</h2>
             <AlertTriangle className="w-4 h-4 text-amber-400 ml-auto" />
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead><tr className="border-b border-gray-200 dark:border-gray-800">
-                {selectedConns.length > 1 && <th className="text-left py-2 px-3 text-gray-500">Banco</th>}
-                <th className="text-left py-2 px-3 text-gray-500">Bloqueado (PID)</th>
-                <th className="text-left py-2 px-3 text-gray-500">Bloqueando (PID)</th>
-                <th className="text-left py-2 px-3 text-gray-500">Tipo</th>
-                <th className="text-left py-2 px-3 text-gray-500">Duração</th>
-                <th className="text-left py-2 px-3 text-gray-500">Query Bloqueada</th>
+              <thead><tr className="border-b border-border">
+                {selectedConns.length > 1 && <th className="text-left py-2 px-3 text-text-tertiary">Banco</th>}
+                <th className="text-left py-2 px-3 text-text-tertiary">Bloqueado (PID)</th>
+                <th className="text-left py-2 px-3 text-text-tertiary">Bloqueando (PID)</th>
+                <th className="text-left py-2 px-3 text-text-tertiary">Tipo</th>
+                <th className="text-left py-2 px-3 text-text-tertiary">Duração</th>
+                <th className="text-left py-2 px-3 text-text-tertiary">Query Bloqueada</th>
               </tr></thead>
               <tbody>
                 {locks.map((l, i) => (
@@ -203,7 +205,7 @@ export default function MonitorPage() {
                     <td className="py-2 px-3 text-red-500 dark:text-red-400 font-mono">{l.blockedPid}</td>
                     <td className="py-2 px-3 text-amber-500 dark:text-amber-400 font-mono">{l.blockingPid}</td>
                     <td className="py-2 px-3 text-gray-500 dark:text-gray-400">{l.lockType}</td>
-                    <td className="py-2 px-3 text-gray-700 dark:text-gray-300">{l.durationMs ? formatMs(l.durationMs) : '-'}</td>
+                    <td className="py-2 px-3 text-text-secondary">{l.durationMs ? formatMs(l.durationMs) : '-'}</td>
                     <td className="py-2 px-3 text-gray-500 dark:text-gray-400 font-mono max-w-sm truncate">{l.blockedQuery}</td>
                   </tr>
                 ))}
@@ -220,7 +222,7 @@ export default function MonitorPage() {
 
       {selectedConns.length === 0 && (
         <div className="flex items-center justify-center py-20">
-          <p className="text-gray-500 dark:text-gray-600">Selecione um ou mais bancos para monitorar</p>
+          <p className="text-gray-500 dark:text-gray-600">{t('monitor.selectDatabases')}</p>
         </div>
       )}
 

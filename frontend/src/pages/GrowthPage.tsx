@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
+import SearchableSelect from '../components/ui/SearchableSelect'
+import { useTranslation } from 'react-i18next'
 import { TrendingUp, TrendingDown, Minus, AlertTriangle, Loader2, RefreshCw, Settings2, Database, X, BarChart3, Search, Filter, ChevronDown, ChevronUp, ArrowUpDown } from 'lucide-react'
 import api from '../lib/api'
 
@@ -13,6 +15,7 @@ type SortCol = 'table' | 'rows' | 'size' | 'delta' | 'avg'
 type SortDir = 'asc' | 'desc'
 
 export default function GrowthPage() {
+  const { t } = useTranslation()
   const [connections, setConnections] = useState<Connection[]>([])
   const [selectedConn, setSelectedConn] = useState('')
   const [data, setData] = useState<GrowthTable[]>([])
@@ -89,7 +92,7 @@ export default function GrowthPage() {
                 const event = JSON.parse(line.slice(6))
                 if (event.type === 'progress') setSnapProgress({ pct: event.pct, current: event.current, done: event.done, total: event.total })
                 else if (event.type === 'start') setSnapProgress({ pct: 0, current: 'Iniciando...', done: 0, total: event.total })
-                else if (event.type === 'done') setSnapProgress({ pct: 100, current: 'Concluído!', done: event.total, total: event.total })
+                else if (event.type === 'done') setSnapProgress({ pct: 100, current: t('growth.completed'), done: event.total, total: event.total })
               } catch {}
             }
           }
@@ -154,21 +157,24 @@ export default function GrowthPage() {
     { key: 'rows', label: 'Rows Atual', align: 'right' },
     { key: 'size', label: 'Tamanho', align: 'right' },
     { key: 'delta', label: 'Delta (hoje)', align: 'right' },
-    { key: 'avg', label: 'Média/dia (7d)', align: 'right' },
+    { key: 'avg', label: t('growth.avgPerDay'), align: 'right' },
   ]
 
   return (
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-text-primary flex items-center gap-2">
           <TrendingUp className="w-6 h-6 text-blue-400" /> Crescimento de Tabelas
         </h1>
         <div className="flex items-center gap-3">
-          <select value={selectedConn} onChange={e => setSelectedConn(e.target.value)}
-            className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:border-blue-500 focus:outline-none">
-            {connections.map(c => <option key={c.id} value={c.id}>{c.name} ({c.databaseName})</option>)}
-          </select>
+          <SearchableSelect
+            value={selectedConn}
+            onChange={setSelectedConn}
+            placeholder="Select connection..."
+            options={connections.map(c => ({ value: c.id, label: `${c.name} (${c.databaseName})` }))}
+            className="min-w-[200px]"
+          />
           <div className="flex items-center gap-2">
             {lastSnapshotTime && !snapshotting && (
               <span className="text-[10px] text-green-400 bg-green-900/20 border border-green-800/50 px-2 py-1 rounded-full">
@@ -176,7 +182,7 @@ export default function GrowthPage() {
               </span>
             )}
             <button onClick={triggerSnapshot} disabled={snapshotting}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-sm text-white font-medium rounded-lg transition shadow-lg shadow-blue-900/20">
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-sm text-text-primary font-medium rounded-lg transition shadow-lg shadow-blue-900/20">
               {snapshotting ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               {snapshotting ? 'Capturando...' : 'Snapshot Agora'}
             </button>
@@ -186,23 +192,23 @@ export default function GrowthPage() {
 
       {/* Progress bar */}
       {snapProgress && (
-        <div className="mb-4 p-4 bg-gray-900/80 border border-gray-800 rounded-xl backdrop-blur">
+        <div className="mb-4 p-4 bg-gray-900/80 border border-border rounded-xl backdrop-blur">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-gray-300 font-medium">
+            <span className="text-xs text-text-secondary font-medium">
               {snapProgress.pct < 100
                 ? `⏳ Capturando ${snapProgress.done}/${snapProgress.total} databases...`
-                : '✅ Snapshot concluído!'}
+                : t('growth.snapshotDone')}
             </span>
             <span className="text-xs font-mono text-blue-400 font-bold">{snapProgress.pct}%</span>
           </div>
-          <div className="w-full h-2.5 bg-gray-800 rounded-full overflow-hidden">
+          <div className="w-full h-2.5 bg-surface-elevated rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-500 ease-out ${snapProgress.pct >= 100 ? 'bg-green-500' : 'bg-gradient-to-r from-blue-600 to-blue-400'}`}
               style={{ width: `${snapProgress.pct}%` }}
             />
           </div>
           {snapProgress.pct < 100 && (
-            <p className="text-[11px] text-gray-500 mt-1.5 font-mono truncate">→ {snapProgress.current}</p>
+            <p className="text-[11px] text-text-tertiary mt-1.5 font-mono truncate">→ {snapProgress.current}</p>
           )}
         </div>
       )}
@@ -210,21 +216,21 @@ export default function GrowthPage() {
       {/* Stats bar */}
       {!loading && data.length > 0 && (
         <div className="grid grid-cols-4 gap-3 mb-4">
-          <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-3">
-            <p className="text-[10px] text-gray-500 uppercase tracking-wider">Total Tabelas</p>
-            <p className="text-xl font-bold text-white mt-0.5">{data.length}</p>
+          <div className="bg-gray-100/50 dark:bg-gray-900/50 border border-border/50 rounded-xl p-3">
+            <p className="text-[10px] text-text-tertiary uppercase tracking-wider">Total Tabelas</p>
+            <p className="text-xl font-bold text-text-primary mt-0.5">{data.length}</p>
           </div>
-          <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-3">
-            <p className="text-[10px] text-gray-500 uppercase tracking-wider">Total Rows</p>
-            <p className="text-xl font-bold text-white mt-0.5">{totalRows.toLocaleString()}</p>
+          <div className="bg-gray-100/50 dark:bg-gray-900/50 border border-border/50 rounded-xl p-3">
+            <p className="text-[10px] text-text-tertiary uppercase tracking-wider">Total Rows</p>
+            <p className="text-xl font-bold text-text-primary mt-0.5">{totalRows.toLocaleString()}</p>
           </div>
-          <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-3">
-            <p className="text-[10px] text-gray-500 uppercase tracking-wider">Cresceram Hoje</p>
+          <div className="bg-gray-100/50 dark:bg-gray-900/50 border border-border/50 rounded-xl p-3">
+            <p className="text-[10px] text-text-tertiary uppercase tracking-wider">Cresceram Hoje</p>
             <p className="text-xl font-bold text-green-400 mt-0.5">{data.filter(t => t.dailyDelta > 0).length}</p>
           </div>
-          <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-3">
-            <p className="text-[10px] text-gray-500 uppercase tracking-wider">Anomalias</p>
-            <p className={`text-xl font-bold mt-0.5 ${anomalies.length > 0 ? 'text-red-400' : 'text-gray-500'}`}>{anomalies.length}</p>
+          <div className="bg-gray-100/50 dark:bg-gray-900/50 border border-border/50 rounded-xl p-3">
+            <p className="text-[10px] text-text-tertiary uppercase tracking-wider">Anomalias</p>
+            <p className={`text-xl font-bold mt-0.5 ${anomalies.length > 0 ? 'text-red-400' : 'text-text-tertiary'}`}>{anomalies.length}</p>
           </div>
         </div>
       )}
@@ -239,8 +245,8 @@ export default function GrowthPage() {
             {anomalies.map((a, i) => (
               <div key={i} className="flex items-center gap-3 text-sm bg-red-950/20 rounded-lg px-3 py-1.5">
                 <span>{a.type === 'spike' ? '🔺' : a.type === 'data_loss' ? '⚠️' : '🔻'}</span>
-                <span className="font-mono text-white text-xs">{a.schemaName}.{a.tableName}</span>
-                <span className="text-gray-400 text-xs">{a.message}</span>
+                <span className="font-mono text-text-primary text-xs">{a.schemaName}.{a.tableName}</span>
+                <span className="text-text-secondary text-xs">{a.message}</span>
               </div>
             ))}
           </div>
@@ -253,7 +259,7 @@ export default function GrowthPage() {
           <span className="text-xl">📊</span>
           <div>
             <p className="text-sm font-medium text-blue-300">Primeiro snapshot coletado!</p>
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xs text-text-secondary mt-1">
               Os dados de <strong>Delta</strong>, <strong>Média/dia</strong> e <strong>Tendência</strong> aparecerão a partir do próximo snapshot.
               O sistema coleta automaticamente à meia-noite (UTC).
             </p>
@@ -265,16 +271,16 @@ export default function GrowthPage() {
       {!loading && data.length > 0 && (
         <div className="mb-3 flex items-center gap-3">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
             <input
               type="text"
               placeholder="Pesquisar tabela ou valor..."
               value={globalSearch}
               onChange={e => setGlobalSearch(e.target.value)}
-              className="w-full pl-9 pr-8 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition"
+              className="w-full pl-9 pr-8 py-2 bg-surface border border-border rounded-lg text-sm text-text-primary placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition"
             />
             {globalSearch && (
-              <button onClick={() => setGlobalSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">
+              <button onClick={() => setGlobalSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-primary">
                 <X className="w-3.5 h-3.5" />
               </button>
             )}
@@ -284,18 +290,18 @@ export default function GrowthPage() {
               <Filter className="w-3.5 h-3.5 text-blue-400" />
               {Object.entries(filterInputs).filter(([,v]) => v).map(([col, val]) => (
                 <span key={col} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-900/30 border border-blue-700/40 rounded-full text-[11px] text-blue-300">
-                  {columns.find(c => c.key === col)?.label}: <span className="text-white font-medium">"{val}"</span>
+                  {columns.find(c => c.key === col)?.label}: <span className="text-text-primary font-medium">"{val}"</span>
                   <button onClick={() => setFilterInputs(f => { const n = {...f}; delete n[col]; return n })} className="hover:text-red-400 transition">
                     <X className="w-3 h-3" />
                   </button>
                 </span>
               ))}
-              <button onClick={() => setFilterInputs({})} className="text-[10px] text-gray-500 hover:text-red-400 transition underline underline-offset-2">
+              <button onClick={() => setFilterInputs({})} className="text-[10px] text-text-tertiary hover:text-red-400 transition underline underline-offset-2">
                 Limpar filtros
               </button>
             </div>
           )}
-          <span className="text-[11px] text-gray-500 ml-auto">
+          <span className="text-[11px] text-text-tertiary ml-auto">
             {processed.length === data.length ? `${data.length} tabelas` : `${processed.length} de ${data.length} tabelas`}
           </span>
         </div>
@@ -305,23 +311,23 @@ export default function GrowthPage() {
       {loading ? (
         <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-blue-500" /></div>
       ) : data.length === 0 ? (
-        <div className="p-8 bg-gray-900 border border-gray-800 rounded-xl text-center">
+        <div className="p-8 bg-surface border border-border rounded-xl text-center">
           <Database className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-          <p className="text-gray-400">Nenhum snapshot disponível ainda.</p>
+          <p className="text-text-secondary">{t('growth.noSnapshots')}</p>
           <p className="text-xs text-gray-600 mt-1">Clique "Snapshot Agora" para coletar o primeiro.</p>
         </div>
       ) : (
-        <div className="bg-gray-900/30 border border-gray-800/50 rounded-xl overflow-hidden">
+        <div className="bg-gray-100/30 dark:bg-gray-900/30 border border-border/50 rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-xs text-gray-500 border-b border-gray-800 bg-gray-900/50">
+                <tr className="text-xs text-text-tertiary border-b border-border bg-gray-100/50 dark:bg-gray-900/50">
                   {columns.map(col => (
                     <th key={col.key} className={`py-3 px-4 font-medium ${col.align === 'right' ? 'text-right' : 'text-left'} relative select-none`}>
                       <div className={`flex items-center gap-1.5 ${col.align === 'right' ? 'justify-end' : ''}`}>
                         <button
                           onClick={() => handleSort(col.key)}
-                          className={`flex items-center gap-1 hover:text-white transition-colors ${sortCol === col.key ? 'text-blue-400' : ''}`}
+                          className={`flex items-center gap-1 hover:text-text-primary transition-colors ${sortCol === col.key ? 'text-blue-400' : ''}`}
                         >
                           {col.label}
                           {sortCol === col.key ? (
@@ -332,7 +338,7 @@ export default function GrowthPage() {
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); setActiveFilter(f => f === col.key ? null : col.key) }}
-                          className={`p-0.5 rounded hover:bg-gray-700 transition ${filterInputs[col.key] ? 'text-blue-400' : 'text-gray-600 hover:text-gray-400'}`}
+                          className={`p-0.5 rounded hover:bg-surface-active transition ${filterInputs[col.key] ? 'text-blue-400' : 'text-gray-600 hover:text-text-secondary'}`}
                           title={`Filtrar por ${col.label}`}
                         >
                           <Filter className="w-3 h-3" />
@@ -340,9 +346,9 @@ export default function GrowthPage() {
                       </div>
                       {/* Filter dropdown */}
                       {activeFilter === col.key && (
-                        <div ref={filterRef} className="absolute top-full left-0 mt-1 z-50 bg-gray-800 border border-gray-700 rounded-xl shadow-2xl p-3 min-w-[220px] animate-in fade-in slide-in-from-top-1 duration-150"
+                        <div ref={filterRef} className="absolute top-full left-0 mt-1 z-50 bg-surface-elevated border border-border rounded-xl shadow-2xl p-3 min-w-[220px] animate-in fade-in slide-in-from-top-1 duration-150"
                           onClick={e => e.stopPropagation()}>
-                          <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Filtrar: {col.label}</p>
+                          <p className="text-[10px] text-text-secondary uppercase tracking-wider mb-2">Filtrar: {col.label}</p>
                           <input
                             autoFocus
                             type="text"
@@ -350,14 +356,14 @@ export default function GrowthPage() {
                             value={filterInputs[col.key] || ''}
                             onChange={e => setFilterInputs(f => ({...f, [col.key]: e.target.value}))}
                             onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') setActiveFilter(null) }}
-                            className="w-full px-3 py-2 text-xs bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
+                            className="w-full px-3 py-2 text-xs bg-surface border border-border rounded-lg text-text-primary placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
                           />
                           <div className="flex items-center gap-2 mt-2.5">
-                            <button onClick={() => setActiveFilter(null)} className="flex-1 px-3 py-1.5 text-[11px] font-medium bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition">
+                            <button onClick={() => setActiveFilter(null)} className="flex-1 px-3 py-1.5 text-[11px] font-medium bg-blue-600 hover:bg-blue-500 text-text-primary rounded-lg transition">
                               Aplicar
                             </button>
                             <button onClick={() => { setFilterInputs(f => { const n = {...f}; delete n[col.key]; return n }); setActiveFilter(null) }}
-                              className="flex-1 px-3 py-1.5 text-[11px] font-medium bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition">
+                              className="flex-1 px-3 py-1.5 text-[11px] font-medium bg-gray-700 hover:bg-gray-600 text-text-secondary rounded-lg transition">
                               Limpar
                             </button>
                           </div>
@@ -374,17 +380,17 @@ export default function GrowthPage() {
                   const isAnomaly = anomalies.some(a => a.tableName === t.table && a.schemaName === t.schema)
                   const ratio = t.avgDailyGrowth > 0 ? t.dailyDelta / t.avgDailyGrowth : 0
                   return (
-                    <tr key={i} className={`group hover:bg-gray-800/30 transition-colors ${isAnomaly ? 'bg-red-950/10 hover:bg-red-950/20' : ''}`}>
+                    <tr key={i} className={`group hover:bg-gray-100/30 dark:hover:bg-gray-800/30 transition-colors ${isAnomaly ? 'bg-red-950/10 hover:bg-red-950/20' : ''}`}>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           {isAnomaly && <span className="text-red-400 text-xs">⚠️</span>}
-                          <span className="font-mono text-white text-xs">{t.schema}.<strong>{t.table}</strong></span>
+                          <span className="font-mono text-text-primary text-xs">{t.schema}.<strong>{t.table}</strong></span>
                         </div>
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <span className="font-mono text-gray-300">{t.currentRows.toLocaleString()}</span>
+                        <span className="font-mono text-text-secondary">{t.currentRows.toLocaleString()}</span>
                       </td>
-                      <td className="py-3 px-4 text-right text-gray-500">{formatBytes(t.currentSize)}</td>
+                      <td className="py-3 px-4 text-right text-text-tertiary">{formatBytes(t.currentSize)}</td>
                       <td className="py-3 px-4 text-right">
                         <span className={`inline-flex items-center gap-1 font-mono font-medium ${
                           t.dailyDelta > 0 ? 'text-green-400' : t.dailyDelta < 0 ? 'text-red-400' : 'text-gray-600'
@@ -395,7 +401,7 @@ export default function GrowthPage() {
                         </span>
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <span className={`text-xs ${t.avgDailyGrowth > 0 ? 'text-gray-400' : t.avgDailyGrowth < 0 ? 'text-red-400/70' : 'text-gray-600'}`}>
+                        <span className={`text-xs ${t.avgDailyGrowth > 0 ? 'text-text-secondary' : t.avgDailyGrowth < 0 ? 'text-red-400/70' : 'text-gray-600'}`}>
                           {t.avgDailyGrowth > 0 ? '+' : ''}{t.avgDailyGrowth.toLocaleString()}/dia
                         </span>
                       </td>
@@ -404,10 +410,10 @@ export default function GrowthPage() {
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center justify-center gap-1 opacity-50 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => setHistoryModal(t)} className="p-1.5 text-gray-400 hover:text-green-400 hover:bg-green-900/20 rounded-lg transition" title="Ver histórico">
+                          <button onClick={() => setHistoryModal(t)} className="p-1.5 text-text-secondary hover:text-green-400 hover:bg-green-900/20 rounded-lg transition" title="Ver histórico">
                             <BarChart3 className="w-4 h-4" />
                           </button>
-                          <button onClick={() => setRuleModal(t)} className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-blue-900/20 rounded-lg transition" title="Regras de alerta">
+                          <button onClick={() => setRuleModal(t)} className="p-1.5 text-text-secondary hover:text-blue-400 hover:bg-blue-900/20 rounded-lg transition" title="Regras de alerta">
                             <Settings2 className="w-4 h-4" />
                           </button>
                         </div>
@@ -421,7 +427,7 @@ export default function GrowthPage() {
           {processed.length === 0 && (
             <div className="py-12 text-center">
               <Search className="w-8 h-8 text-gray-700 mx-auto mb-2" />
-              <p className="text-gray-500 text-sm">Nenhuma tabela encontrada com os filtros aplicados.</p>
+              <p className="text-text-tertiary text-sm">{t('growth.noTablesFiltered')}</p>
             </div>
           )}
         </div>
@@ -449,45 +455,45 @@ function HistoryModal({ table, onClose }: { table: GrowthTable; onClose: () => v
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-[620px] max-h-[80vh] overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-5 border-b border-gray-800">
+      <div className="bg-surface border border-border rounded-2xl w-[620px] max-h-[80vh] overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-border">
           <div>
-            <h3 className="text-white font-semibold text-lg">📊 Histórico de Snapshots</h3>
-            <p className="text-xs text-gray-400 font-mono mt-0.5">{table.schema}.{table.table}</p>
+            <h3 className="text-text-primary font-semibold text-lg">📊 Histórico de Snapshots</h3>
+            <p className="text-xs text-text-secondary font-mono mt-0.5">{table.schema}.{table.table}</p>
           </div>
-          <button onClick={onClose} className="p-2 text-gray-500 hover:text-white hover:bg-gray-800 rounded-lg transition"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-2 text-text-tertiary hover:text-text-primary hover:bg-surface-elevated rounded-lg transition"><X className="w-5 h-5" /></button>
         </div>
         <div className="p-5">
           <div className="grid grid-cols-3 gap-3 mb-5">
-            <div className="bg-gray-800/50 rounded-xl p-4 text-center border border-gray-700/30">
-              <p className="text-[10px] text-gray-500 uppercase tracking-wider">Rows Atual</p>
-              <p className="text-2xl font-bold text-white mt-1">{table.currentRows.toLocaleString()}</p>
+            <div className="bg-gray-100/50 dark:bg-gray-800/50 rounded-xl p-4 text-center border border-border/30">
+              <p className="text-[10px] text-text-tertiary uppercase tracking-wider">Rows Atual</p>
+              <p className="text-2xl font-bold text-text-primary mt-1">{table.currentRows.toLocaleString()}</p>
             </div>
-            <div className="bg-gray-800/50 rounded-xl p-4 text-center border border-gray-700/30">
-              <p className="text-[10px] text-gray-500 uppercase tracking-wider">Delta Hoje</p>
-              <p className={`text-2xl font-bold mt-1 ${table.dailyDelta > 0 ? 'text-green-400' : table.dailyDelta < 0 ? 'text-red-400' : 'text-gray-500'}`}>
+            <div className="bg-gray-100/50 dark:bg-gray-800/50 rounded-xl p-4 text-center border border-border/30">
+              <p className="text-[10px] text-text-tertiary uppercase tracking-wider">Delta Hoje</p>
+              <p className={`text-2xl font-bold mt-1 ${table.dailyDelta > 0 ? 'text-green-400' : table.dailyDelta < 0 ? 'text-red-400' : 'text-text-tertiary'}`}>
                 {table.dailyDelta > 0 ? '+' : ''}{table.dailyDelta.toLocaleString()}
               </p>
             </div>
-            <div className="bg-gray-800/50 rounded-xl p-4 text-center border border-gray-700/30">
-              <p className="text-[10px] text-gray-500 uppercase tracking-wider">Média 7d</p>
+            <div className="bg-gray-100/50 dark:bg-gray-800/50 rounded-xl p-4 text-center border border-border/30">
+              <p className="text-[10px] text-text-tertiary uppercase tracking-wider">Média 7d</p>
               <p className="text-2xl font-bold text-blue-400 mt-1">{table.avgDailyGrowth > 0 ? '+' : ''}{table.avgDailyGrowth.toLocaleString()}/dia</p>
             </div>
           </div>
           {history.length > 1 ? (
             <div>
-              <p className="text-xs text-gray-500 mb-3 font-medium">Evolução diária:</p>
+              <p className="text-xs text-text-tertiary mb-3 font-medium">Evolução diária:</p>
               <div className="space-y-1.5 max-h-[280px] overflow-y-auto pr-2 custom-scrollbar">
                 {history.map((h, i) => {
                   const prev = i > 0 ? history[i-1].rows : h.rows
                   const delta = h.rows - prev
                   const pct = (h.rows / maxRows) * 100
                   return (
-                    <div key={h.date} className="flex items-center gap-3 text-xs group hover:bg-gray-800/30 rounded-lg px-2 py-1 transition">
-                      <span className="text-gray-500 font-mono w-16 flex-shrink-0">{h.date.slice(5)}</span>
-                      <div className="flex-1 h-6 bg-gray-800/60 rounded-lg overflow-hidden relative">
+                    <div key={h.date} className="flex items-center gap-3 text-xs group hover:bg-gray-100/30 dark:hover:bg-gray-800/30 rounded-lg px-2 py-1 transition">
+                      <span className="text-text-tertiary font-mono w-16 flex-shrink-0">{h.date.slice(5)}</span>
+                      <div className="flex-1 h-6 bg-gray-100/60 dark:bg-gray-800/60 rounded-lg overflow-hidden relative">
                         <div className={`h-full rounded-lg transition-all ${delta >= 0 ? 'bg-blue-600/40' : 'bg-red-600/30'}`} style={{ width: `${pct}%` }} />
-                        <span className="absolute inset-0 flex items-center px-2.5 text-[11px] text-gray-200 font-mono">
+                        <span className="absolute inset-0 flex items-center px-2.5 text-[11px] text-text-primary font-mono">
                           {h.rows.toLocaleString()}
                         </span>
                       </div>
@@ -500,9 +506,9 @@ function HistoryModal({ table, onClose }: { table: GrowthTable; onClose: () => v
               </div>
             </div>
           ) : (
-            <div className="text-center py-10 bg-gray-800/20 rounded-xl border border-gray-800/50">
+            <div className="text-center py-10 bg-gray-800/20 rounded-xl border border-border/50">
               <Database className="w-10 h-10 text-gray-700 mx-auto mb-3" />
-              <p className="text-gray-400 text-sm">Ainda não há histórico suficiente.</p>
+              <p className="text-text-secondary text-sm">Ainda não há histórico suficiente.</p>
               <p className="text-gray-600 text-xs mt-1">Volte amanhã para ver a comparação entre snapshots.</p>
             </div>
           )}
@@ -557,31 +563,31 @@ function RuleModal({ table, connectionId, onClose }: { table: GrowthTable; conne
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-[420px] shadow-2xl" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-5 border-b border-gray-800">
+      <div className="bg-surface border border-border rounded-2xl w-[420px] shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-border">
           <div>
-            <h3 className="text-white font-semibold">⚙️ Regras de Alerta</h3>
-            <p className="text-xs text-gray-400 font-mono mt-0.5">{table.schema}.{table.table}</p>
+            <h3 className="text-text-primary font-semibold">⚙️ Regras de Alerta</h3>
+            <p className="text-xs text-text-secondary font-mono mt-0.5">{table.schema}.{table.table}</p>
           </div>
-          <button onClick={onClose} className="p-2 text-gray-500 hover:text-white hover:bg-gray-800 rounded-lg transition"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-2 text-text-tertiary hover:text-text-primary hover:bg-surface-elevated rounded-lg transition"><X className="w-5 h-5" /></button>
         </div>
         <div className="p-5 space-y-4">
           <div>
-            <label className="text-xs text-gray-400 block mb-1.5">Crescimento máximo (% da média diária)</label>
+            <label className="text-xs text-text-secondary block mb-1.5">Crescimento máximo (% da média diária)</label>
             <input type="number" value={maxGrowthPct} onChange={e => setMaxGrowthPct(Number(e.target.value))}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500" />
+              className="w-full px-3 py-2 bg-surface-elevated border border-border rounded-lg text-text-primary text-sm focus:outline-none focus:border-blue-500" />
             <p className="text-[10px] text-gray-600 mt-1">Alerta se crescer mais que {maxGrowthPct}% da média</p>
           </div>
           <div>
-            <label className="text-xs text-gray-400 block mb-1.5">Redução máxima (%)</label>
+            <label className="text-xs text-text-secondary block mb-1.5">Redução máxima (%)</label>
             <input type="number" value={maxShrinkPct} onChange={e => setMaxShrinkPct(Number(e.target.value))}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500" />
+              className="w-full px-3 py-2 bg-surface-elevated border border-border rounded-lg text-text-primary text-sm focus:outline-none focus:border-blue-500" />
             <p className="text-[10px] text-gray-600 mt-1">Alerta se encolher mais que {maxShrinkPct}%</p>
           </div>
         </div>
-        <div className="flex gap-2 p-5 border-t border-gray-800">
-          <button onClick={onClose} className="flex-1 px-4 py-2 text-sm bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition">Cancelar</button>
-          <button onClick={save} disabled={saving} className="flex-1 px-4 py-2 text-sm bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg transition disabled:opacity-50">
+        <div className="flex gap-2 p-5 border-t border-border">
+          <button onClick={onClose} className="flex-1 px-4 py-2 text-sm bg-surface-elevated hover:bg-surface-active text-text-secondary rounded-lg transition">Cancelar</button>
+          <button onClick={save} disabled={saving} className="flex-1 px-4 py-2 text-sm bg-blue-600 hover:bg-blue-500 text-text-primary font-medium rounded-lg transition disabled:opacity-50">
             {saving ? 'Salvando...' : 'Salvar'}
           </button>
         </div>

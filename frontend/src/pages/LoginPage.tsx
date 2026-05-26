@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { Database, Loader2, AlertCircle } from 'lucide-react'
 import { useAuthStore } from '../stores/auth.store'
 
 export default function LoginPage() {
-  const [username, setUsuário] = useState('')
+  const { t } = useTranslation()
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -41,8 +43,8 @@ export default function LoginPage() {
         )}
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1.5">Usuário</label>
-            <input type="text" value={username} onChange={e => setUsuário(e.target.value)} required
+            <label className="block text-xs font-medium text-gray-400 mb-1.5">{t('login.username')}</label>
+            <input type="text" value={username} onChange={e => setUsername(e.target.value)} required
               className="w-full px-3.5 py-2.5 bg-gray-900 border border-gray-700 rounded-lg text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none"
               placeholder="admin" />
           </div>

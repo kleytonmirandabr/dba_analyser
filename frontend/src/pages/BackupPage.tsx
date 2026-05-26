@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
+import SearchableSelect from '../components/ui/SearchableSelect'
+import { useTranslation } from 'react-i18next'
 import { HardDrive, Plus, Download, RotateCcw, Trash2, Loader2, CheckCircle2, XCircle, Clock } from 'lucide-react'
 import api from '../lib/api'
 
@@ -24,6 +26,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function BackupPage() {
+  const { t } = useTranslation()
   const [connections, setConnections] = useState<Connection[]>([])
   const [selectedConn, setSelectedConn] = useState('')
   const [backups, setBackups] = useState<BackupJob[]>([])
@@ -110,7 +113,7 @@ export default function BackupPage() {
     if (!confirm('Excluir este backup permanentemente?')) return
     try {
       await api.delete(`/api/backup/${selectedConn}/${id}`)
-      showToast('Backup excluído', 'success')
+      showToast(t('backup.deleted'), 'success')
       loadBackups()
     } catch (err: any) {
       showToast(err.response?.data?.error || 'Erro ao excluir', 'error')
@@ -126,19 +129,21 @@ export default function BackupPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <HardDrive className="w-6 h-6 text-blue-500" />
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Backup & Restore</h1>
+          <h1 className="text-xl font-bold text-text-primary">Backup & Restore</h1>
         </div>
       </div>
 
       <div className="flex items-center gap-3">
-        <select className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white"
-          value={selectedConn} onChange={e => setSelectedConn(e.target.value)}>
-          <option value="">Selecionar conexão...</option>
-          {connections.map(c => <option key={c.id} value={c.id}>{c.name} ({c.environment})</option>)}
-        </select>
+        <SearchableSelect
+          value={selectedConn}
+          onChange={setSelectedConn}
+          placeholder={t('connections.search')}
+          options={connections.map(c => ({ value: c.id, label: `${c.name} (${c.environment})` }))}
+          className="min-w-[200px]"
+        />
         {selectedConn && (
           <button onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition">
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-text-primary text-sm font-medium rounded-lg transition">
             <Plus className="w-4 h-4" /> Novo Backup
           </button>
         )}
@@ -146,45 +151,45 @@ export default function BackupPage() {
       </div>
 
       {selectedConn && (
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+        <div className="bg-surface rounded-xl border border-border overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
-                <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Arquivo</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Formato</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Tamanho</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Data</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Status</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Ações</th>
+              <tr className="border-b border-border bg-surface-elevated/50">
+                <th className="text-left px-4 py-3 font-medium text-text-secondary">Arquivo</th>
+                <th className="text-left px-4 py-3 font-medium text-text-secondary">Formato</th>
+                <th className="text-left px-4 py-3 font-medium text-text-secondary">Tamanho</th>
+                <th className="text-left px-4 py-3 font-medium text-text-secondary">Data</th>
+                <th className="text-left px-4 py-3 font-medium text-text-secondary">Status</th>
+                <th className="text-right px-4 py-3 font-medium text-text-secondary">Ações</th>
               </tr>
             </thead>
             <tbody>
               {backups.length === 0 && (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-500">Nenhum backup encontrado</td></tr>
+                <tr><td colSpan={6} className="px-4 py-8 text-center text-text-tertiary">{t('backup.noBackups')}</td></tr>
               )}
               {backups.map(b => (
                 <tr key={b.id} className="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/30">
-                  <td className="px-4 py-3 text-gray-900 dark:text-white font-mono text-xs">{b.filename || '—'}</td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{b.format || '—'}</td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{formatBytes(b.sizeBytes)}</td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{new Date(b.startedAt).toLocaleString()}</td>
+                  <td className="px-4 py-3 text-text-primary font-mono text-xs">{b.filename || '—'}</td>
+                  <td className="px-4 py-3 text-text-secondary">{b.format || '—'}</td>
+                  <td className="px-4 py-3 text-text-secondary">{formatBytes(b.sizeBytes)}</td>
+                  <td className="px-4 py-3 text-text-secondary">{new Date(b.startedAt).toLocaleString()}</td>
                   <td className="px-4 py-3"><StatusBadge status={b.status} /></td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
                       {b.status === 'completed' && (
                         <>
                           <button onClick={() => downloadBackup(b.id)} title="Download"
-                            className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 hover:text-blue-500 transition">
+                            className="p-1.5 rounded hover:bg-surface-active text-text-tertiary hover:text-blue-500 transition">
                             <Download className="w-4 h-4" />
                           </button>
                           <button onClick={() => { setShowRestore(b); setTargetDb(''); setCleanRestore(false); }} title="Restore"
-                            className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 hover:text-amber-500 transition">
+                            className="p-1.5 rounded hover:bg-surface-active text-text-tertiary hover:text-amber-500 transition">
                             <RotateCcw className="w-4 h-4" />
                           </button>
                         </>
                       )}
                       <button onClick={() => deleteBackup(b.id)} title="Excluir"
-                        className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 hover:text-red-500 transition">
+                        className="p-1.5 rounded hover:bg-surface-active text-text-tertiary hover:text-red-500 transition">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -199,38 +204,42 @@ export default function BackupPage() {
       {/* New Backup Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowModal(false)}>
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6 w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Novo Backup</h2>
+          <div className="bg-surface rounded-xl border border-border p-6 w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-bold text-text-primary mb-4">Novo Backup</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Formato</label>
-                <select value={format} onChange={e => setFormat(e.target.value as any)}
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white">
-                  <option value="custom">Custom (.dump)</option>
-                  <option value="plain">Plain SQL (.sql)</option>
-                  <option value="directory">Directory</option>
-                </select>
+                <label className="block text-sm font-medium text-text-secondary mb-1">Formato</label>
+                <SearchableSelect
+                  value={format}
+                  onChange={v => setFormat(v as any)}
+                  searchable={false}
+                  options={[
+                    { value: 'custom', label: 'Custom (.dump)' },
+                    { value: 'plain', label: 'Plain SQL (.sql)' },
+                    { value: 'directory', label: 'Directory' },
+                  ]}
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Schema (opcional)</label>
+                <label className="block text-sm font-medium text-text-secondary mb-1">Schema (opcional)</label>
                 <input value={schema} onChange={e => setSchema(e.target.value)} placeholder="public"
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white" />
+                  className="w-full px-3 py-2 bg-surface-elevated border border-border rounded-lg text-sm text-text-primary" />
               </div>
               <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <label className="flex items-center gap-2 text-sm text-text-secondary">
                   <input type="checkbox" checked={tablesOnly} onChange={e => { setTablesOnly(e.target.checked); if (e.target.checked) setDataOnly(false); }} className="rounded" />
                   Somente estrutura
                 </label>
-                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <label className="flex items-center gap-2 text-sm text-text-secondary">
                   <input type="checkbox" checked={dataOnly} onChange={e => { setDataOnly(e.target.checked); if (e.target.checked) setTablesOnly(false); }} className="rounded" />
                   Somente dados
                 </label>
               </div>
             </div>
             <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition">Cancelar</button>
+              <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-text-secondary hover:text-gray-900 dark:hover:text-text-primary transition">Cancelar</button>
               <button onClick={createBackup} disabled={creating}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg disabled:opacity-50 transition">
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-text-primary text-sm font-medium rounded-lg disabled:opacity-50 transition">
                 {creating && <Loader2 className="w-4 h-4 animate-spin" />} Criar Backup
               </button>
             </div>
@@ -241,16 +250,16 @@ export default function BackupPage() {
       {/* Restore Modal */}
       {showRestore && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowRestore(null)}>
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6 w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Restaurar Backup</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Arquivo: <span className="font-mono">{showRestore.filename}</span></p>
+          <div className="bg-surface rounded-xl border border-border p-6 w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-bold text-text-primary mb-4">Restaurar Backup</h2>
+            <p className="text-sm text-text-secondary mb-4">Arquivo: <span className="font-mono">{showRestore.filename}</span></p>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Database destino (opcional)</label>
-                <input value={targetDb} onChange={e => setTargetDb(e.target.value)} placeholder="Mesmo da conexão"
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white" />
+                <label className="block text-sm font-medium text-text-secondary mb-1">Database destino (opcional)</label>
+                <input value={targetDb} onChange={e => setTargetDb(e.target.value)} placeholder={t('backup.sameAsConnection')}
+                  className="w-full px-3 py-2 bg-surface-elevated border border-border rounded-lg text-sm text-text-primary" />
               </div>
-              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+              <label className="flex items-center gap-2 text-sm text-text-secondary">
                 <input type="checkbox" checked={cleanRestore} onChange={e => setCleanRestore(e.target.checked)} className="rounded" />
                 Clean (drop objetos antes de restaurar)
               </label>
@@ -259,9 +268,9 @@ export default function BackupPage() {
               <p className="text-xs text-amber-700 dark:text-amber-300">⚠️ Esta ação pode sobrescrever dados existentes. Certifique-se de que deseja continuar.</p>
             </div>
             <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setShowRestore(null)} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition">Cancelar</button>
+              <button onClick={() => setShowRestore(null)} className="px-4 py-2 text-sm text-text-secondary hover:text-gray-900 dark:hover:text-text-primary transition">Cancelar</button>
               <button onClick={restoreBackup} disabled={restoring}
-                className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg disabled:opacity-50 transition">
+                className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-text-primary text-sm font-medium rounded-lg disabled:opacity-50 transition">
                 {restoring && <Loader2 className="w-4 h-4 animate-spin" />} Restaurar
               </button>
             </div>
@@ -271,7 +280,7 @@ export default function BackupPage() {
 
       {/* Toast */}
       {toast && (
-        <div className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium ${toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`}>
+        <div className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium ${toast.type === 'success' ? 'bg-emerald-600 text-text-primary' : 'bg-red-600 text-text-primary'}`}>
           {toast.msg}
         </div>
       )}

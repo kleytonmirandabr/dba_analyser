@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { CheckCircle2, XCircle, Clock, Play, AlertTriangle, Loader2 } from 'lucide-react'
 import api from '../lib/api'
 import { useAuthStore } from '../stores/auth.store'
@@ -12,6 +13,7 @@ interface ExecRequest {
 }
 
 export default function ExecutionPage() {
+  const { t } = useTranslation()
   const [requests, setRequests] = useState<ExecRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('')
@@ -28,7 +30,7 @@ export default function ExecutionPage() {
   useEffect(() => { load() }, [filter])
 
   const approve = async (id: string) => { await api.post(`/api/execution/${id}/approve`); load() }
-  const reject = async (id: string) => { if (confirm('Rejeitar esta solicitação?')) { await api.post(`/api/execution/${id}/reject`); load() } }
+  const reject = async (id: string) => { if (confirm(t('executions.confirmReject'))) { await api.post(`/api/execution/${id}/reject`); load() } }
   const execute = async (id: string) => { if (confirm('Executar este SQL no banco?')) { await api.post(`/api/execution/${id}/execute`); load() } }
 
   const statusBadge = (s: string) => {
@@ -48,11 +50,11 @@ export default function ExecutionPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-white">Execuções</h1>
+        <h1 className="text-2xl font-bold text-text-primary">{t('executions.title')}</h1>
         <div className="flex gap-2">
           {['', 'pending', 'approved', 'executed', 'failed'].map(f => (
             <button key={f} onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 text-xs rounded-lg transition ${filter === f ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>
+              className={`px-3 py-1.5 text-xs rounded-lg transition ${filter === f ? 'bg-blue-600 text-text-primary' : 'bg-surface-elevated text-text-secondary hover:bg-surface-active'}`}>
               {f || 'Todos'}
             </button>
           ))}
@@ -61,18 +63,18 @@ export default function ExecutionPage() {
 
       {loading ? <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-blue-500" /></div> : (
         <div className="space-y-3">
-          {requests.length === 0 && <p className="text-gray-500 text-center py-12">Nenhuma solicitação encontrada.</p>}
+          {requests.length === 0 && <p className="text-text-tertiary text-center py-12">{t('executions.noRequests')}</p>}
           {requests.map(req => (
-            <div key={req.id} className="p-4 bg-gray-900 border border-gray-800 rounded-xl">
+            <div key={req.id} className="p-4 bg-surface border border-border rounded-xl">
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-2">
                   {statusBadge(req.status)}
-                  <span className="text-xs text-gray-500">{req.connection?.name} ({req.connection?.environment})</span>
+                  <span className="text-xs text-text-tertiary">{req.connection?.name} ({req.connection?.environment})</span>
                 </div>
                 <span className="text-[10px] text-gray-600">{new Date(req.requestedAt).toLocaleString('pt-BR')}</span>
               </div>
-              {req.description && <p className="text-xs text-gray-400 mb-2">{req.description}</p>}
-              <pre className="text-xs font-mono text-green-300 bg-gray-950 p-3 rounded-lg overflow-x-auto mb-2">{req.sqlText}</pre>
+              {req.description && <p className="text-xs text-text-secondary mb-2">{req.description}</p>}
+              <pre className="text-xs font-mono text-green-300 bg-background p-3 rounded-lg overflow-x-auto mb-2">{req.sqlText}</pre>
               <div className="flex items-center justify-between">
                 <span className="text-[10px] text-gray-600">Por: {req.requestedBy?.name} {req.approvedBy ? `| Aprovado: ${req.approvedBy.name}` : ''} {req.executionDurationMs ? `| ${req.executionDurationMs}ms` : ''}</span>
                 {canApprove && (

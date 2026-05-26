@@ -1,7 +1,7 @@
 {
   "name": "dba-analyser-frontend",
   "private": true,
-  "version": "1.7.0",
+  "version": "1.8.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
@@ -21,9 +21,12 @@
     "clsx": "^2.1.1",
     "codemirror": "^6.0.2",
     "html-to-image": "^1.11.13",
+    "i18next": "^26.3.0",
+    "i18next-browser-languagedetector": "^8.2.1",
     "lucide-react": "^0.378.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-i18next": "^17.0.8",
     "react-router-dom": "^6.23.1",
     "recharts": "^3.8.1",
     "socket.io-client": "^4.7.5",

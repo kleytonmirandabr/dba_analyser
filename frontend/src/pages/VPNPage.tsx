@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Wifi, WifiOff, Upload, Trash2, Loader2, CheckCircle2, AlertCircle, Shield, Key, Server, Terminal, X } from 'lucide-react'
 import api from '../lib/api'
 
@@ -11,6 +12,7 @@ interface VPNStatus {
 }
 
 export default function VPNPage() {
+  const { t } = useTranslation()
   const [status, setStatus] = useState<VPNStatus>({ connected: false, configUploaded: false })
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -81,10 +83,10 @@ export default function VPNPage() {
     setConnecting(true)
     setMessage(null)
     setShowLogs(true)
-    setConnectStep('Iniciando container VPN...')
-    stepTimers.current.push(setTimeout(() => setConnectStep('Autenticando com servidor...'), 3000))
-    stepTimers.current.push(setTimeout(() => setConnectStep('Estabelecendo túnel...'), 6000))
-    stepTimers.current.push(setTimeout(() => setConnectStep('Verificando conectividade...'), 10000))
+    setConnectStep(t('vpn.startingContainer'))
+    stepTimers.current.push(setTimeout(() => setConnectStep(t('vpn.authenticating')), 3000))
+    stepTimers.current.push(setTimeout(() => setConnectStep(t('vpn.establishingTunnel')), 6000))
+    stepTimers.current.push(setTimeout(() => setConnectStep(t('vpn.verifyingConnectivity')), 10000))
     pollRef.current = setInterval(loadStatus, 3000)
     stepTimers.current.push(setTimeout(() => {
       if (!status.connected && connecting) {
@@ -96,12 +98,12 @@ export default function VPNPage() {
   const cancelConnection = async () => {
     stopConnecting()
     try { await api.post('/api/vpn/disconnect') } catch {}
-    setMessage({ type: 'error', text: 'Conexão cancelada pelo usuário.' })
+    setMessage({ type: 'error', text: t('vpn.cancelledByUser') })
     setTimeout(loadStatus, 2000)
   }
 
   const handleUpload = async () => {
-    if (!ovpnContent) { setMessage({ type: 'error', text: 'Selecione um arquivo .ovpn' }); return }
+    if (!ovpnContent) { setMessage({ type: 'error', text: t('vpn.selectFile') }); return }
     setUploading(true); setMessage(null)
     try {
       await api.post('/api/vpn/upload', {
@@ -119,7 +121,7 @@ export default function VPNPage() {
       }
       loadStatus()
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.response?.data?.error || 'Erro ao enviar configuração' })
+      setMessage({ type: 'error', text: err.response?.data?.error || t('vpn.errorSendingConfig') })
     }
     setUploading(false)
   }
@@ -145,10 +147,10 @@ export default function VPNPage() {
   }
 
   const handleRemove = async () => {
-    if (!confirm('Tem certeza que deseja remover a configuração VPN?')) return
+    if (!confirm(t('vpn.confirmRemove'))) return
     try {
       await api.delete('/api/vpn/config')
-      setMessage({ type: 'success', text: 'Configuração VPN removida' })
+      setMessage({ type: 'success', text: t('vpn.configRemoved') })
       loadStatus()
     } catch (err: any) {
       setMessage({ type: 'error', text: err.response?.data?.error || 'Erro ao remover' })
@@ -161,7 +163,7 @@ export default function VPNPage() {
     if (line.includes('Initialization Sequence Completed')) return 'text-green-400 font-bold'
     if (line.includes('CONNECTED') || line.includes('connected')) return 'text-green-400'
     if (line.includes('PUSH_REPLY') || line.includes('ifconfig')) return 'text-blue-400'
-    return 'text-gray-400'
+    return 'text-text-secondary'
   }
 
   if (loading) return <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-blue-500" /></div>
@@ -171,9 +173,9 @@ export default function VPNPage() {
       {/* Main content */}
       <div className={`${showLogs ? 'w-1/2' : 'w-full max-w-2xl'} overflow-y-auto pr-2 transition-all`}>
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-white">Configuração VPN</h1>
+          <h1 className="text-2xl font-bold text-text-primary">{t('vpn.title')}</h1>
           <button onClick={() => setShowLogs(!showLogs)}
-            className={`px-3 py-1.5 text-xs rounded-lg border transition flex items-center gap-1.5 ${showLogs ? 'bg-green-900/20 border-green-800 text-green-400' : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white'}`}>
+            className={`px-3 py-1.5 text-xs rounded-lg border transition flex items-center gap-1.5 ${showLogs ? 'bg-green-900/20 border-green-800 text-green-400' : 'bg-surface-elevated border-border text-text-secondary hover:text-text-primary'}`}>
             <Terminal className="w-3.5 h-3.5" />
             {showLogs ? 'Logs ativo' : 'Ver Logs'}
           </button>
@@ -186,10 +188,10 @@ export default function VPNPage() {
               <AlertCircle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-sm font-medium text-amber-400">Container VPN não disponível</p>
-                <p className="text-xs text-gray-400 mt-1">
-                  Este ambiente está rodando sem o sidecar OpenVPN (<code className="bg-gray-800 px-1 py-0.5 rounded text-[10px]">docker-compose.dev.yml</code>).
+                <p className="text-xs text-text-secondary mt-1">
+                  Este ambiente está rodando sem o sidecar OpenVPN (<code className="bg-surface-elevated px-1 py-0.5 rounded text-[10px]">docker-compose.dev.yml</code>).
                 </p>
-                <code className="block mt-2 text-[11px] bg-gray-800 text-green-400 px-3 py-2 rounded-lg">docker compose up --build</code>
+                <code className="block mt-2 text-[11px] bg-surface-elevated text-green-400 px-3 py-2 rounded-lg">docker compose up --build</code>
               </div>
             </div>
           </div>
@@ -201,21 +203,21 @@ export default function VPNPage() {
             {status.connected ? <Wifi className="w-6 h-6 text-green-400" /> : connecting ? <Loader2 className="w-6 h-6 text-amber-400 animate-spin" /> : <WifiOff className="w-6 h-6 text-red-400" />}
             <div className="flex-1">
               <p className={`text-sm font-semibold ${status.connected ? 'text-green-400' : connecting ? 'text-amber-400' : status.configUploaded ? 'text-amber-400' : 'text-red-400'}`}>
-                {status.connected ? 'VPN Conectada' : connecting ? 'Conectando...' : status.configUploaded ? 'VPN Configurada (desconectada)' : 'VPN Não Configurada'}
+                {status.connected ? t('vpn.connected') : connecting ? t('vpn.connecting') : status.configUploaded ? t('vpn.configured') : t('vpn.notConfigured')}
               </p>
-              <p className="text-xs text-gray-500 mt-0.5">
-                {status.connected ? `Túnel ativo • IP: ${status.ip || 'obtendo...'}` : connecting ? connectStep : status.configUploaded ? 'Pronta para conectar' : 'Faça upload do arquivo .ovpn'}
+              <p className="text-xs text-text-tertiary mt-0.5">
+                {status.connected ? `${t('vpn.tunnelActive')} • IP: ${status.ip || t('vpn.gettingIp')}` : connecting ? connectStep : status.configUploaded ? t('vpn.readyToConnect') : t('vpn.uploadOvpn')}
               </p>
             </div>
             {status.configUploaded && !connecting && (
               <div className="flex gap-2">
                 {!status.connected && (
-                  <button onClick={handleConnect} className="px-4 py-2 text-xs bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition flex items-center gap-1.5">
+                  <button onClick={handleConnect} className="px-4 py-2 text-xs bg-green-600 hover:bg-green-700 text-text-primary font-medium rounded-lg transition flex items-center gap-1.5">
                     <Wifi className="w-3.5 h-3.5" /> Conectar
                   </button>
                 )}
                 {status.connected && (
-                  <button onClick={handleDisconnect} className="px-4 py-2 text-xs bg-red-600/80 hover:bg-red-600 text-white font-medium rounded-lg transition flex items-center gap-1.5">
+                  <button onClick={handleDisconnect} className="px-4 py-2 text-xs bg-red-600/80 hover:bg-red-600 text-text-primary font-medium rounded-lg transition flex items-center gap-1.5">
                     <WifiOff className="w-3.5 h-3.5" /> Desconectar
                   </button>
                 )}
@@ -227,22 +229,22 @@ export default function VPNPage() {
           {connecting && (
             <div className="mt-4 ml-9">
               <div className="flex items-center gap-2 mb-2">
-                <div className="flex-1 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                <div className="flex-1 h-1.5 bg-surface-elevated rounded-full overflow-hidden">
                   <div className="h-full bg-amber-500 rounded-full animate-pulse" style={{ width: '60%' }} />
                 </div>
-                <button onClick={cancelConnection} className="px-3 py-1 text-[11px] bg-gray-800 hover:bg-red-900/30 text-gray-400 hover:text-red-400 border border-gray-700 hover:border-red-800 rounded-lg transition">
+                <button onClick={cancelConnection} className="px-3 py-1 text-[11px] bg-surface-elevated hover:bg-red-900/30 text-text-secondary hover:text-red-400 border border-border hover:border-red-800 rounded-lg transition">
                   Cancelar
                 </button>
               </div>
               <div className="space-y-1">
-                {['Iniciando container VPN...', 'Autenticando com servidor...', 'Estabelecendo túnel...', 'Verificando conectividade...'].map((step, i) => {
-                  const steps = ['Iniciando container VPN...', 'Autenticando com servidor...', 'Estabelecendo túnel...', 'Verificando conectividade...']
+                {[t('vpn.startingContainer'), t('vpn.authenticating'), t('vpn.establishingTunnel'), t('vpn.verifyingConnectivity')].map((step, i) => {
+                  const steps = [t('vpn.startingContainer'), t('vpn.authenticating'), t('vpn.establishingTunnel'), t('vpn.verifyingConnectivity')]
                   const currentIdx = steps.indexOf(connectStep)
                   const isDone = i < currentIdx
                   const isCurrent = i === currentIdx
                   return (
                     <div key={i} className={`flex items-center gap-2 text-xs ${isDone ? 'text-green-400' : isCurrent ? 'text-amber-400' : 'text-gray-600'}`}>
-                      {isDone ? <CheckCircle2 className="w-3 h-3" /> : isCurrent ? <Loader2 className="w-3 h-3 animate-spin" /> : <div className="w-3 h-3 rounded-full border border-gray-700" />}
+                      {isDone ? <CheckCircle2 className="w-3 h-3" /> : isCurrent ? <Loader2 className="w-3 h-3 animate-spin" /> : <div className="w-3 h-3 rounded-full border border-border" />}
                       {step}
                     </div>
                   )
@@ -261,47 +263,47 @@ export default function VPNPage() {
         )}
 
         {/* Upload form */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-4">
-          <h2 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+        <div className="bg-surface border border-border rounded-xl p-6 mb-4">
+          <h2 className="text-sm font-semibold text-text-primary mb-4 flex items-center gap-2">
             <Shield className="w-4 h-4 text-blue-400" />
-            {status.configUploaded ? 'Atualizar Configuração VPN' : 'Configurar VPN'}
+            {status.configUploaded ? t('vpn.updateConfig') : t('vpn.configureVpn')}
           </h2>
 
           <div className="mb-4">
-            <label className="block text-xs font-medium text-gray-400 mb-1.5 flex items-center gap-1">
+            <label className="block text-xs font-medium text-text-secondary mb-1.5 flex items-center gap-1">
               <Server className="w-3 h-3" /> IP do Servidor VPN
             </label>
-            <input className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none"
+            <input className="w-full px-3 py-2 bg-surface-elevated border border-border rounded-lg text-sm text-text-primary focus:ring-2 focus:ring-blue-500 outline-none"
               placeholder="Ex: 192.168.1.100 ou vpn.empresa.com.br" value={serverIp} onChange={e => setServerIp(e.target.value)} />
             <p className="text-[10px] text-gray-600 mt-1">Endereço do servidor VPN (informativo, o .ovpn já contém este dado)</p>
           </div>
 
           <div className="mb-4">
-            <label className="block text-xs font-medium text-gray-400 mb-1.5">Arquivo .ovpn</label>
-            <div className="border-2 border-dashed border-gray-700 rounded-xl p-6 hover:border-blue-600 transition cursor-pointer relative text-center">
+            <label className="block text-xs font-medium text-text-secondary mb-1.5">Arquivo .ovpn</label>
+            <div className="border-2 border-dashed border-border rounded-xl p-6 hover:border-blue-600 transition cursor-pointer relative text-center">
               <input type="file" accept=".ovpn,.conf" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
-              <Upload className="w-8 h-8 text-gray-500 mx-auto mb-2" />
-              {ovpnFilename ? <p className="text-sm text-green-400">✅ {ovpnFilename}</p> : <p className="text-sm text-gray-400">Clique ou arraste o arquivo .ovpn aqui</p>}
+              <Upload className="w-8 h-8 text-text-tertiary mx-auto mb-2" />
+              {ovpnFilename ? <p className="text-sm text-green-400">✅ {ovpnFilename}</p> : <p className="text-sm text-text-secondary">Clique ou arraste o arquivo .ovpn aqui</p>}
               <p className="text-[10px] text-gray-600 mt-1">Formatos aceitos: .ovpn, .conf</p>
             </div>
           </div>
 
           <div className="mb-4">
-            <label className="block text-xs font-medium text-gray-400 mb-1.5 flex items-center gap-1">
+            <label className="block text-xs font-medium text-text-secondary mb-1.5 flex items-center gap-1">
               <Key className="w-3 h-3" /> Credenciais VPN (opcional)
             </label>
             <p className="text-[10px] text-gray-600 mb-2">Se sua VPN requer autenticação user/password, informe abaixo.</p>
             <div className="grid grid-cols-2 gap-3">
-              <input className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none"
-                placeholder="Usuário VPN" value={vpnUser} onChange={e => setVpnUser(e.target.value)} />
-              <input type="password" className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none"
+              <input className="px-3 py-2 bg-surface-elevated border border-border rounded-lg text-sm text-text-primary focus:ring-2 focus:ring-blue-500 outline-none"
+                placeholder={t('vpn.username')} value={vpnUser} onChange={e => setVpnUser(e.target.value)} />
+              <input type="password" className="px-3 py-2 bg-surface-elevated border border-border rounded-lg text-sm text-text-primary focus:ring-2 focus:ring-blue-500 outline-none"
                 placeholder="Senha VPN" value={vpnPass} onChange={e => setVpnPass(e.target.value)} />
             </div>
           </div>
 
           <div className="flex gap-3">
             <button onClick={handleUpload} disabled={uploading || !ovpnContent}
-              className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-lg transition flex items-center justify-center gap-2">
+              className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-text-primary text-sm font-medium rounded-lg transition flex items-center justify-center gap-2">
               {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
               {uploading ? 'Enviando...' : 'Salvar e Conectar'}
             </button>
@@ -316,22 +318,22 @@ export default function VPNPage() {
 
       {/* Logs panel */}
       {showLogs && (
-        <div className="w-1/2 bg-gray-950 border border-gray-800 rounded-xl flex flex-col overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 bg-gray-900/50">
+        <div className="w-1/2 bg-background border border-border rounded-xl flex flex-col overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-gray-100/50 dark:bg-gray-900/50">
             <div className="flex items-center gap-2">
               <Terminal className="w-4 h-4 text-green-400" />
-              <span className="text-xs font-semibold text-white">Logs do Container VPN</span>
-              <span className="text-[10px] text-gray-500">auto-refresh 3s</span>
+              <span className="text-xs font-semibold text-text-primary">Logs do Container VPN</span>
+              <span className="text-[10px] text-text-tertiary">auto-refresh 3s</span>
             </div>
-            <button onClick={() => setShowLogs(false)} className="p-1 hover:bg-gray-800 rounded transition">
-              <X className="w-3.5 h-3.5 text-gray-500" />
+            <button onClick={() => setShowLogs(false)} className="p-1 hover:bg-surface-elevated rounded transition">
+              <X className="w-3.5 h-3.5 text-text-tertiary" />
             </button>
           </div>
           <div className="flex-1 overflow-y-auto p-3 font-mono text-[11px] leading-relaxed">
             {logsLoading && logs.length === 0 ? (
-              <div className="flex items-center gap-2 text-gray-500"><Loader2 className="w-3 h-3 animate-spin" /> Carregando logs...</div>
+              <div className="flex items-center gap-2 text-text-tertiary"><Loader2 className="w-3 h-3 animate-spin" /> Carregando logs...</div>
             ) : logs.length === 0 ? (
-              <p className="text-gray-600">Nenhum log disponível</p>
+              <p className="text-gray-600">{t('vpn.noLogs')}</p>
             ) : (
               logs.map((line, i) => (
                 <div key={i} className={`py-0.5 ${getLogColor(line)} break-all`}>

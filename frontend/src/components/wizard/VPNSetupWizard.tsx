@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Wifi, Upload, CheckCircle2, AlertCircle, Loader2, ArrowRight } from 'lucide-react'
 import api from '../../lib/api'
 
 interface Props { onComplete: () => void }
 
 export default function VPNSetupWizard({ onComplete }: Props) {
+  const { t } = useTranslation()
   const [step, setStep] = useState(1)
   const [ovpnContent, setOvpnContent] = useState('')
   const [vpnUser, setVpnUser] = useState('')
@@ -32,14 +34,14 @@ export default function VPNSetupWizard({ onComplete }: Props) {
       setSuccess(true)
       setStep(3)
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Erro ao enviar configuração')
+      setError(err.response?.data?.error || t('vpn.errorSendingConfig'))
     }
     setUploading(false)
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
+      <div className="bg-card border border-card-border rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
         {/* Steps indicator */}
         <div className="flex items-center gap-2 mb-6">
           {[1,2,3].map(s => (
@@ -56,14 +58,14 @@ export default function VPNSetupWizard({ onComplete }: Props) {
             </p>
             <div className="border-2 border-dashed border-gray-700 rounded-xl p-6 hover:border-blue-600 transition cursor-pointer relative">
               <input type="file" accept=".ovpn,.conf" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
-              <Upload className="w-8 h-8 text-gray-500 mx-auto mb-2" />
+              <Upload className="w-8 h-8 text-text-tertiary mx-auto mb-2" />
               <p className="text-sm text-gray-400">{ovpnContent ? '✅ Arquivo carregado' : 'Clique ou arraste o arquivo .ovpn'}</p>
             </div>
             <button onClick={() => setStep(2)} disabled={!ovpnContent}
               className="mt-4 w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-lg transition flex items-center justify-center gap-2">
               Próximo <ArrowRight className="w-4 h-4" />
             </button>
-            <button onClick={onComplete} className="mt-2 text-xs text-gray-500 hover:text-gray-400">Pular (sem VPN)</button>
+            <button onClick={onComplete} className="mt-2 text-xs text-text-tertiary hover:text-gray-400">Pular (sem VPN)</button>
           </div>
         )}
 
@@ -74,7 +76,7 @@ export default function VPNSetupWizard({ onComplete }: Props) {
             {error && <div className="mb-3 p-2 bg-red-900/30 border border-red-800 rounded text-xs text-red-400">{error}</div>}
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1">Usuário VPN (opcional)</label>
+                <label className="block text-xs font-medium text-gray-400 mb-1">{t('vpn.username')}</label>
                 <input className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none"
                   value={vpnUser} onChange={e => setVpnUser(e.target.value)} />
               </div>

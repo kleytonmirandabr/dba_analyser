@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import SearchableSelect from '../components/ui/SearchableSelect'
+import { useTranslation } from 'react-i18next'
 import { Brain, Loader2, Sparkles, AlertTriangle, CheckCircle2, Play, RefreshCw } from 'lucide-react'
 import api from '../lib/api'
 import ExplainTree from '../components/advisor/ExplainTree'
@@ -7,6 +9,7 @@ import AiSuggestionCard from '../components/advisor/AiSuggestionCard'
 interface Connection { id: string; name: string; dbType: string; databaseName?: string }
 
 export default function AdvisorPage() {
+  const { t } = useTranslation()
   const [connections, setConnections] = useState<Connection[]>([])
   const [selectedConn, setSelectedConn] = useState('')
   const [query, setQuery] = useState('')
@@ -72,17 +75,19 @@ export default function AdvisorPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Brain className="w-6 h-6 text-purple-500" />
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">AI Query Advisor</h1>
+        <h1 className="text-2xl font-bold text-text-primary">AI Query Advisor</h1>
       </div>
 
       {/* Connection selector + options */}
       <div className="flex items-center gap-4">
-        <select value={selectedConn} onChange={e => setSelectedConn(e.target.value)}
-          className="px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:border-purple-500 outline-none">
-          <option value="">Selecione uma conexão...</option>
-          {connections.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-        <label className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+        <SearchableSelect
+          value={selectedConn}
+          onChange={setSelectedConn}
+          placeholder={t('connections.search')}
+          options={connections.map(c => ({ value: c.id, label: c.name }))}
+          className="min-w-[200px]"
+        />
+        <label className="flex items-center gap-1.5 text-xs text-text-secondary">
           <input type="checkbox" checked={runAnalyze} onChange={e => setRunAnalyze(e.target.checked)} className="rounded" />
           ANALYZE (executa a query)
         </label>
@@ -93,19 +98,19 @@ export default function AdvisorPage() {
       </div>
 
       {/* Manual query input */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
-        <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-2">Analisar Query</p>
+      <div className="bg-surface border border-border rounded-xl p-4">
+        <p className="text-xs text-text-tertiary font-medium uppercase tracking-wide mb-2">Analisar Query</p>
         <textarea
           value={query} onChange={e => setQuery(e.target.value)}
           placeholder="Cole sua query SQL aqui..."
-          className="w-full h-32 px-3 py-2 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 placeholder-gray-400 resize-none focus:border-purple-500 outline-none"
+          className="w-full h-32 px-3 py-2 bg-background border border-border rounded-lg text-sm font-mono text-text-primary placeholder-gray-400 resize-none focus:border-purple-500 outline-none"
         />
         <div className="flex items-center justify-between mt-3">
-          <p className="text-[10px] text-gray-500">
-            {runAnalyze ? '⚠️ ANALYZE executa a query no banco (READ-ONLY recomendado)' : 'Modo estimado (não executa a query)'}
+          <p className="text-[10px] text-text-tertiary">
+            {runAnalyze ? t('advisor.runAnalyze') : t('advisor.estimatedMode')}
           </p>
           <button onClick={analyzeQuery} disabled={!selectedConn || !query.trim() || loading}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white rounded-lg text-sm font-medium transition">
+            className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-text-primary rounded-lg text-sm font-medium transition">
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
             Analisar
           </button>
@@ -117,7 +122,7 @@ export default function AdvisorPage() {
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             {severityIcon(result.severity)}
-            <p className="text-sm text-gray-700 dark:text-gray-300">{result.summary}</p>
+            <p className="text-sm text-text-secondary">{result.summary}</p>
           </div>
 
           {result.explainPlan?.plan && (
@@ -133,7 +138,7 @@ export default function AdvisorPage() {
 
           {result.suggestions?.length > 0 && (
             <div className="space-y-3">
-              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Sugestões ({result.suggestions.length})</p>
+              <p className="text-xs text-text-tertiary font-medium uppercase tracking-wide">Sugestões ({result.suggestions.length})</p>
               {result.suggestions.map((s: any, i: number) => <AiSuggestionCard key={i} suggestion={s} />)}
             </div>
           )}
@@ -152,10 +157,10 @@ export default function AdvisorPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-500" />
-              <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Sugestões Automáticas</h2>
-              <span className="text-[10px] text-gray-500">(top queries lentas)</span>
+              <h2 className="text-sm font-semibold text-text-primary">Sugestões Automáticas</h2>
+              <span className="text-[10px] text-text-tertiary">(top queries lentas)</span>
             </div>
-            <button onClick={loadAutoSuggestions} className="p-1.5 text-gray-400 hover:text-purple-500 transition">
+            <button onClick={loadAutoSuggestions} className="p-1.5 text-text-secondary hover:text-purple-500 transition">
               <RefreshCw className={`w-4 h-4 ${autoLoading ? 'animate-spin' : ''}`} />
             </button>
           </div>
@@ -163,16 +168,16 @@ export default function AdvisorPage() {
           {autoLoading && <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-purple-500" /></div>}
 
           {!autoLoading && autoResults.length === 0 && (
-            <p className="text-sm text-gray-500 py-4">Nenhum problema detectado nas queries lentas. 👍</p>
+            <p className="text-sm text-text-tertiary py-4">{t('advisor.noIssues')}</p>
           )}
 
           {!autoLoading && autoResults.map((r, i) => (
-            <div key={i} className="border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
-              <div className="p-3 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800 flex items-center gap-2">
+            <div key={i} className="border border-border rounded-xl overflow-hidden">
+              <div className="p-3 bg-surface-elevated/50 border-b border-border flex items-center gap-2">
                 {severityIcon(r.severity)}
-                <pre className="text-[11px] font-mono text-gray-600 dark:text-gray-400 truncate flex-1">{r.originalQuery?.slice(0, 100)}</pre>
+                <pre className="text-[11px] font-mono text-text-secondary truncate flex-1">{r.originalQuery?.slice(0, 100)}</pre>
                 {r.stats && (
-                  <span className="text-[10px] text-gray-500 whitespace-nowrap">
+                  <span className="text-[10px] text-text-tertiary whitespace-nowrap">
                     {r.stats.calls}x • avg {Math.round(r.stats.meanTimeMs)}ms
                   </span>
                 )}

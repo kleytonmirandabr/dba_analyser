@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import SearchableSelect from '../components/ui/SearchableSelect'
+import { useTranslation } from 'react-i18next'
 import {
   ReactFlow,
   MiniMap,
@@ -41,7 +43,7 @@ function TableNode({ data }: { data: { label: string; columns: Column[]; theme: 
             {col.isFk && !col.isPk && <Link2 className="w-3 h-3 text-blue-400 flex-shrink-0" />}
             {!col.isPk && !col.isFk && <span className="w-3 h-3 flex-shrink-0" />}
             <span className="font-medium">{col.name}</span>
-            <span className={`ml-auto ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{col.type}</span>
+            <span className={`ml-auto ${isDark ? 'text-text-tertiary' : 'text-gray-400'}`}>{col.type}</span>
           </div>
         ))}
       </div>
@@ -95,6 +97,7 @@ function getLayoutedElements(tables: TableData[], relationships: Relationship[],
 }
 
 export default function ERDiagramPage() {
+  const { t } = useTranslation()
   const [connections, setConnections] = useState<Connection[]>([])
   const [selectedConn, setSelectedConn] = useState('')
   const [schemas, setSchemas] = useState<string[]>([])
@@ -180,37 +183,41 @@ export default function ERDiagramPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-3.5rem)]">
-      <div className="flex items-center gap-3 p-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-        <select className="px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white"
-          value={selectedConn} onChange={e => setSelectedConn(e.target.value)}>
-          <option value="">Conexão...</option>
-          {connections.map(c => <option key={c.id} value={c.id}>{c.name} ({c.environment})</option>)}
-        </select>
-        <select className="px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white"
-          value={selectedSchema} onChange={e => setSelectedSchema(e.target.value)}>
-          {schemas.map(s => <option key={s} value={s}>{s}</option>)}
-          {!schemas.length && <option value="public">public</option>}
-        </select>
+      <div className="flex items-center gap-3 p-3 border-b border-border bg-surface">
+        <SearchableSelect
+          value={selectedConn}
+          onChange={setSelectedConn}
+          placeholder={t('connections.search')}
+          options={connections.map(c => ({ value: c.id, label: `${c.name} (${c.environment})` }))}
+          className="min-w-[200px]"
+        />
+        <SearchableSelect
+          value={selectedSchema}
+          onChange={setSelectedSchema}
+          placeholder="Schema"
+          options={schemas.length ? schemas.map(s => ({ value: s, label: s })) : [{ value: 'public', label: 'public' }]}
+          searchable={false}
+        />
         {loading && <Loader2 className="w-4 h-4 animate-spin text-blue-500" />}
         {error && <span className="text-xs text-red-400">{error}</span>}
         {allTables.length > 0 && (
           <div className="relative">
             <button onClick={() => setShowFilter(!showFilter)}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border transition ${showFilter ? 'bg-indigo-600 text-white border-indigo-600' : 'text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border transition ${showFilter ? 'bg-indigo-600 text-white border-indigo-600' : 'text-text-secondary border-border hover:bg-surface-hover'}`}>
               <Filter className="w-3.5 h-3.5" /> Tabelas ({visibleTables.size}/{allTables.length})
             </button>
             {showFilter && (
-              <div className="absolute top-full left-0 mt-1 z-50 w-64 max-h-80 overflow-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-2">
-                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-200 dark:border-gray-700">
+              <div className="absolute top-full left-0 mt-1 z-50 w-64 max-h-80 overflow-auto bg-surface-elevated border border-border rounded-lg shadow-xl p-2">
+                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border">
                   <button onClick={() => setVisibleTables(new Set(allTables))}
-                    className="text-xs text-blue-500 hover:text-blue-600 font-medium">Selecionar Todos</button>
+                    className="text-xs text-blue-500 hover:text-blue-600 font-medium">{t('common.selectAll')}</button>
                   <button onClick={() => setVisibleTables(new Set())}
                     className="text-xs text-red-500 hover:text-red-600 font-medium">Limpar</button>
                 </div>
                 {allTables.map(t => (
-                  <label key={t} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
+                  <label key={t} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-surface-hover cursor-pointer">
                     <input type="checkbox" checked={visibleTables.has(t)} onChange={() => toggleTable(t)} className="rounded text-blue-600" />
-                    <span className="text-xs text-gray-700 dark:text-gray-300 truncate">{t}</span>
+                    <span className="text-xs text-text-secondary truncate">{t}</span>
                   </label>
                 ))}
               </div>

@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import SearchableSelect from '../components/ui/SearchableSelect'
+import { useTranslation } from 'react-i18next'
 import { Bell, Plus, CheckCircle, AlertTriangle, XCircle, Clock, Loader2, X, Play, Pause, Trash2, Edit, ChevronRight, BarChart3, List, TrendingUp, Activity } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area } from 'recharts'
 import api from '../lib/api'
@@ -23,6 +25,7 @@ interface Alert {
 }
 
 export default function AlertsPage() {
+  const { t } = useTranslation()
   const [view, setView] = useState<View>('dashboard')
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [dashboard, setDashboard] = useState<AlertDashboard[]>([])
@@ -65,7 +68,7 @@ export default function AlertsPage() {
     try {
       const { data } = await api.post(`/api/alerts/${id}/test`)
       const a = alerts.find(x => x.id === id)
-      setTestToast({ name: a?.name || '', status: data.data?.status || 'ok', message: data.data?.message || 'Teste concluído' })
+      setTestToast({ name: a?.name || '', status: data.data?.status || 'ok', message: data.data?.message || t('alerts.testCompleted') })
       setTimeout(() => setTestToast(null), 5000)
       load()
     } catch (err: any) {
@@ -85,10 +88,10 @@ export default function AlertsPage() {
     if (s === 'ok') return <CheckCircle className="w-4 h-4 text-green-400" />
     if (s === 'triggered') return <AlertTriangle className="w-4 h-4 text-amber-400" />
     if (s === 'error') return <XCircle className="w-4 h-4 text-red-400" />
-    return <Clock className="w-4 h-4 text-gray-500" />
+    return <Clock className="w-4 h-4 text-text-tertiary" />
   }
 
-  const statusColor = (s: string) => s === 'ok' ? 'text-green-400' : s === 'triggered' ? 'text-amber-400' : s === 'error' ? 'text-red-400' : 'text-gray-500'
+  const statusColor = (s: string) => s === 'ok' ? 'text-green-400' : s === 'triggered' ? 'text-amber-400' : s === 'error' ? 'text-red-400' : 'text-text-tertiary'
 
   // Summary stats
   const totalAlerts = alerts.length
@@ -100,23 +103,23 @@ export default function AlertsPage() {
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-text-primary flex items-center gap-2">
           <Bell className="w-6 h-6 text-blue-400" /> Alertas
         </h1>
         <div className="flex items-center gap-3">
           {/* View toggle */}
-          <div className="flex bg-gray-800 rounded-lg p-0.5 border border-gray-700">
+          <div className="flex bg-surface-elevated rounded-lg p-0.5 border border-border">
             <button onClick={() => setView('dashboard')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition ${view === 'dashboard' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition ${view === 'dashboard' ? 'bg-blue-600 text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}>
               <BarChart3 className="w-3.5 h-3.5" /> Dashboard
             </button>
             <button onClick={() => setView('list')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition ${view === 'list' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition ${view === 'list' ? 'bg-blue-600 text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}>
               <List className="w-3.5 h-3.5" /> Lista
             </button>
           </div>
           <button onClick={() => { setEditAlert(null); setFormOpen(true) }}
-            className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition">
+            className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-text-primary text-sm font-medium rounded-lg transition">
             <Plus className="w-4 h-4" /> Novo Alerta
           </button>
         </div>
@@ -124,20 +127,20 @@ export default function AlertsPage() {
 
       {/* Summary cards */}
       <div className="grid grid-cols-4 gap-3 mb-6">
-        <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-4">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider">Total</p>
-          <p className="text-2xl font-bold text-white mt-1">{totalAlerts}</p>
+        <div className="bg-gray-100/50 dark:bg-gray-900/50 border border-border/50 rounded-xl p-4">
+          <p className="text-[10px] text-text-tertiary uppercase tracking-wider">Total</p>
+          <p className="text-2xl font-bold text-text-primary mt-1">{totalAlerts}</p>
         </div>
-        <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-4">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider">OK</p>
+        <div className="bg-gray-100/50 dark:bg-gray-900/50 border border-border/50 rounded-xl p-4">
+          <p className="text-[10px] text-text-tertiary uppercase tracking-wider">OK</p>
           <p className="text-2xl font-bold text-green-400 mt-1">{okCount}</p>
         </div>
-        <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-4">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider">Disparados</p>
+        <div className="bg-gray-100/50 dark:bg-gray-900/50 border border-border/50 rounded-xl p-4">
+          <p className="text-[10px] text-text-tertiary uppercase tracking-wider">Disparados</p>
           <p className="text-2xl font-bold text-amber-400 mt-1">{triggeredCount}</p>
         </div>
-        <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-4">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider">Erro</p>
+        <div className="bg-gray-100/50 dark:bg-gray-900/50 border border-border/50 rounded-xl p-4">
+          <p className="text-[10px] text-text-tertiary uppercase tracking-wider">Erro</p>
           <p className="text-2xl font-bold text-red-400 mt-1">{errorCount}</p>
         </div>
       </div>
@@ -148,52 +151,52 @@ export default function AlertsPage() {
         /* ─── DASHBOARD VIEW ─── */
         <div className="space-y-4">
           {dashboard.length === 0 && (
-            <div className="text-center py-16 bg-gray-900/30 border border-gray-800 rounded-xl">
+            <div className="text-center py-16 bg-gray-100/30 dark:bg-gray-900/30 border border-border rounded-xl">
               <Bell className="w-12 h-12 text-gray-700 mx-auto mb-3" />
-              <p className="text-gray-400">Nenhum alerta configurado.</p>
+              <p className="text-text-secondary">{t('alerts.noAlerts')}</p>
               <p className="text-xs text-gray-600 mt-1">Crie um alerta para monitorar seus bancos.</p>
             </div>
           )}
           {dashboard.map(d => (
-            <div key={d.id} className="bg-gray-900/40 border border-gray-800/60 rounded-xl overflow-hidden">
+            <div key={d.id} className="bg-gray-900/40 border border-border/60 rounded-xl overflow-hidden">
               {/* Alert header */}
-              <div className="flex items-center justify-between p-4 border-b border-gray-800/50">
+              <div className="flex items-center justify-between p-4 border-b border-border/50">
                 <div className="flex items-center gap-3">
                   {statusIcon(d.currentStatus)}
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-white font-semibold text-sm">{d.name}</span>
+                      <span className="text-text-primary font-semibold text-sm">{d.name}</span>
                       <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
                         d.severity === 'critical' ? 'bg-red-900/40 text-red-400 border border-red-800/50' :
                         d.severity === 'warning' ? 'bg-amber-900/40 text-amber-400 border border-amber-800/50' :
                         'bg-blue-900/40 text-blue-400 border border-blue-800/50'
                       }`}>{d.severity}</span>
                     </div>
-                    <p className="text-[11px] text-gray-500 mt-0.5">
+                    <p className="text-[11px] text-text-tertiary mt-0.5">
                       {d.connectionName} • {d.databaseName} • Último check: {d.lastCheckedAt ? new Date(d.lastCheckedAt).toLocaleString() : '—'}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 text-xs">
                   <div className="text-center">
-                    <p className="text-gray-500">Checks</p>
-                    <p className="text-white font-bold">{d.stats.totalChecks}</p>
+                    <p className="text-text-tertiary">Checks</p>
+                    <p className="text-text-primary font-bold">{d.stats.totalChecks}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-gray-500">OK</p>
+                    <p className="text-text-tertiary">OK</p>
                     <p className="text-green-400 font-bold">{d.stats.okCount}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-gray-500">Alertas</p>
+                    <p className="text-text-tertiary">Alertas</p>
                     <p className="text-amber-400 font-bold">{d.stats.triggeredCount}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-gray-500">Erros</p>
+                    <p className="text-text-tertiary">Erros</p>
                     <p className="text-red-400 font-bold">{d.stats.errorCount}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-gray-500">Média</p>
-                    <p className="text-gray-300 font-bold">{d.stats.avgExecutionMs}ms</p>
+                    <p className="text-text-tertiary">Média</p>
+                    <p className="text-text-secondary font-bold">{d.stats.avgExecutionMs}ms</p>
                   </div>
                 </div>
               </div>
@@ -225,8 +228,8 @@ export default function AlertsPage() {
 
                 {/* Value timeline for scalar alerts */}
                 {d.lastValues.length > 2 && (
-                  <div className="mt-3 h-[80px] border-t border-gray-800/50 pt-3">
-                    <p className="text-[10px] text-gray-500 mb-1">Valor retornado ao longo do tempo:</p>
+                  <div className="mt-3 h-[80px] border-t border-border/50 pt-3">
+                    <p className="text-[10px] text-text-tertiary mb-1">Valor retornado ao longo do tempo:</p>
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={d.lastValues} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
@@ -251,13 +254,13 @@ export default function AlertsPage() {
         /* ─── LIST VIEW ─── */
         <div className="space-y-2">
           {alerts.map(a => (
-            <div key={a.id} className="bg-gray-900/40 border border-gray-800/60 rounded-xl overflow-hidden">
+            <div key={a.id} className="bg-gray-900/40 border border-border/60 rounded-xl overflow-hidden">
               <div className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-3">
                   {statusIcon(a.currentStatus)}
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-white font-medium text-sm">{a.name}</span>
+                      <span className="text-text-primary font-medium text-sm">{a.name}</span>
                       <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
                         a.severity === 'critical' ? 'bg-red-900/40 text-red-400' :
                         a.severity === 'warning' ? 'bg-amber-900/40 text-amber-400' :
@@ -271,26 +274,26 @@ export default function AlertsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => { setEditAlert(a); setFormOpen(true) }} className="p-2 text-gray-500 hover:text-blue-400 hover:bg-blue-900/20 rounded-lg transition" title="Editar">
+                  <button onClick={() => { setEditAlert(a); setFormOpen(true) }} className="p-2 text-text-tertiary hover:text-blue-400 hover:bg-blue-900/20 rounded-lg transition" title="Editar">
                     <Edit className="w-4 h-4" />
                   </button>
-                  <button onClick={() => testAlert(a.id)} className="p-2 text-gray-500 hover:text-green-400 hover:bg-green-900/20 rounded-lg transition" title="Testar agora">
+                  <button onClick={() => testAlert(a.id)} className="p-2 text-text-tertiary hover:text-green-400 hover:bg-green-900/20 rounded-lg transition" title="Testar agora">
                     <Play className="w-4 h-4" />
                   </button>
-                  <button onClick={() => toggleEnabled(a)} className={`p-2 rounded-lg transition ${a.enabled ? 'text-amber-400 hover:bg-amber-900/20' : 'text-gray-600 hover:bg-gray-800'}`} title={a.enabled ? 'Pausar' : 'Ativar'}>
+                  <button onClick={() => toggleEnabled(a)} className={`p-2 rounded-lg transition ${a.enabled ? 'text-amber-400 hover:bg-amber-900/20' : 'text-gray-600 hover:bg-surface-elevated'}`} title={a.enabled ? 'Pausar' : 'Ativar'}>
                     <Pause className="w-4 h-4" />
                   </button>
-                  <button onClick={() => deleteAlert(a.id)} className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition" title="Excluir">
+                  <button onClick={() => deleteAlert(a.id)} className="p-2 text-text-tertiary hover:text-red-400 hover:bg-red-900/20 rounded-lg transition" title="Excluir">
                     <Trash2 className="w-4 h-4" />
                   </button>
-                  <button onClick={() => expand(a.id)} className={`p-2 text-gray-500 hover:text-white rounded-lg transition ${expandedId === a.id ? 'rotate-90' : ''}`}>
+                  <button onClick={() => expand(a.id)} className={`p-2 text-text-tertiary hover:text-text-primary rounded-lg transition ${expandedId === a.id ? 'rotate-90' : ''}`}>
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
               {/* Expanded history */}
               {expandedId === a.id && (
-                <div className="px-4 pb-4 border-t border-gray-800/50 pt-3">
+                <div className="px-4 pb-4 border-t border-border/50 pt-3">
                   <HistoryPanel history={history} loading={histLoading} />
                 </div>
               )}
@@ -335,26 +338,26 @@ function HistoryPanel({ history, loading }: { history: any[]; loading: boolean }
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <p className="text-xs text-gray-500 font-medium">Histórico recente</p>
-        <div className="flex bg-gray-800 rounded-lg p-0.5 border border-gray-700">
+        <p className="text-xs text-text-tertiary font-medium">Histórico recente</p>
+        <div className="flex bg-surface-elevated rounded-lg p-0.5 border border-border">
           <button onClick={() => setFilter('problems')}
-            className={`px-2.5 py-1 text-[10px] rounded-md transition ${filter === 'problems' ? 'bg-red-600/80 text-white' : 'text-gray-400 hover:text-white'}`}>
+            className={`px-2.5 py-1 text-[10px] rounded-md transition ${filter === 'problems' ? 'bg-red-600/80 text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}>
             Problemas ({problemCount})
           </button>
           <button onClick={() => setFilter('all')}
-            className={`px-2.5 py-1 text-[10px] rounded-md transition ${filter === 'all' ? 'bg-gray-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+            className={`px-2.5 py-1 text-[10px] rounded-md transition ${filter === 'all' ? 'bg-gray-600 text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}>
             Todos ({history.length})
           </button>
         </div>
       </div>
       {filtered.length === 0 ? (
-        <p className="text-xs text-green-400/70 py-3">✅ Nenhum problema encontrado no histórico recente.</p>
+        <p className="text-xs text-green-400/70 py-3">{t('alerts.noIssuesHistory')}</p>
       ) : (
         <div className="space-y-1 max-h-[250px] overflow-y-auto">
           {filtered.slice(0, 50).map((h: any, i: number) => (
             <div key={i} className={`flex items-center gap-2 text-xs px-2 py-1 rounded ${h.status !== 'ok' ? 'bg-red-950/20' : ''}`}>
               <span className={`w-2 h-2 rounded-full flex-shrink-0 ${h.status === 'ok' ? 'bg-green-400' : h.status === 'triggered' ? 'bg-amber-400' : 'bg-red-400'}`} />
-              <span className="text-gray-500 font-mono w-28 flex-shrink-0">{new Date(h.checkedAt).toLocaleString()}</span>
+              <span className="text-text-tertiary font-mono w-28 flex-shrink-0">{new Date(h.checkedAt).toLocaleString()}</span>
               <span className={`font-medium truncate ${h.status === 'ok' ? 'text-green-400/70' : h.status === 'triggered' ? 'text-amber-400' : 'text-red-400'}`}>{h.message}</span>
               <span className="text-gray-600 ml-auto flex-shrink-0">{h.executionMs}ms</span>
             </div>
@@ -367,7 +370,7 @@ function HistoryPanel({ history, loading }: { history: any[]; loading: boolean }
 
 // ─── Alert Message Component (shows ONLY problems) ──────────────────────────
 function AlertMessage({ message, lastChecked }: { message: string | null | undefined; lastChecked?: string | null }) {
-  if (!message) return <p className="text-[11px] text-gray-500">Aguardando primeira verificação...</p>
+  if (!message) return <p className="text-[11px] text-text-tertiary">Aguardando primeira verificação...</p>
 
   // Try parsing as JSON (multi-db result)
   try {
@@ -387,7 +390,7 @@ function AlertMessage({ message, lastChecked }: { message: string | null | undef
 
       return (
         <div className="space-y-1.5">
-          <p className="text-[11px] text-gray-400">
+          <p className="text-[11px] text-text-secondary">
             <span className="text-red-400 font-semibold">{problems.length} de {total} bancos com problema</span>
             {lastChecked && <span className="text-gray-600 ml-2">• {new Date(lastChecked).toLocaleString()}</span>}
           </p>
@@ -409,7 +412,7 @@ function AlertMessage({ message, lastChecked }: { message: string | null | undef
 
   // Plain text message (single connection)
   return (
-    <p className="text-[11px] text-gray-500">
+    <p className="text-[11px] text-text-tertiary">
       {message}
       {lastChecked && <span className="text-gray-600 ml-2">• Último check: {new Date(lastChecked).toLocaleString()}</span>}
     </p>
@@ -452,7 +455,7 @@ function AlertFormModal({ alert, onClose, onSaved }: { alert: Alert | null; onCl
         const { data: testData } = await api.post(`/api/alerts/${alert.id}/test`)
         setTestResult(testData.data)
       } else {
-        setTestResult({ valid: true, message: data.data.message || '✅ Query válida!' })
+        setTestResult({ valid: true, message: data.data.message || t('alerts.validQuery') })
       }
     } catch (err: any) { setTestResult({ error: err.response?.data?.error || err.message }) }
     setTesting(false)
@@ -475,18 +478,18 @@ function AlertFormModal({ alert, onClose, onSaved }: { alert: Alert | null; onCl
     setSaving(false)
   }
 
-  const inputCls = "w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none"
-  const labelCls = "block text-xs font-medium text-gray-400 mb-1.5"
+  const inputCls = "w-full px-3 py-2 bg-surface-elevated border border-border rounded-lg text-sm text-text-primary focus:ring-2 focus:ring-blue-500 outline-none"
+  const labelCls = "block text-xs font-medium text-text-secondary mb-1.5"
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-xl mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="bg-surface border border-border rounded-2xl shadow-2xl w-full max-w-xl mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-lg font-bold text-white">{alert ? 'Editar Alerta' : 'Novo Alerta'}</h2>
-            <p className="text-xs text-gray-500">Passo {step} de 3</p>
+            <h2 className="text-lg font-bold text-text-primary">{alert ? t('alerts.editAlert') : 'Novo Alerta'}</h2>
+            <p className="text-xs text-text-tertiary">Passo {step} de 3</p>
           </div>
-          <button onClick={onClose} className="p-2 text-gray-500 hover:text-white hover:bg-gray-800 rounded-lg"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-2 text-text-tertiary hover:text-text-primary hover:bg-surface-elevated rounded-lg"><X className="w-5 h-5" /></button>
         </div>
 
         {error && (
@@ -500,11 +503,11 @@ function AlertFormModal({ alert, onClose, onSaved }: { alert: Alert | null; onCl
             <div><label className={labelCls}>Nome do Alerta</label><input className={inputCls} value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} placeholder="Ex: Não recebe VIAGEM" /></div>
             <div>
               <label className={labelCls}>Databases para monitorar</label>
-              <div className="max-h-[180px] overflow-y-auto bg-gray-800 border border-gray-700 rounded-lg p-2 space-y-1">
+              <div className="max-h-[180px] overflow-y-auto bg-surface-elevated border border-border rounded-lg p-2 space-y-1">
                 {connections.filter(c => c.databaseName).map(c => {
                   const checked = form.connectionIds.includes(c.id) || form.connectionId === c.id
                   return (
-                    <label key={c.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-700/50 cursor-pointer transition">
+                    <label key={c.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-surface-active/50 cursor-pointer transition">
                       <input type="checkbox" checked={checked}
                         onChange={e => {
                           const ids = e.target.checked
@@ -512,10 +515,10 @@ function AlertFormModal({ alert, onClose, onSaved }: { alert: Alert | null; onCl
                             : form.connectionIds.filter(id => id !== c.id)
                           setForm(f => ({ ...f, connectionIds: ids, connectionId: ids[0] || f.connectionId }))
                         }}
-                        className="w-3.5 h-3.5 rounded border-gray-600 bg-gray-900 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+                        className="w-3.5 h-3.5 rounded border-gray-600 bg-surface text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
                       />
-                      <span className="text-xs text-gray-300">{c.name}</span>
-                      <span className="text-[10px] text-gray-500 ml-auto">{c.databaseName}</span>
+                      <span className="text-xs text-text-secondary">{c.name}</span>
+                      <span className="text-[10px] text-text-tertiary ml-auto">{c.databaseName}</span>
                     </label>
                   )
                 })}
@@ -523,17 +526,33 @@ function AlertFormModal({ alert, onClose, onSaved }: { alert: Alert | null; onCl
               <p className="text-[10px] text-gray-600 mt-1">{form.connectionIds.length || 1} database(s) selecionada(s)</p>
             </div>
             <div><label className={labelCls}>Severidade</label>
-              <select className={inputCls} value={form.severity} onChange={e => setForm(f => ({...f, severity: e.target.value}))}>
-                <option value="info">Info</option><option value="warning">Warning</option><option value="critical">Critical</option>
-              </select>
+              <SearchableSelect
+                value={form.severity}
+                onChange={v => setForm(f => ({...f, severity: v}))}
+                searchable={false}
+                options={[
+                  { value: 'info', label: 'Info' },
+                  { value: 'warning', label: 'Warning' },
+                  { value: 'critical', label: 'Critical' },
+                ]}
+              />
             </div>
             <div><label className={labelCls}>Intervalo de verificação</label>
-              <select className={inputCls} value={form.intervalSeconds} onChange={e => setForm(f => ({...f, intervalSeconds: Number(e.target.value)}))}>
-                <option value={30}>30 segundos</option><option value={60}>1 minuto</option><option value={300}>5 minutos</option>
-                <option value={600}>10 minutos</option><option value={1800}>30 minutos</option><option value={3600}>1 hora</option>
-              </select>
+              <SearchableSelect
+                value={String(form.intervalSeconds)}
+                onChange={v => setForm(f => ({...f, intervalSeconds: Number(v)}))}
+                searchable={false}
+                options={[
+                  { value: '30', label: '30 segundos' },
+                  { value: '60', label: '1 minuto' },
+                  { value: '300', label: '5 minutos' },
+                  { value: '600', label: '10 minutos' },
+                  { value: '1800', label: '30 minutos' },
+                  { value: '3600', label: '1 hora' },
+                ]}
+              />
             </div>
-            <button onClick={() => setStep(2)} className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition">Próximo →</button>
+            <button onClick={() => setStep(2)} className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-text-primary text-sm font-medium rounded-lg transition">Próximo →</button>
           </div>
         )}
 
@@ -547,7 +566,7 @@ function AlertFormModal({ alert, onClose, onSaved }: { alert: Alert | null; onCl
             </div>
             <div className="flex gap-2">
               <button onClick={testQuery} disabled={testing || !form.query}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-white text-xs rounded-lg transition">
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-text-primary text-xs rounded-lg transition">
                 {testing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
                 Validar Query
               </button>
@@ -558,8 +577,8 @@ function AlertFormModal({ alert, onClose, onSaved }: { alert: Alert | null; onCl
               </div>
             )}
             <div className="flex gap-2">
-              <button onClick={() => setStep(1)} className="flex-1 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm rounded-lg transition">← Voltar</button>
-              <button onClick={() => setStep(3)} disabled={!form.query} className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition">Próximo →</button>
+              <button onClick={() => setStep(1)} className="flex-1 py-2 bg-surface-elevated hover:bg-surface-active text-text-secondary text-sm rounded-lg transition">← Voltar</button>
+              <button onClick={() => setStep(3)} disabled={!form.query} className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-text-primary text-sm font-medium rounded-lg transition">Próximo →</button>
             </div>
           </div>
         )}
@@ -567,30 +586,43 @@ function AlertFormModal({ alert, onClose, onSaved }: { alert: Alert | null; onCl
         {step === 3 && (
           <div className="space-y-4">
             <div><label className={labelCls}>Tipo de avaliação</label>
-              <select className={inputCls} value={form.evaluationType} onChange={e => setForm(f => ({...f, evaluationType: e.target.value}))}>
-                <option value="has_rows">Deve retornar linhas (alerta se 0)</option>
-                <option value="no_rows">Não deve retornar linhas (alerta se &gt; 0)</option>
-                <option value="row_count">Quantidade de linhas</option>
-                <option value="scalar_value">Valor escalar (primeira coluna)</option>
-              </select>
+              <SearchableSelect
+                value={form.evaluationType}
+                onChange={v => setForm(f => ({...f, evaluationType: v}))}
+                searchable={false}
+                options={[
+                  { value: 'has_rows', label: 'Deve retornar linhas (alerta se 0)' },
+                  { value: 'no_rows', label: 'Não deve retornar linhas (alerta se > 0)' },
+                  { value: 'row_count', label: 'Quantidade de linhas' },
+                  { value: 'scalar_value', label: 'Valor escalar (primeira coluna)' },
+                ]}
+              />
             </div>
             {(form.evaluationType === 'row_count' || form.evaluationType === 'scalar_value') && (
               <div className="grid grid-cols-2 gap-3">
                 <div><label className={labelCls}>Operador</label>
-                  <select className={inputCls} value={form.operator} onChange={e => setForm(f => ({...f, operator: e.target.value}))}>
-                    <option value=">">&gt; Maior que</option><option value="<">&lt; Menor que</option>
-                    <option value=">=">&gt;= Maior ou igual</option><option value="<=">&lt;= Menor ou igual</option>
-                    <option value="=">=  Igual</option><option value="!=">!= Diferente</option>
-                  </select>
+                  <SearchableSelect
+                    value={form.operator}
+                    onChange={v => setForm(f => ({...f, operator: v}))}
+                    searchable={false}
+                    options={[
+                      { value: '>', label: '> Maior que' },
+                      { value: '<', label: '< Menor que' },
+                      { value: '>=', label: '>= Maior ou igual' },
+                      { value: '<=', label: '<= Menor ou igual' },
+                      { value: '=', label: '= Igual' },
+                      { value: '!=', label: '!= Diferente' },
+                    ]}
+                  />
                 </div>
                 <div><label className={labelCls}>Threshold</label><input className={inputCls} value={form.threshold} onChange={e => setForm(f => ({...f, threshold: e.target.value}))} placeholder="0" /></div>
               </div>
             )}
             <div className="flex gap-2">
-              <button onClick={() => setStep(2)} className="flex-1 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm rounded-lg transition">← Voltar</button>
+              <button onClick={() => setStep(2)} className="flex-1 py-2 bg-surface-elevated hover:bg-surface-active text-text-secondary text-sm rounded-lg transition">← Voltar</button>
               <button onClick={handleSubmit} disabled={saving}
-                className="flex-1 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition">
-                {saving ? 'Salvando...' : alert ? 'Salvar Alterações' : 'Criar Alerta'}
+                className="flex-1 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-50 text-text-primary text-sm font-medium rounded-lg transition">
+                {saving ? t('alerts.saving') : alert ? t('alerts.saveChanges') : t('alerts.createAlert')}
               </button>
             </div>
           </div>

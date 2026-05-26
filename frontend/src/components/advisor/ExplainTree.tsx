@@ -48,7 +48,7 @@ function NodeRow({ node, depth, maxCost }: { node: ExplainNode; depth: number; m
       <div className={`flex items-center gap-2 py-1.5 px-2 rounded ${isProblematic ? 'bg-red-50 dark:bg-red-900/10' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
         style={{ paddingLeft: `${depth * 20 + 8}px` }}>
         <span className="text-sm">{icon}</span>
-        <span className={`text-xs font-medium ${isProblematic ? 'text-red-600 dark:text-red-400' : 'text-gray-800 dark:text-gray-200'}`}>
+        <span className={`text-xs font-medium ${isProblematic ? 'text-red-600 dark:text-red-400' : 'text-text-primary'}`}>
           {node.nodeType}
         </span>
         {node.relation && <span className="text-[10px] text-purple-600 dark:text-purple-400 font-mono">{node.relation}</span>}
@@ -56,7 +56,7 @@ function NodeRow({ node, depth, maxCost }: { node: ExplainNode; depth: number; m
         <span className={`ml-auto text-[10px] font-mono ${costColor}`}>
           cost:{node.totalCost.toFixed(1)}
         </span>
-        <span className="text-[10px] text-gray-500 font-mono">
+        <span className="text-[10px] text-text-tertiary font-mono">
           rows:{node.actualRows ?? node.planRows}
         </span>
         {node.actualTime != null && (
@@ -64,7 +64,7 @@ function NodeRow({ node, depth, maxCost }: { node: ExplainNode; depth: number; m
         )}
       </div>
       {node.filter && (
-        <div className="text-[10px] text-gray-500 font-mono pl-2" style={{ paddingLeft: `${depth * 20 + 36}px` }}>
+        <div className="text-[10px] text-text-tertiary font-mono pl-2" style={{ paddingLeft: `${depth * 20 + 36}px` }}>
           Filter: {node.filter}
         </div>
       )}
@@ -79,8 +79,8 @@ export default function ExplainTree({ plan, maxCost }: Props) {
   const resolvedMax = maxCost || plan.totalCost || 1
 
   return (
-    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-3 overflow-x-auto">
-      <p className="text-[10px] text-gray-500 uppercase tracking-wide font-medium mb-2">Plano de Execução</p>
+    <div className="bg-surface border border-border rounded-xl p-3 overflow-x-auto">
+      <p className="text-[10px] text-text-tertiary uppercase tracking-wide font-medium mb-2">Plano de Execução</p>
       <NodeRow node={plan} depth={0} maxCost={resolvedMax} />
     </div>
   )
