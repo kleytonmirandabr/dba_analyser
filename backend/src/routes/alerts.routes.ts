@@ -27,6 +27,71 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
 });
 
 // GET /api/alerts/summary — quick badge count
+// GET /api/alerts/dashboard — alert history aggregated for charts
+router.get('/dashboard', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const days = parseInt(req.query.days as string) || 7;
+    const fromDate = new Date();
+    fromDate.setDate(fromDate.getDate() - days);
+
+    const alerts = await alertRepo().find({ relations: ['connection'] });
+
+    const dashboard = await Promise.all(alerts.map(async (alert) => {
+      const history = await historyRepo()
+        .createQueryBuilder('h')
+        .where('h.alertId = :id', { id: alert.id })
+        .andWhere('h.checkedAt >= :from', { from: fromDate.toISOString() })
+        .orderBy('h.checkedAt', 'ASC')
+        .getMany();
+
+      // Aggregate by hour for chart
+      const hourly: Record<string, { ok: number; triggered: number; error: number }> = {};
+      for (const h of history) {
+        const hourKey = new Date(h.checkedAt).toISOString().slice(0, 13) + ':00';
+        if (!hourly[hourKey]) hourly[hourKey] = { ok: 0, triggered: 0, error: 0 };
+        if (h.status === 'ok') hourly[hourKey].ok++;
+        else if (h.status === 'triggered') hourly[hourKey].triggered++;
+        else hourly[hourKey].error++;
+      }
+
+      const timeline = Object.entries(hourly).map(([time, counts]) => ({ time, ...counts }));
+
+      // Stats
+      const totalChecks = history.length;
+      const triggeredCount = history.filter(h => h.status === 'triggered').length;
+      const errorCount = history.filter(h => h.status === 'error').length;
+      const okCount = history.filter(h => h.status === 'ok').length;
+      const avgExecutionMs = totalChecks > 0 ? Math.round(history.reduce((s, h) => s + (h.executionMs || 0), 0) / totalChecks) : 0;
+
+      // Last values for scalar alerts
+      const lastValues = history.slice(-50).map(h => ({
+        time: h.checkedAt,
+        value: h.value ? parseFloat(h.value) : null,
+        status: h.status,
+      })).filter(v => v.value !== null);
+
+      return {
+        id: alert.id,
+        name: alert.name,
+        severity: alert.severity,
+        currentStatus: alert.currentStatus,
+        connectionName: (alert as any).connection?.name || 'N/A',
+        databaseName: (alert as any).connection?.databaseName || 'N/A',
+        evaluationType: alert.evaluationType,
+        lastCheckedAt: alert.lastCheckedAt,
+        lastMessage: alert.lastMessage,
+        stats: { totalChecks, triggeredCount, errorCount, okCount, avgExecutionMs },
+        timeline,
+        lastValues,
+      };
+    }));
+
+    return res.json({ data: dashboard });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 router.get('/summary', authMiddleware, async (req: Request, res: Response) => {
   const triggered = await alertRepo().count({ where: { currentStatus: 'triggered', enabled: true } });
   const error = await alertRepo().count({ where: { currentStatus: 'error', enabled: true } });
