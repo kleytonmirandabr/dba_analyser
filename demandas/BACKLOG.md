@@ -15,18 +15,18 @@
 - Dark/Light Mode + Dashboard Indicadores Gráficos (v1.1.0)
 - AI Query Advisor + Executive PDF Reports (v1.2.0)
 - CodeMirror SQL Editor + ER Diagram Visual (v1.3.0)
+- SQL Autocomplete + ER Export PNG/SVG + Notification Bell (v1.4.0)
 
-## 🔜 Próximas (v1.4.0)
-- [ ] SQL Autocomplete inteligente (tabelas/colunas do catálogo)
-- [ ] Export ER Diagram como PNG/SVG
-- [ ] Notificações push (execuções pendentes)
+## 🔜 Próximas (v1.5.0)
+- [ ] Backup/restore management (pg_dump/pg_restore integrado)
+- [ ] Schema versioning (git-like history de alterações)
 - [ ] ER Diagram: filtro por grupo de tabelas
 
 ## 📋 Backlog Futuro
-- [ ] Backup/restore management
-- [ ] Schema versioning (git-like history)
 - [ ] Rate limit interno no health monitor
 - [ ] Horário de coleta configurável (queries pesadas fora do pico)
 - [ ] Alertas automáticos (bloat > X%, cache hit < Y%)
 - [ ] Endpoint /api/metrics/history para dados reais nos sparklines
 - [ ] SQL Editor: highlight de erros inline
+- [ ] Multi-tenant (organizações/equipes)
+- [ ] Integração Slack/Teams para alertas

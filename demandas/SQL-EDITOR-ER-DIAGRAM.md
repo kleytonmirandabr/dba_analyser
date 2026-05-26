@@ -13,7 +13,7 @@ Melhorar a experiência de edição SQL com syntax highlighting profissional e a
 - [x] Substituir textarea atual pelo CodeMirror no Query Editor
 - [x] Tema claro/escuro sincronizado com o app
 - [x] Atalho Ctrl+Enter para executar query
-- [ ] Autocomplete de tabelas/colunas baseado no catálogo (backlog futuro)
+- [x] Autocomplete de tabelas/colunas baseado no catálogo ✅ v1.4.0
 - [ ] Highlight de erros inline (backlog futuro)
 
 ### ER Diagram Visual
@@ -24,7 +24,7 @@ Melhorar a experiência de edição SQL com syntax highlighting profissional e a
 - [x] Zoom + pan + minimap
 - [x] Seletor de conexão + schema
 - [x] Sidebar link "ER Diagram"
-- [ ] Export como PNG/SVG (backlog futuro)
+- [x] Export como PNG/SVG ✅ v1.4.0
 - [ ] Filtro por grupo de tabelas (backlog futuro)
 
 ## Dependências Instaladas
