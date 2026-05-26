@@ -16,11 +16,11 @@ services:
       - "3030:3030"  # Backend exposto AQUI (pois backend usa network do vpn)
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "ping", "-c", "1", "-W", "3", "8.8.8.8"]
+      test: ["CMD", "ping", "-c", "1", "-W", "5", "10.0.0.18"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 15s
+      retries: 5
+      start_period: 30s
 
   # ─── Backend (Node.js + Express + TypeScript) ────────────
   backend:
