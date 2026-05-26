@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Play, Download, Clock, AlertCircle, Database, Loader2, FileText } from 'lucide-react'
 import api from '../lib/api'
+import SqlEditor from '../components/editor/SqlEditor'
 
 interface Connection { id: string; name: string; environment: string; mode: string; }
 
@@ -12,7 +13,6 @@ export default function QueryPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [history, setHistory] = useState<{ sql: string; time: string; duration: number }[]>([])
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     api.get('/api/connections').then(r => {
@@ -57,10 +57,6 @@ export default function QueryPage() {
     const a = document.createElement('a'); a.href = url; a.download = 'query_result.csv'; a.click()
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); execute() }
-  }
-
   const connMode = connections.find(c => c.id === selectedConn)?.mode
 
   return (
@@ -90,10 +86,7 @@ export default function QueryPage() {
       {/* Editor */}
       <div className="flex-1 flex flex-col min-h-0">
         <div className="h-1/3 min-h-[120px] border-b border-gray-800">
-          <textarea ref={textareaRef} value={sql} onChange={e => setSql(e.target.value)} onKeyDown={handleKeyDown}
-            className="w-full h-full p-4 bg-gray-950 text-sm text-green-300 font-mono resize-none outline-none"
-            placeholder="SELECT * FROM tabela LIMIT 100;"
-            spellCheck={false} />
+          <SqlEditor value={sql} onChange={setSql} onExecute={execute} placeholder="SELECT * FROM tabela LIMIT 100;" />
         </div>
 
         {/* Results */}
