@@ -161,7 +161,7 @@ ${xmlRows.join('\n')}
         <ChevronDown className={`w-3 h-3 transition ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-72 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-50 py-1 overflow-hidden">
+        <div className="absolute right-0 bottom-full mb-1 w-72 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-50 py-1 overflow-hidden max-h-[400px] overflow-y-auto">
           <p className="px-3 py-1.5 text-[10px] text-gray-500 font-medium uppercase tracking-wide">Exportar {rows.length} linhas como</p>
           {items.map((item, i) => (
             <button key={i} onClick={item.fn}
