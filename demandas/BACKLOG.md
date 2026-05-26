@@ -13,17 +13,17 @@
 - Comparador de Schema Completo (v0.9.0)
 - Fixes MSSQL + Monitor DB filter + Compare diff view (v0.9.1)
 - Dark/Light Mode + Dashboard Indicadores Gráficos (v1.1.0)
+- AI Query Advisor + Executive PDF Reports (v1.2.0)
 
-## 🔜 Próximas
+## 🔜 Próximas (v1.3.0)
 - [ ] Syntax highlight (CodeMirror / Monaco) no SQL Editor
-- [x] ~~Tema claro (light mode)~~ ✅ v1.1.0
+- [ ] ER Diagram visual (visualização de relacionamentos)
 - [ ] Notificações push (execuções pendentes)
+
+## 📋 Backlog Futuro
 - [ ] Backup/restore management
 - [ ] Schema versioning (git-like history)
-- [ ] ER Diagram visual
 - [ ] Rate limit interno no health monitor
 - [ ] Horário de coleta configurável (queries pesadas fora do pico)
-- [x] ~~Dashboard de tendências (crescimento de tabelas ao longo do tempo)~~ ✅ v1.1.0 (sparklines)
 - [ ] Alertas automáticos (bloat > X%, cache hit < Y%)
-- [ ] Export de relatório de saúde (PDF)
 - [ ] Endpoint /api/metrics/history para dados reais nos sparklines
