@@ -100,8 +100,8 @@ export default function ERDiagramPage() {
   const [selectedSchema, setSelectedSchema] = useState('public')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node[]>([])
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge[]>([])
+  const [nodes, setNodes, onNodesChange] = useNodesState([] as Node[])
+  const [edges, setEdges, onEdgesChange] = useEdgesState([] as Edge[])
   const theme = useThemeStore(s => s.theme)
 
   useEffect(() => {
