@@ -1,9 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { authMiddleware, requireRole } from '../middleware/auth.middleware';
 import { AppDataSource } from '../config/database';
+import { Connection } from '../entities/connection.entity';
 import { TableGrowthRule } from '../entities/table-growth-rule.entity';
 import { TableSnapshot } from '../entities/table-snapshot.entity';
-import { runManualSnapshot, getGrowthData, GrowthAnomaly } from '../services/growth.scheduler';
+import { runManualSnapshot, getGrowthData, GrowthAnomaly, snapshotConnection } from '../services/growth.scheduler';
 
 const router = Router();
 const ruleRepo = () => AppDataSource.getRepository(TableGrowthRule);
@@ -78,6 +79,40 @@ router.post('/snapshot', authMiddleware, requireRole('admin'), async (req: Reque
     return res.json({ data: { message: 'Snapshot realizado', anomalies } });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/growth/snapshot/stream — SSE progress stream for snapshot
+router.get('/snapshot/stream', authMiddleware, requireRole('admin'), async (req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  try {
+    const connRepo = AppDataSource.getRepository(Connection);
+    const connections = await connRepo.find({ where: { isActive: true } });
+    const withDb = connections.filter(c => c.databaseName);
+    const total = withDb.length;
+    let done = 0;
+
+    res.write(`data: ${JSON.stringify({ type: 'start', total, message: `Iniciando snapshot de ${total} databases...` })}\n\n`);
+
+    for (const conn of withDb) {
+      done++;
+      res.write(`data: ${JSON.stringify({ type: 'progress', done, total, current: conn.name, pct: Math.round((done / total) * 100) })}\n\n`);
+      try {
+        await snapshotConnection(conn);
+      } catch (err: any) {
+        res.write(`data: ${JSON.stringify({ type: 'error', connection: conn.name, error: err.message })}\n\n`);
+      }
+    }
+
+    res.write(`data: ${JSON.stringify({ type: 'done', total: done, message: 'Snapshot concluído!' })}\n\n`);
+    res.end();
+  } catch (err: any) {
+    res.write(`data: ${JSON.stringify({ type: 'error', error: err.message })}\n\n`);
+    res.end();
   }
 });
 

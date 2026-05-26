@@ -92,7 +92,7 @@ export async function runDailySnapshot(): Promise<GrowthAnomaly[]> {
   return allAnomalies;
 }
 
-async function snapshotConnection(conn: Connection): Promise<GrowthAnomaly[]> {
+export async function snapshotConnection(conn: Connection): Promise<GrowthAnomaly[]> {
   const snapshotRepo = AppDataSource.getRepository(TableSnapshot);
   const ruleRepo = AppDataSource.getRepository(TableGrowthRule);
 

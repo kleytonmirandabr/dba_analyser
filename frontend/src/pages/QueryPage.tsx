@@ -321,9 +321,28 @@ export default function QueryPage() {
         {/* Results */}
         <div className="flex-1 overflow-auto bg-gray-950">
           {error && (
-            <div className="m-4 p-3 bg-red-900/20 border border-red-800 rounded-lg flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
-              <pre className="text-xs text-red-400 whitespace-pre-wrap">{error}</pre>
+            <div className={`m-4 p-4 rounded-lg flex items-start gap-3 ${
+              (error as string).includes('WHERE') || (error as string).includes('bloqueada')
+                ? 'bg-amber-900/20 border border-amber-700'
+                : 'bg-red-900/20 border border-red-800'
+            }`}>
+              <AlertCircle className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
+                (error as string).includes('WHERE') || (error as string).includes('bloqueada')
+                  ? 'text-amber-400' : 'text-red-400'
+              }`} />
+              <div>
+                <p className={`text-sm font-medium ${
+                  (error as string).includes('WHERE') || (error as string).includes('bloqueada')
+                    ? 'text-amber-300' : 'text-red-400'
+                }`}>{(error as string).includes('WHERE') ? '🛡️ Proteção de Segurança' : 'Erro na execução'}</p>
+                <pre className="text-xs text-gray-300 whitespace-pre-wrap mt-1">{error}</pre>
+                {(error as string).includes('WHERE') && (
+                  <p className="text-xs text-gray-400 mt-2 border-t border-gray-700 pt-2">
+                    💡 <strong>Dica:</strong> Adicione uma cláusula WHERE para limitar as linhas afetadas. 
+                    Exemplo: <code className="px-1 py-0.5 bg-gray-800 rounded text-amber-300">WHERE id = 123</code>
+                  </p>
+                )}
+              </div>
             </div>
           )}
           {result?.rows && result.rows.length > 0 && (
