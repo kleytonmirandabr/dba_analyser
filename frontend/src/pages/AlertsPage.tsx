@@ -318,6 +318,7 @@ function AlertFormModal({ alert, onClose, onSaved }: { alert: Alert | null; onCl
   const [form, setForm] = useState({
     name: alert?.name || '',
     connectionId: alert?.connectionId || '',
+    connectionIds: (alert as any)?.connectionIds || [] as string[],
     query: alert?.query || '',
     evaluationType: alert?.evaluationType || 'has_rows',
     operator: alert?.operator || '>',
@@ -359,7 +360,7 @@ function AlertFormModal({ alert, onClose, onSaved }: { alert: Alert | null; onCl
       if (alert) {
         await api.put(`/api/alerts/${alert.id}`, form)
       } else {
-        await api.post('/api/alerts', { ...form, intervalSeconds: Number(form.intervalSeconds) })
+        await api.post('/api/alerts', { ...form, intervalSeconds: Number(form.intervalSeconds), connectionIds: form.connectionIds.length > 1 ? form.connectionIds : null })
       }
       onSaved()
     } catch (err: any) {
@@ -393,10 +394,29 @@ function AlertFormModal({ alert, onClose, onSaved }: { alert: Alert | null; onCl
         {step === 1 && (
           <div className="space-y-4">
             <div><label className={labelCls}>Nome do Alerta</label><input className={inputCls} value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} placeholder="Ex: Não recebe VIAGEM" /></div>
-            <div><label className={labelCls}>Conexão / Database</label>
-              <select className={inputCls} value={form.connectionId} onChange={e => setForm(f => ({...f, connectionId: e.target.value}))}>
-                {connections.filter(c => c.databaseName).map(c => <option key={c.id} value={c.id}>{c.name} ({c.databaseName})</option>)}
-              </select>
+            <div>
+              <label className={labelCls}>Databases para monitorar</label>
+              <div className="max-h-[180px] overflow-y-auto bg-gray-800 border border-gray-700 rounded-lg p-2 space-y-1">
+                {connections.filter(c => c.databaseName).map(c => {
+                  const checked = form.connectionIds.includes(c.id) || form.connectionId === c.id
+                  return (
+                    <label key={c.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-700/50 cursor-pointer transition">
+                      <input type="checkbox" checked={checked}
+                        onChange={e => {
+                          const ids = e.target.checked
+                            ? [...form.connectionIds.filter(id => id !== c.id), c.id]
+                            : form.connectionIds.filter(id => id !== c.id)
+                          setForm(f => ({ ...f, connectionIds: ids, connectionId: ids[0] || f.connectionId }))
+                        }}
+                        className="w-3.5 h-3.5 rounded border-gray-600 bg-gray-900 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+                      />
+                      <span className="text-xs text-gray-300">{c.name}</span>
+                      <span className="text-[10px] text-gray-500 ml-auto">{c.databaseName}</span>
+                    </label>
+                  )
+                })}
+              </div>
+              <p className="text-[10px] text-gray-600 mt-1">{form.connectionIds.length || 1} database(s) selecionada(s)</p>
             </div>
             <div><label className={labelCls}>Severidade</label>
               <select className={inputCls} value={form.severity} onChange={e => setForm(f => ({...f, severity: e.target.value}))}>

@@ -22,6 +22,11 @@ export class Alert {
   @JoinColumn({ name: 'connectionId' })
   connection!: Connection;
 
+  // Multiple connections support — if set, alert runs on all of these
+  // connectionId remains as "primary" for backwards compat
+  @Column('simple-json', { nullable: true, default: null })
+  connectionIds!: string[] | null;
+
   @Column('text')
   query!: string;
 

@@ -77,57 +77,69 @@ async function runAlertCheck(alertId: string) {
     return;
   }
 
-  const conn = await connRepo.findOne({ where: { id: alert.connectionId } });
-  if (!conn) {
-    await updateAlertStatus(alert, 'error', 'Conexão não encontrada');
+  // Determine which connections to check
+  const connIds = alert.connectionIds && alert.connectionIds.length > 0
+    ? alert.connectionIds
+    : [alert.connectionId];
+
+  const connections = await connRepo.findByIds(connIds);
+  if (connections.length === 0) {
+    await updateAlertStatus(alert, 'error', 'Nenhuma conexão encontrada');
     return;
   }
+
+  // Run on all connections, aggregate results
+  let worstStatus: AlertStatus = 'ok';
+  let messages: string[] = [];
+
+  for (const conn of connections) {
+    const result = await runAlertOnConnection(alert, conn, historyRepo);
+    if (result.status === 'triggered' && worstStatus !== 'error') worstStatus = 'triggered';
+    if (result.status === 'error' && worstStatus === 'ok') worstStatus = 'error';
+    messages.push(`[${conn.name}] ${result.message}`);
+  }
+
+  // Update overall status
+  const finalMessage = connections.length === 1 ? messages[0].replace(/^[.*?] /, '') : messages.join(' | ');
+  await updateAlertStatus(alert, worstStatus, finalMessage);
+
+  if (worstStatus === 'triggered' && io) {
+    io.emit('alert:triggered', {
+      alertId: alert.id, name: alert.name, severity: alert.severity,
+      message: finalMessage, timestamp: new Date().toISOString(),
+    });
+  }
+}
+
+async function runAlertOnConnection(alert: Alert, conn: Connection, historyRepo: any): Promise<{ status: AlertStatus; message: string }> {
 
   const start = Date.now();
   let adapter: any = null;
 
   try {
-    
     adapter = createAdapter(conn.dbType);
-
     await adapter.connect({
-      host: conn.host,
-      port: conn.port,
+      host: conn.host, port: conn.port,
       database: conn.databaseName || (conn.dbType === 'postgresql' ? 'postgres' : 'master'),
-      ...getConnCredentials(conn),
-      timeoutMs: 10000, // 10s max for alert queries
+      ...getConnCredentials(conn), timeoutMs: 10000,
     });
 
     const result = await adapter.executeSQL(alert.query);
     const executionMs = Date.now() - start;
 
     if (!result.success) {
-      await saveHistory(historyRepo, alert, 'error', null, executionMs, `Erro: ${result.error}`);
-      await updateAlertStatus(alert, 'error', result.error || 'Query falhou');
-      return;
+      await saveHistory(historyRepo, alert, 'error', null, executionMs, `[${conn.name}] Erro: ${result.error}`);
+      return { status: 'error' as AlertStatus, message: `Erro: ${result.error}` };
     }
 
     const { status, message, value } = evaluateResult(alert, result);
-    await saveHistory(historyRepo, alert, status, value, executionMs, message);
-    await updateAlertStatus(alert, status, message);
-
-    // Emit via WebSocket if triggered
-    if (status === 'triggered' && io) {
-      io.emit('alert:triggered', {
-        alertId: alert.id,
-        name: alert.name,
-        severity: alert.severity,
-        message,
-        connectionName: conn.name,
-        database: conn.databaseName,
-        timestamp: new Date().toISOString(),
-      });
-    }
+    await saveHistory(historyRepo, alert, status, value, executionMs, `[${conn.name}] ${message}`);
+    return { status, message };
 
   } catch (err: any) {
     const executionMs = Date.now() - start;
-    await saveHistory(historyRepo, alert, 'error', null, executionMs, err.message);
-    await updateAlertStatus(alert, 'error', err.message);
+    await saveHistory(historyRepo, alert, 'error', null, executionMs, `[${conn.name}] ${err.message}`);
+    return { status: 'error' as AlertStatus, message: err.message };
   } finally {
     if (adapter) try { await adapter.disconnect(); } catch {}
   }

@@ -117,6 +117,7 @@ router.get('/:id', authMiddleware, async (req: Request, res: Response) => {
 const createSchema = z.object({
   name: z.string().min(1).max(150),
   connectionId: z.string().uuid(),
+  connectionIds: z.array(z.string().uuid()).nullable().optional(),
   query: z.string().min(5),
   evaluationType: z.enum(['row_count', 'scalar_value', 'no_rows', 'has_rows', 'threshold']),
   operator: z.enum(['>', '<', '=', '!=', '>=', '<=']).optional().nullable(),
@@ -229,6 +230,7 @@ router.put('/:id', authMiddleware, requireRole('admin'), async (req: Request, re
     if (severity !== undefined) alert.severity = severity;
     if (enabled !== undefined) alert.enabled = enabled;
     if (notifyChannels !== undefined) alert.notifyChannels = notifyChannels;
+    if (req.body.connectionIds !== undefined) alert.connectionIds = req.body.connectionIds;
 
     const saved = await alertRepo().save(alert);
 
