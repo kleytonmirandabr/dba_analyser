@@ -59,10 +59,19 @@ export default function AlertsPage() {
     load()
   }
 
+  const [testToast, setTestToast] = useState<{ name: string; status: string; message: string } | null>(null)
+
   const testAlert = async (id: string) => {
-    const { data } = await api.post(`/api/alerts/${id}/test`)
-    alert(`Resultado: ${data.data.status} — ${data.data.message}`)
-    load()
+    try {
+      const { data } = await api.post(`/api/alerts/${id}/test`)
+      const a = alerts.find(x => x.id === id)
+      setTestToast({ name: a?.name || '', status: data.data?.status || 'ok', message: data.data?.message || 'Teste concluído' })
+      setTimeout(() => setTestToast(null), 5000)
+      load()
+    } catch (err: any) {
+      setTestToast({ name: '', status: 'error', message: err.response?.data?.error || err.message })
+      setTimeout(() => setTestToast(null), 5000)
+    }
   }
 
   const expand = (id: string) => {
@@ -302,6 +311,20 @@ export default function AlertsPage() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Test result toast */}
+      {testToast && (
+        <div className={`fixed bottom-6 right-6 z-50 px-5 py-4 rounded-xl shadow-2xl border backdrop-blur-sm max-w-md ${
+          testToast.status === 'ok' ? 'bg-green-950/90 border-green-800 text-green-200' :
+          testToast.status === 'triggered' ? 'bg-amber-950/90 border-amber-800 text-amber-200' :
+          'bg-red-950/90 border-red-800 text-red-200'
+        }`}>
+          <p className="text-xs font-medium opacity-70">{testToast.name || 'Teste'}</p>
+          <p className="text-sm font-semibold mt-0.5">
+            {testToast.status === 'ok' ? '✅' : testToast.status === 'triggered' ? '⚠️' : '❌'} {testToast.message}
+          </p>
         </div>
       )}
 
