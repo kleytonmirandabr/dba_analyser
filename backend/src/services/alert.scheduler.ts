@@ -90,23 +90,38 @@ async function runAlertCheck(alertId: string) {
 
   // Run on all connections, aggregate results
   let worstStatus: AlertStatus = 'ok';
-  let messages: string[] = [];
+  const results: { connName: string; database: string; status: AlertStatus; message: string }[] = [];
 
   for (const conn of connections) {
     const result = await runAlertOnConnection(alert, conn, historyRepo);
-    if (result.status === 'triggered' && worstStatus !== 'error') worstStatus = 'triggered';
+    results.push({ connName: conn.name, database: conn.databaseName || '', status: result.status, message: result.message });
+    if (result.status === 'triggered') worstStatus = 'triggered';
     if (result.status === 'error' && worstStatus === 'ok') worstStatus = 'error';
-    messages.push(`[${conn.name}] ${result.message}`);
   }
 
-  // Update overall status
-  const finalMessage = connections.length === 1 ? messages[0].replace(/^[.*?] /, '') : messages.join(' | ');
+  // Build summary message
+  const triggered = results.filter(r => r.status === 'triggered');
+  const errors = results.filter(r => r.status === 'error');
+  const ok = results.filter(r => r.status === 'ok');
+
+  let finalMessage: string;
+  if (connections.length === 1) {
+    finalMessage = results[0].message;
+  } else {
+    const parts: string[] = [];
+    if (triggered.length > 0) parts.push(`⚠️ ${triggered.length} alertas: ${triggered.map(t => t.database).join(', ')}`);
+    if (errors.length > 0) parts.push(`❌ ${errors.length} erros: ${errors.map(t => t.database).join(', ')}`);
+    parts.push(`✅ ${ok.length}/${connections.length} OK`);
+    finalMessage = JSON.stringify({ summary: parts.join(' | '), details: results });
+  }
+
   await updateAlertStatus(alert, worstStatus, finalMessage);
 
   if (worstStatus === 'triggered' && io) {
     io.emit('alert:triggered', {
       alertId: alert.id, name: alert.name, severity: alert.severity,
-      message: finalMessage, timestamp: new Date().toISOString(),
+      message: triggered.map(t => t.database).join(', '),
+      timestamp: new Date().toISOString(),
     });
   }
 }

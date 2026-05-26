@@ -239,10 +239,9 @@ export default function AlertsPage() {
                   </div>
                 )}
 
-                {/* Last message */}
-                <div className="mt-3 flex items-center gap-2 text-xs">
-                  {statusIcon(d.currentStatus)}
-                  <span className={`${statusColor(d.currentStatus)}`}>{d.lastMessage || 'Sem mensagem'}</span>
+                {/* Last message / per-db results */}
+                <div className="mt-3">
+                  <AlertMessage message={d.lastMessage} lastChecked={d.lastCheckedAt} />
                 </div>
               </div>
             </div>
@@ -266,10 +265,9 @@ export default function AlertsPage() {
                       }`}>{a.severity}</span>
                       <span className="text-[10px] text-gray-600">{a.connection?.name}</span>
                     </div>
-                    <p className="text-[11px] text-gray-500 mt-0.5">
-                      {a.lastMessage || 'Aguardando primeira verificação...'}
-                      {a.lastCheckedAt && <span className="ml-2 text-gray-600">• Último check: {new Date(a.lastCheckedAt).toLocaleString()}</span>}
-                    </p>
+                    <div className="mt-1">
+                      <AlertMessage message={a.lastMessage} lastChecked={a.lastCheckedAt} />
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
@@ -335,6 +333,61 @@ export default function AlertsPage() {
 }
 
 // ─── Alert Form Modal ─────────────────────────────────────────────────────────
+// ─── Alert Message Component (handles multi-db display) ─────────────────────
+function AlertMessage({ message, lastChecked }: { message: string | null | undefined; lastChecked?: string | null }) {
+  if (!message) return <p className="text-[11px] text-gray-500">Aguardando primeira verificação...</p>
+
+  // Try parsing as JSON (multi-db result)
+  try {
+    const parsed = JSON.parse(message)
+    if (parsed.details && Array.isArray(parsed.details)) {
+      const triggered = parsed.details.filter((d: any) => d.status === 'triggered')
+      const errors = parsed.details.filter((d: any) => d.status === 'error')
+      const ok = parsed.details.filter((d: any) => d.status === 'ok')
+
+      return (
+        <div className="space-y-1.5">
+          <p className="text-[11px] text-gray-400">
+            {triggered.length > 0 && <span className="text-amber-400 font-medium">⚠️ {triggered.length} alertas</span>}
+            {triggered.length > 0 && ok.length > 0 && ' • '}
+            {errors.length > 0 && <span className="text-red-400 font-medium">❌ {errors.length} erros</span>}
+            {errors.length > 0 && ok.length > 0 && ' • '}
+            <span className="text-green-400/70">✅ {ok.length}/{parsed.details.length} OK</span>
+            {lastChecked && <span className="text-gray-600 ml-2">• {new Date(lastChecked).toLocaleString()}</span>}
+          </p>
+          {/* Show triggered/error databases */}
+          {triggered.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {triggered.map((d: any) => (
+                <span key={d.database} className="text-[10px] px-1.5 py-0.5 bg-amber-900/30 border border-amber-800/40 text-amber-300 rounded font-mono">
+                  ⚠️ {d.database}
+                </span>
+              ))}
+            </div>
+          )}
+          {errors.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {errors.map((d: any) => (
+                <span key={d.database} className="text-[10px] px-1.5 py-0.5 bg-red-900/30 border border-red-800/40 text-red-300 rounded font-mono">
+                  ❌ {d.database}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )
+    }
+  } catch {}
+
+  // Plain text message (single connection)
+  return (
+    <p className="text-[11px] text-gray-500">
+      {message}
+      {lastChecked && <span className="text-gray-600 ml-2">• Último check: {new Date(lastChecked).toLocaleString()}</span>}
+    </p>
+  )
+}
+
 function AlertFormModal({ alert, onClose, onSaved }: { alert: Alert | null; onClose: () => void; onSaved: () => void }) {
   const [connections, setConnections] = useState<any[]>([])
   const [step, setStep] = useState(1)
