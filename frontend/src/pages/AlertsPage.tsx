@@ -333,7 +333,7 @@ export default function AlertsPage() {
 }
 
 // ─── Alert Form Modal ─────────────────────────────────────────────────────────
-// ─── Alert Message Component (handles multi-db display) ─────────────────────
+// ─── Alert Message Component (shows ONLY problems) ──────────────────────────
 function AlertMessage({ message, lastChecked }: { message: string | null | undefined; lastChecked?: string | null }) {
   if (!message) return <p className="text-[11px] text-gray-500">Aguardando primeira verificação...</p>
 
@@ -341,39 +341,35 @@ function AlertMessage({ message, lastChecked }: { message: string | null | undef
   try {
     const parsed = JSON.parse(message)
     if (parsed.details && Array.isArray(parsed.details)) {
-      const triggered = parsed.details.filter((d: any) => d.status === 'triggered')
-      const errors = parsed.details.filter((d: any) => d.status === 'error')
-      const ok = parsed.details.filter((d: any) => d.status === 'ok')
+      const problems = parsed.details.filter((d: any) => d.status !== 'ok')
+      const total = parsed.details.length
+
+      if (problems.length === 0) {
+        return (
+          <p className="text-[11px] text-green-400/70">
+            ✅ Todos os {total} bancos OK
+            {lastChecked && <span className="text-gray-600 ml-2">• {new Date(lastChecked).toLocaleString()}</span>}
+          </p>
+        )
+      }
 
       return (
         <div className="space-y-1.5">
           <p className="text-[11px] text-gray-400">
-            {triggered.length > 0 && <span className="text-amber-400 font-medium">⚠️ {triggered.length} alertas</span>}
-            {triggered.length > 0 && ok.length > 0 && ' • '}
-            {errors.length > 0 && <span className="text-red-400 font-medium">❌ {errors.length} erros</span>}
-            {errors.length > 0 && ok.length > 0 && ' • '}
-            <span className="text-green-400/70">✅ {ok.length}/{parsed.details.length} OK</span>
+            <span className="text-red-400 font-semibold">{problems.length} de {total} bancos com problema</span>
             {lastChecked && <span className="text-gray-600 ml-2">• {new Date(lastChecked).toLocaleString()}</span>}
           </p>
-          {/* Show triggered/error databases */}
-          {triggered.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {triggered.map((d: any) => (
-                <span key={d.database} className="text-[10px] px-1.5 py-0.5 bg-amber-900/30 border border-amber-800/40 text-amber-300 rounded font-mono">
-                  ⚠️ {d.database}
-                </span>
-              ))}
-            </div>
-          )}
-          {errors.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {errors.map((d: any) => (
-                <span key={d.database} className="text-[10px] px-1.5 py-0.5 bg-red-900/30 border border-red-800/40 text-red-300 rounded font-mono">
-                  ❌ {d.database}
-                </span>
-              ))}
-            </div>
-          )}
+          <div className="flex flex-wrap gap-1">
+            {problems.map((d: any) => (
+              <span key={d.database} className={`text-[10px] px-2 py-0.5 rounded font-mono ${
+                d.status === 'triggered'
+                  ? 'bg-amber-900/30 border border-amber-800/40 text-amber-300'
+                  : 'bg-red-900/30 border border-red-800/40 text-red-300'
+              }`}>
+                {d.status === 'triggered' ? '⚠️' : '❌'} {d.database}
+              </span>
+            ))}
+          </div>
         </div>
       )
     }
