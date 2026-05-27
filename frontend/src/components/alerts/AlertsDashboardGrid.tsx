@@ -91,9 +91,8 @@ export default function AlertsDashboardGrid({ data, filter }: Props) {
           margin={[12, 12] as [number, number]}
         >
           {filtered.map(d => (
-            <div key={d.id}>
-              <div className="h-full drag-handle cursor-grab active:cursor-grabbing">
-                <AlertWidget
+            <div key={d.id} className="h-full">
+              <AlertWidget
                   id={d.id}
                   name={d.name}
                   severity={d.severity}
@@ -107,7 +106,6 @@ export default function AlertsDashboardGrid({ data, filter }: Props) {
                   config={getConfig(d.id)}
                   onConfigChange={setWidgetConfig}
                 />
-              </div>
             </div>
           ))}
         </GridLayout>

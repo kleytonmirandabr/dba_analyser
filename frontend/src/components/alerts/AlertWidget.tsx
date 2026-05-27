@@ -154,8 +154,8 @@ export default function AlertWidget({ id, name, severity, currentStatus, connect
 
   return (
     <div className={`h-full flex flex-col bg-surface border ${colors.border} rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow`}>
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border/50 bg-surface-elevated/50">
+      {/* Header - drag handle */}
+      <div className="drag-handle cursor-grab active:cursor-grabbing flex items-center justify-between px-3 py-2 border-b border-border/50 bg-surface-elevated/50">
         <div className="flex items-center gap-2 min-w-0">
           <div className={`w-2 h-2 rounded-full ${colors.dot} animate-pulse`} />
           <span className="text-xs font-semibold text-text-primary truncate">{name}</span>
