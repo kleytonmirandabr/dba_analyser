@@ -152,8 +152,8 @@ export default function AvailabilityPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex gap-px h-6 rounded overflow-hidden">
                     {item.timeline.map((t, i) => (
-                      <div key={i} title={`${t.hour}: ${t.status === 'ok' ? 'OK' : t.status === 'triggered' ? 'Problema' : 'Erro'}`}
-                        className={`flex-1 ${
+                      <div key={i} title={`🕐 ${new Date(t.hour).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} — ${t.status === 'ok' ? '✅ Online' : t.status === 'triggered' ? '⚠️ Problema' : '❌ Erro'}`}
+                        className={`flex-1 cursor-pointer hover:opacity-80 transition-opacity ${
                           t.status === 'ok' ? 'bg-green-400 dark:bg-green-600' :
                           t.status === 'triggered' ? 'bg-amber-400 dark:bg-amber-500' :
                           t.status === 'error' ? 'bg-red-400 dark:bg-red-500' :
