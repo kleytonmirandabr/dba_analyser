@@ -129,21 +129,21 @@ export default function AlertsPage() {
 
       {/* Summary cards */}
       <div className="grid grid-cols-4 gap-3 mb-6">
-        <div className="bg-gray-100/50 dark:bg-gray-900/50 border border-border/50 rounded-xl p-4">
+        <div className="bg-white dark:bg-gray-900/50 border border-border rounded-xl p-4 shadow-sm">
           <p className="text-[10px] text-text-tertiary uppercase tracking-wider">Total</p>
           <p className="text-2xl font-bold text-text-primary mt-1">{totalAlerts}</p>
         </div>
-        <div className="bg-gray-100/50 dark:bg-gray-900/50 border border-border/50 rounded-xl p-4">
+        <div className="bg-white dark:bg-gray-900/50 border border-border rounded-xl p-4 shadow-sm">
           <p className="text-[10px] text-text-tertiary uppercase tracking-wider">OK</p>
-          <p className="text-2xl font-bold text-green-400 mt-1">{okCount}</p>
+          <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">{okCount}</p>
         </div>
-        <div className="bg-gray-100/50 dark:bg-gray-900/50 border border-border/50 rounded-xl p-4">
+        <div className="bg-white dark:bg-gray-900/50 border border-border rounded-xl p-4 shadow-sm">
           <p className="text-[10px] text-text-tertiary uppercase tracking-wider">Disparados</p>
-          <p className="text-2xl font-bold text-amber-400 mt-1">{triggeredCount}</p>
+          <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">{triggeredCount}</p>
         </div>
-        <div className="bg-gray-100/50 dark:bg-gray-900/50 border border-border/50 rounded-xl p-4">
+        <div className="bg-white dark:bg-gray-900/50 border border-border rounded-xl p-4 shadow-sm">
           <p className="text-[10px] text-text-tertiary uppercase tracking-wider">Erro</p>
-          <p className="text-2xl font-bold text-red-400 mt-1">{errorCount}</p>
+          <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">{errorCount}</p>
         </div>
       </div>
 
@@ -183,7 +183,7 @@ export default function AlertsPage() {
         /* ─── LIST VIEW ─── */
         <div className="space-y-2">
           {alerts.map(a => (
-            <div key={a.id} className="bg-gray-900/40 border border-border/60 rounded-xl overflow-hidden">
+            <div key={a.id} className="bg-surface-elevated border border-border rounded-xl overflow-hidden shadow-sm">
               <div className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-3">
                   {statusIcon(a.currentStatus)}
@@ -318,22 +318,31 @@ function AlertMessage({ message, lastChecked }: { message: string | null | undef
         )
       }
 
+      const MAX_VISIBLE = 15
+      const showAll = problems.length <= MAX_VISIBLE
+      const visible = showAll ? problems : problems.slice(0, MAX_VISIBLE)
+
       return (
         <div className="space-y-1.5">
           <p className="text-[11px] text-text-secondary">
-            <span className="text-red-400 font-semibold">{problems.length} de {total} bancos com problema</span>
-            {lastChecked && <span className="text-gray-600 ml-2">• {new Date(lastChecked).toLocaleString()}</span>}
+            <span className="text-red-600 dark:text-red-400 font-semibold">{problems.length} de {total} bancos com problema</span>
+            {lastChecked && <span className="text-text-tertiary ml-2">• {new Date(lastChecked).toLocaleString()}</span>}
           </p>
           <div className="flex flex-wrap gap-1">
-            {problems.map((d: any) => (
-              <span key={d.database} className={`text-[10px] px-2 py-0.5 rounded font-mono ${
+            {visible.map((d: any) => (
+              <span key={d.database} className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
                 d.status === 'triggered'
-                  ? 'bg-amber-900/30 border border-amber-800/40 text-amber-300'
-                  : 'bg-red-900/30 border border-red-800/40 text-red-300'
+                  ? 'bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-800/40 text-amber-700 dark:text-amber-300'
+                  : 'bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-800/40 text-red-700 dark:text-red-300'
               }`}>
-                {d.status === 'triggered' ? '⚠️' : '❌'} {d.database}
+                {d.status === 'triggered' ? '⚠' : '✕'} {d.database}
               </span>
             ))}
+            {!showAll && (
+              <span className="text-[10px] px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-text-secondary font-medium">
+                +{problems.length - MAX_VISIBLE} mais
+              </span>
+            )}
           </div>
         </div>
       )
@@ -497,13 +506,13 @@ function AlertFormModal({ alert, onClose, onSaved }: { alert: Alert | null; onCl
             </div>
             <div className="flex gap-2">
               <button onClick={testQuery} disabled={testing || !form.query}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-text-primary text-xs rounded-lg transition">
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 text-text-primary text-xs rounded-lg transition">
                 {testing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
                 Validar Query
               </button>
             </div>
             {testResult && (
-              <div className={`p-3 rounded-lg text-xs ${testResult.error ? 'bg-red-950/30 border border-red-900/40 text-red-400' : 'bg-green-950/30 border border-green-900/40 text-green-400'}`}>
+              <div className={`p-3 rounded-lg text-xs ${testResult.error ? 'bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 text-red-600 dark:text-red-400' : 'bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900/40 text-green-600 dark:text-green-400'}`}>
                 {testResult.error || testResult.message}
               </div>
             )}
