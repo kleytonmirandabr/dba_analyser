@@ -36,6 +36,10 @@ import VPNSetupWizard from './components/wizard/VPNSetupWizard'
 import K8sDashboardPage from './pages/K8sDashboardPage'
 import K8sClustersPage from './pages/K8sClustersPage'
 import K8sDeploymentsPage from './pages/K8sDeploymentsPage'
+import K8sPodsPage from './pages/K8sPodsPage'
+import K8sNodesPage from './pages/K8sNodesPage'
+import K8sServicesPage from './pages/K8sServicesPage'
+import K8sIngressPage from './pages/K8sIngressPage'
 import { Loader2 } from 'lucide-react'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -101,10 +105,10 @@ export default function App() {
           <Route path="k8s" element={<K8sDashboardPage />} />
           <Route path="k8s/clusters" element={<K8sClustersPage />} />
           <Route path="k8s/deployments" element={<K8sDeploymentsPage />} />
-          <Route path="k8s/pods" element={<K8sDashboardPage />} />
-          <Route path="k8s/nodes" element={<K8sDashboardPage />} />
-          <Route path="k8s/services" element={<K8sDashboardPage />} />
-          <Route path="k8s/ingress" element={<K8sDashboardPage />} />
+          <Route path="k8s/pods" element={<K8sPodsPage />} />
+          <Route path="k8s/nodes" element={<K8sNodesPage />} />
+          <Route path="k8s/services" element={<K8sServicesPage />} />
+          <Route path="k8s/ingress" element={<K8sIngressPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
