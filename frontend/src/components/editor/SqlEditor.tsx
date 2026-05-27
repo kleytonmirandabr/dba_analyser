@@ -4,7 +4,7 @@ import { EditorState, Compartment } from '@codemirror/state'
 import { sql, MSSQL, PostgreSQL, MySQL } from '@codemirror/lang-sql'
 import { autocompletion, CompletionContext, CompletionResult, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete'
 import { oneDark } from '@codemirror/theme-one-dark'
-import { defaultKeymap, history, historyKeymap, indentWithTab, toggleComment, toggleBlockComment, undo, redo } from '@codemirror/commands'
+import { defaultKeymap, history, historyKeymap, indentWithTab, toggleComment, toggleBlockComment, undo, redo, indentMore, indentLess, moveLineUp, moveLineDown, copyLineDown, selectLine } from '@codemirror/commands'
 import { searchKeymap, highlightSelectionMatches, openSearchPanel } from '@codemirror/search'
 import { foldGutter, foldKeymap, foldAll, unfoldAll, indentOnInput, bracketMatching, syntaxHighlighting, defaultHighlightStyle, HighlightStyle } from '@codemirror/language'
 import { lintGutter } from '@codemirror/lint'
@@ -23,6 +23,12 @@ export interface EditorCommands {
   foldAll: () => void
   unfoldAll: () => void
   focus: () => void
+  indent: () => void
+  dedent: () => void
+  duplicateLine: () => void
+  moveUp: () => void
+  moveDown: () => void
+  selectLine: () => void
 }
 
 interface SqlEditorProps {
@@ -51,6 +57,21 @@ const lightTheme = EditorView.theme({
   '.cm-searchMatch.cm-searchMatch-selected': { backgroundColor: '#fdba74' },
   '.cm-tooltip-autocomplete': { border: '1px solid #e5e7eb', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' },
 })
+
+// SQL syntax colors for light mode
+const lightSqlHighlight = HighlightStyle.define([
+  { tag: tags.keyword, color: '#0000ff', fontWeight: '600' },        // SELECT, FROM, WHERE = blue bold
+  { tag: tags.operatorKeyword, color: '#0000ff', fontWeight: '600' },
+  { tag: tags.definitionKeyword, color: '#0000ff', fontWeight: '600' },
+  { tag: tags.typeName, color: '#267f99' },                           // INT, VARCHAR = teal
+  { tag: tags.string, color: '#a31515' },                             // 'strings' = red
+  { tag: tags.number, color: '#098658' },                             // numbers = green
+  { tag: tags.comment, color: '#6a9955', fontStyle: 'italic' },       // --comments = green italic
+  { tag: tags.operator, color: '#d4d4d4' },
+  { tag: tags.function(tags.variableName), color: '#795e26' },        // functions = brown
+  { tag: tags.variableName, color: '#001080' },                       // variables/columns = dark blue
+  { tag: tags.null, color: '#0000ff', fontWeight: '600' },
+])
 
 const darkThemeCustom = EditorView.theme({
   '&': { fontSize: '13px' },
@@ -281,8 +302,8 @@ export default function SqlEditor({ value, onChange, onExecute, onExecuteSelecte
         phPlugin(placeholder || 'SELECT * FROM table LIMIT 100;\n-- Ctrl+Enter para executar | Ctrl+/ para comentar | Ctrl+F para buscar'),
         EditorView.lineWrapping,
 
-        // Theme
-        ...(theme === 'dark' ? [oneDark, darkThemeCustom] : [lightTheme]),
+        // Theme + Syntax highlighting
+        ...(theme === 'dark' ? [oneDark, darkThemeCustom] : [lightTheme, syntaxHighlighting(lightSqlHighlight)]),
       ],
     })
 
@@ -314,6 +335,12 @@ export default function SqlEditor({ value, onChange, onExecute, onExecuteSelecte
         redo: () => { redo(view); view.focus() },
         foldAll: () => { foldAll(view); view.focus() },
         unfoldAll: () => { unfoldAll(view); view.focus() },
+        indent: () => { indentMore(view); view.focus() },
+        dedent: () => { indentLess(view); view.focus() },
+        duplicateLine: () => { copyLineDown(view); view.focus() },
+        moveUp: () => { moveLineUp(view); view.focus() },
+        moveDown: () => { moveLineDown(view); view.focus() },
+        selectLine: () => { selectLine(view); view.focus() },
         focus: () => { view.focus() },
       })
     }

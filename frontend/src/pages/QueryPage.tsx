@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Play, Square, Download, Clock, AlertCircle, Database, Loader2, FileText, Search, CaseUpper, CaseLower, Undo2, Redo2, FoldVertical, UnfoldVertical, Copy, Table2, FileSpreadsheet, FileJson, FileType, ChevronDown, ChevronRight, Plus, X, History, Star, Code2, AlignLeft, Braces, ChevronLeft, Eye, Zap, Key, FolderOpen, RefreshCw, Keyboard, GripVertical, Server } from 'lucide-react'
+import { Play, Square, Download, Clock, AlertCircle, Database, Loader2, FileText, Search, CaseUpper, CaseLower, Undo2, Redo2, FoldVertical, UnfoldVertical, Copy, Table2, FileSpreadsheet, FileJson, FileType, ChevronDown, ChevronRight, Plus, X, History, Star, Code2, AlignLeft, Braces, ChevronLeft, Eye, Zap, Key, FolderOpen, RefreshCw, Keyboard, GripVertical, Server, Indent, Outdent, CopyPlus, ArrowUp, ArrowDown, MessageSquareCode, WrapText } from 'lucide-react'
 import api from '../lib/api'
 import SqlEditor, { EditorCommands } from '../components/editor/SqlEditor'
 import { format as formatSQL } from 'sql-formatter'
@@ -218,7 +218,7 @@ export default function QueryPage() {
 
   const renderNode = (node: TreeNode, depth = 0): JSX.Element => {
     const isExpanded = expanded.has(node.id)
-    const hasChildren = node.type !== 'column' && node.type !== 'view' && node.type !== 'function' && node.type !== 'trigger'
+    const hasChildren = ['connection', 'schema', 'tables_folder', 'views_folder', 'functions_folder', 'triggers_folder', 'table'].includes(node.type)
     const Icon = nodeIcon(node.type)
     const isConn = node.type === 'connection'
     const isActive = isConn && node.connId === activeTab.connectionId
@@ -422,11 +422,21 @@ export default function QueryPage() {
           <div className="w-px h-5 bg-gray-300 dark:bg-gray-700 mx-1" />
 
           <ToolbarBtn icon={AlignLeft} label="Formatar (Ctrl+Shift+F)" onClick={formatSql} disabled={!activeTab.sql.trim()} />
-          <ToolbarBtn icon={Undo2} label="Desfazer" onClick={() => editorCmds?.undo()} disabled={!editorCmds} />
-          <ToolbarBtn icon={Redo2} label="Refazer" onClick={() => editorCmds?.redo()} disabled={!editorCmds} />
+          <ToolbarBtn icon={MessageSquareCode} label="Comentar (Ctrl+/)" onClick={() => editorCmds?.comment()} disabled={!editorCmds} />
+          <div className="w-px h-4 bg-gray-300 dark:bg-gray-700" />
+          <ToolbarBtn icon={Undo2} label="Desfazer (Ctrl+Z)" onClick={() => editorCmds?.undo()} disabled={!editorCmds} />
+          <ToolbarBtn icon={Redo2} label="Refazer (Ctrl+Y)" onClick={() => editorCmds?.redo()} disabled={!editorCmds} />
+          <div className="w-px h-4 bg-gray-300 dark:bg-gray-700" />
+          <ToolbarBtn icon={Indent} label="Indentar (Tab)" onClick={() => editorCmds?.indent()} disabled={!editorCmds} />
+          <ToolbarBtn icon={Outdent} label="Desindentar (Shift+Tab)" onClick={() => editorCmds?.dedent()} disabled={!editorCmds} />
+          <div className="w-px h-4 bg-gray-300 dark:bg-gray-700" />
+          <ToolbarBtn icon={CopyPlus} label="Duplicar linha (Ctrl+Shift+D)" onClick={() => editorCmds?.duplicateLine()} disabled={!editorCmds} />
+          <ToolbarBtn icon={ArrowUp} label="Mover linha ↑ (Alt+↑)" onClick={() => editorCmds?.moveUp()} disabled={!editorCmds} />
+          <ToolbarBtn icon={ArrowDown} label="Mover linha ↓ (Alt+↓)" onClick={() => editorCmds?.moveDown()} disabled={!editorCmds} />
+          <div className="w-px h-4 bg-gray-300 dark:bg-gray-700" />
           <ToolbarBtn icon={Search} label="Buscar (Ctrl+F)" onClick={() => editorCmds?.search()} disabled={!editorCmds} />
-          <ToolbarBtn icon={CaseUpper} label="UPPER" onClick={() => editorCmds?.uppercase()} disabled={!editorCmds} />
-          <ToolbarBtn icon={CaseLower} label="lower" onClick={() => editorCmds?.lowercase()} disabled={!editorCmds} />
+          <ToolbarBtn icon={CaseUpper} label="UPPER (Ctrl+Shift+U)" onClick={() => editorCmds?.uppercase()} disabled={!editorCmds} />
+          <ToolbarBtn icon={CaseLower} label="lower (Ctrl+Shift+L)" onClick={() => editorCmds?.lowercase()} disabled={!editorCmds} />
 
           <div className="ml-auto flex items-center gap-1.5">
             <ToolbarBtn icon={History} label="Histórico" onClick={() => setShowHistory(!showHistory)} active={showHistory} />
