@@ -239,6 +239,7 @@ export default function ConnectionsPage() {
 }
 
 function ConnectionForm({ onClose, onSaved, connection }: { onClose: () => void; onSaved: () => void; connection?: Connection }) {
+  const { t } = useTranslation()
   const [form, setForm] = useState({
     name: connection?.name || '', host: connection?.host || '', port: connection?.port || 5432,
     databaseName: connection?.databaseName || '', username: connection?.username || '', password: '',
@@ -363,6 +364,7 @@ function ConnectionForm({ onClose, onSaved, connection }: { onClose: () => void;
 
 
 function DatabaseDiscovery({ connection, existingDatabases = [], onClose, onSaved }: { connection: Connection; existingDatabases?: string[]; onClose: () => void; onSaved: () => void }) {
+  const { t } = useTranslation()
   const [databases, setDatabases] = useState<{ name: string; sizeBytes?: number; encoding?: string }[]>([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<Set<string>>(new Set())
