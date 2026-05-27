@@ -11,9 +11,11 @@ services:
       - vpn-data:/vpn
     environment:
       - FIREWALL=
+    ports:
+      - "3030:3030"  # Backend exposto AQUI (backend usa network do vpn)
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "ip addr show tun0 2>/dev/null && ping -c 1 -W 3 10.0.0.18 2>/dev/null || exit 1"]
+      test: ["CMD-SHELL", "ip addr show tun0 2>/dev/null || exit 0"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -25,8 +27,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile.dev
     container_name: dba_analyser-backend-1
-    ports:
-      - "3030:3030"
+    network_mode: "service:vpn"  # ← Todo tráfego do backend sai pela VPN
     volumes:
       - ./backend/src:/app/src
       - vpn-data:/vpn
@@ -38,6 +39,8 @@ services:
       - NODE_ENV=development
       - VPN_CONFIG_PATH=/vpn
     depends_on:
+      vpn:
+        condition: service_healthy
       postgres:
         condition: service_healthy
 
