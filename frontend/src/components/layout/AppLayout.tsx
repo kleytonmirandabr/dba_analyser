@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import Header from './Header'
+import GlobalSearch from './GlobalSearch'
 
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('dba-sidebar-collapsed') === 'true')
@@ -20,6 +21,7 @@ export default function AppLayout() {
         <main className="flex-1 overflow-y-auto p-6">
           <Outlet />
         </main>
+        <GlobalSearch />
       </div>
     </div>
   )

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Save, Lock, Eye, EyeOff, CheckCircle2, Globe, Languages } from 'lucide-react';
+import { User, Save, Lock, Eye, EyeOff, CheckCircle2, Globe, Languages, Shield, QrCode } from 'lucide-react';
 import api from '../lib/api';
 import { useAuthStore } from '../stores/auth.store';
 
@@ -51,6 +51,31 @@ export default function MyAccountPage() {
     } catch (e: any) { setPwdMsg({ type: 'err', text: e.response?.data?.error || 'Erro' }); }
   }
 
+  const [twoFA, setTwoFA] = useState<{ enabled: boolean; secret?: string; otpauthUrl?: string }>({ enabled: false });
+  const [tfaToken, setTfaToken] = useState('');
+  const [tfaMsg, setTfaMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+
+  async function setup2FA() {
+    try {
+      const { data } = await api.post('/api/2fa/setup');
+      setTwoFA({ enabled: false, secret: data.secret, otpauthUrl: data.otpauthUrl });
+    } catch (e: any) { setTfaMsg({ type: 'err', text: e.response?.data?.error || 'Erro' }); }
+  }
+
+  async function enable2FA() {
+    try {
+      await api.post('/api/2fa/enable', { token: tfaToken });
+      setTwoFA({ enabled: true }); setTfaToken(''); setTfaMsg({ type: 'ok', text: '2FA ativado!' });
+    } catch (e: any) { setTfaMsg({ type: 'err', text: e.response?.data?.error || 'Código inválido' }); }
+  }
+
+  async function disable2FA() {
+    try {
+      await api.post('/api/2fa/disable', { token: tfaToken });
+      setTwoFA({ enabled: false }); setTfaToken(''); setTfaMsg({ type: 'ok', text: '2FA desativado' });
+    } catch (e: any) { setTfaMsg({ type: 'err', text: e.response?.data?.error || 'Código inválido' }); }
+  }
+
   return (
     <div className="p-6 max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold flex items-center gap-2 mb-6"><User className="w-6 h-6" /> Minha Conta</h1>
@@ -90,6 +115,44 @@ export default function MyAccountPage() {
             {saved ? <><CheckCircle2 className="w-4 h-4" /> Salvo!</> : <><Save className="w-4 h-4" /> Salvar</>}
           </button>
         </div>
+      </div>
+
+      {/* 2FA section */}
+      <div className="border border-border rounded-lg p-5 mb-6">
+        <h2 className="font-semibold mb-4 flex items-center gap-2"><Shield className="w-4 h-4" /> Autenticação em Dois Fatores (2FA)</h2>
+        {twoFA.enabled ? (
+          <div>
+            <p className="text-sm text-green-600 dark:text-green-400 mb-3">✅ 2FA está ativado</p>
+            <div className="flex gap-2 items-end">
+              <div className="flex-1">
+                <label className="text-xs text-muted-foreground">Código para desativar</label>
+                <input className="w-full border border-border rounded px-3 py-2 bg-background" value={tfaToken} onChange={e => setTfaToken(e.target.value)} placeholder="000000" maxLength={6} />
+              </div>
+              <button onClick={disable2FA} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm">Desativar</button>
+            </div>
+          </div>
+        ) : twoFA.secret ? (
+          <div>
+            <p className="text-sm mb-3">Escaneie o QR code com Google Authenticator ou Authy:</p>
+            <div className="bg-white p-4 rounded-lg inline-block mb-3">
+              <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(twoFA.otpauthUrl || '')}`} alt="QR Code" className="w-48 h-48" />
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">Ou insira manualmente: <code className="bg-muted px-1 py-0.5 rounded text-xs">{twoFA.secret}</code></p>
+            <div className="flex gap-2 items-end">
+              <div className="flex-1">
+                <label className="text-xs text-muted-foreground">Digite o código do app</label>
+                <input className="w-full border border-border rounded px-3 py-2 bg-background" value={tfaToken} onChange={e => setTfaToken(e.target.value)} placeholder="000000" maxLength={6} />
+              </div>
+              <button onClick={enable2FA} className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm">Ativar</button>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <p className="text-sm text-muted-foreground mb-3">Proteja sua conta com autenticação em dois fatores. Após ativar, será necessário um código do app a cada login.</p>
+            <button onClick={setup2FA} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm flex items-center gap-2"><QrCode className="w-4 h-4" /> Configurar 2FA</button>
+          </div>
+        )}
+        {tfaMsg && <p className={`text-sm mt-2 ${tfaMsg.type === 'ok' ? 'text-green-600' : 'text-red-600'}`}>{tfaMsg.text}</p>}
       </div>
 
       {/* Password section */}

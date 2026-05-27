@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth.middleware';
 import { requireFeature } from '../middleware/feature.middleware';
+import { Between, MoreThanOrEqual } from 'typeorm';
 import { AppDataSource } from '../config/database';
 import { Alert } from '../entities/alert.entity';
 import { AlertHistory } from '../entities/alert-history.entity';
@@ -310,6 +311,78 @@ router.get('/analytics', authMiddleware, async (req: Request, res: Response) => 
     });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/alerts/mttr — Mean Time To Resolve
+router.get('/mttr', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const hours = parseInt(req.query.hours as string) || 168; // default 7 days
+    const since = new Date(Date.now() - hours * 3600000);
+
+    // Find incidents: sequences of triggered → ok
+    const history = await AppDataSource.getRepository(AlertHistory)
+      .createQueryBuilder('h')
+      .where('h.checkedAt >= :since', { since })
+      .orderBy('h.alertId', 'ASC')
+      .addOrderBy('h.checkedAt', 'ASC')
+      .getMany();
+
+    // Group by alert+database, find triggered→ok transitions
+    const incidents: { alertId: string; alertName: string; database: string; startedAt: Date; resolvedAt: Date; durationMin: number }[] = [];
+    const openIncidents: Map<string, Date> = new Map();
+
+    for (const h of history) {
+      const key = `${h.alertId}:${h.message?.match(/\[([^\]]+)\]/)?.[1] || 'default'}`;
+      if (h.status === 'triggered' && !openIncidents.has(key)) {
+        openIncidents.set(key, h.checkedAt);
+      } else if (h.status === 'ok' && openIncidents.has(key)) {
+        const start = openIncidents.get(key)!;
+        const durationMin = Math.round((h.checkedAt.getTime() - start.getTime()) / 60000);
+        incidents.push({
+          alertId: h.alertId,
+          alertName: '', // will fill
+          database: h.message?.match(/\[([^\]]+)\]/)?.[1] || '',
+          startedAt: start,
+          resolvedAt: h.checkedAt,
+          durationMin,
+        });
+        openIncidents.delete(key);
+      }
+    }
+
+    // Fill alert names
+    const alerts = await alertRepo().find();
+    const alertMap = new Map(alerts.map(a => [a.id, a.name]));
+    incidents.forEach(i => { i.alertName = alertMap.get(i.alertId) || ''; });
+
+    // Calculate metrics
+    const totalIncidents = incidents.length;
+    const avgMttr = totalIncidents > 0 ? Math.round(incidents.reduce((s, i) => s + i.durationMin, 0) / totalIncidents) : 0;
+    const maxMttr = totalIncidents > 0 ? Math.max(...incidents.map(i => i.durationMin)) : 0;
+    const minMttr = totalIncidents > 0 ? Math.min(...incidents.map(i => i.durationMin)) : 0;
+
+    // By alert
+    const byAlert: Record<string, { name: string; count: number; avgMin: number }> = {};
+    for (const i of incidents) {
+      if (!byAlert[i.alertId]) byAlert[i.alertId] = { name: i.alertName, count: 0, avgMin: 0 };
+      byAlert[i.alertId].count++;
+      byAlert[i.alertId].avgMin += i.durationMin;
+    }
+    Object.values(byAlert).forEach(v => { v.avgMin = Math.round(v.avgMin / v.count); });
+
+    // Open (unresolved)
+    const openCount = openIncidents.size;
+
+    res.json({
+      period: { hours, since: since.toISOString() },
+      totalIncidents, openCount,
+      mttr: { avg: avgMttr, max: maxMttr, min: minMttr },
+      byAlert: Object.entries(byAlert).map(([id, v]) => ({ alertId: id, ...v })),
+      recentIncidents: incidents.slice(-20).reverse(),
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
 });
 

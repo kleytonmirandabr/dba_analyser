@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { Wifi, WifiOff, LogOut, Bell, Sun, Moon, Settings, Building2, Users, Shield, Key, FileText, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { Wifi, WifiOff, LogOut, Bell, Sun, Moon, Settings, Building2, Users, Shield, Key, FileText, PanelLeftClose, PanelLeftOpen, HelpCircle } from 'lucide-react'
 import { useAuthStore } from '../../stores/auth.store'
 import { useThemeStore } from '../../stores/theme.store'
 import { useNavigate } from 'react-router-dom'
@@ -50,6 +50,7 @@ export default function Header({ sidebarCollapsed, onToggleSidebar }: HeaderProp
     { to: '/notifications', icon: Bell, label: 'Notificações', feature: 'alerts.manage' },
     { to: '/audit', icon: FileText, label: 'Auditoria', feature: 'admin.audit' },
     { to: '/settings', icon: Settings, label: 'Configurações', feature: 'admin.settings' },
+    { to: '/help', icon: HelpCircle, label: 'Central de Ajuda', feature: null },
   ]
   const visibleAdminItems = adminItems.filter(item => !item.feature || hasFeature(item.feature))
 

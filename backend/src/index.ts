@@ -34,7 +34,11 @@ import profilesRoutes from './routes/profiles.routes';
 import featuresRoutes from './routes/features.routes';
 import usersRoutes from './routes/users.routes';
 import heartbeatRoutes from './routes/heartbeat.routes';
+import twoFactorRoutes from './routes/two-factor.routes';
+import reportsPdfRoutes from './routes/reports-pdf.routes';
 import notificationsRoutes from './routes/notifications.routes';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './config/swagger';
 import { initMonitorSocket } from './services/monitor.ws';
 
 dotenv.config();
@@ -79,6 +83,10 @@ app.get('/health', (_req, res) => {
 });
 
 // API routes
+// Swagger API docs
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, { customCss: '.swagger-ui .topbar { display: none }', customSiteTitle: 'DBA Analyser API' }));
+app.get('/api/docs.json', (_req, res) => res.json(swaggerSpec));
+
 app.use('/api/connections', healthRoutes); // health sub-routes
 app.use('/api/alerts', alertRoutes);
 app.use('/api/growth', growthRoutes);
@@ -98,6 +106,8 @@ app.use('/api/profiles', profilesRoutes);
 app.use('/api/features', featuresRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/heartbeat', heartbeatRoutes);
+app.use('/api/2fa', twoFactorRoutes);
+app.use('/api/reports/pdf', reportsPdfRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/diagnostics', diagnosticsRoutes);
 app.use('/api/backup', backupRoutes);

@@ -63,6 +63,12 @@ export class User {
   @Column({ type: 'timestamp', nullable: true })
   lastLoginAt!: Date | null;
 
+  @Column({ default: false })
+  twoFactorEnabled!: boolean;
+
+  @Column('varchar', { length: 255, nullable: true })
+  twoFactorSecret!: string | null;
+
   @CreateDateColumn()
   createdAt!: Date;
 
