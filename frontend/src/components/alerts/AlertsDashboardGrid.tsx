@@ -3,7 +3,7 @@ import { GridLayout } from 'react-grid-layout'
 import type { Layout } from 'react-grid-layout'
 import AlertWidget from './AlertWidget'
 import { useAlertDashboardLayout, LayoutPreset } from '../../hooks/useAlertDashboardLayout'
-import { LayoutGrid, Grid, Maximize2, Minimize2, RotateCcw } from 'lucide-react'
+import { LayoutGrid, Grid, Maximize2, Minimize2, RotateCcw, Pencil, Lock } from 'lucide-react'
 
 interface AlertDashboard {
   id: string; name: string; severity: string; currentStatus: string;
@@ -29,6 +29,7 @@ const PRESETS: { value: LayoutPreset; label: string; icon: any }[] = [
 export default function AlertsDashboardGrid({ data, filter }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(1200)
+  const [editMode, setEditMode] = useState(false)
 
   useEffect(() => {
     const el = containerRef.current
@@ -56,20 +57,30 @@ export default function AlertsDashboardGrid({ data, filter }: Props) {
     <div ref={containerRef}>
       {/* Toolbar */}
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-1 flex-wrap">
-          <span className="text-[10px] text-text-tertiary mr-1">Layout:</span>
-          {PRESETS.map(p => (
-            <button key={p.value} onClick={() => applyPreset(p.value)}
-              className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] transition ${
-                preset === p.value ? 'bg-blue-600 text-white' : 'text-text-secondary hover:bg-surface-elevated border border-border/50'
-              }`}>
-              <p.icon className="w-3 h-3" /> {p.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <button onClick={() => setEditMode(!editMode)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+              editMode ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-surface-elevated text-text-secondary border border-border hover:border-blue-500/50'
+            }`}>
+            {editMode ? <><Pencil className="w-3.5 h-3.5" /> Editando</> : <><Lock className="w-3.5 h-3.5" /> Editar Layout</>}
+          </button>
+          {editMode && (
+            <div className="flex items-center gap-1 ml-2">
+              <span className="text-[10px] text-text-tertiary mr-1">Preset:</span>
+              {PRESETS.map(p => (
+                <button key={p.value} onClick={() => applyPreset(p.value)}
+                  className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] transition ${
+                    preset === p.value ? 'bg-blue-600 text-white' : 'text-text-secondary hover:bg-surface-elevated border border-border/50'
+                  }`}>
+                  <p.icon className="w-3 h-3" /> {p.label}
+                </button>
+              ))}
+              <button onClick={() => applyPreset('overview')} className="flex items-center gap-1 px-2 py-1 text-[10px] text-text-tertiary hover:text-text-primary rounded transition ml-2" title="Reset">
+                <RotateCcw className="w-3 h-3" /> Reset
+              </button>
+            </div>
+          )}
         </div>
-        <button onClick={() => applyPreset('overview')} className="flex items-center gap-1 px-2 py-1 text-[10px] text-text-tertiary hover:text-text-primary rounded transition" title="Reset layout">
-          <RotateCcw className="w-3 h-3" /> Reset
-        </button>
       </div>
 
       {/* Grid */}
@@ -84,9 +95,9 @@ export default function AlertsDashboardGrid({ data, filter }: Props) {
           cols={12}
           rowHeight={80}
           width={width}
-          onLayoutChange={(newLayout: Layout[]) => setLayout(newLayout)}
-          isDraggable
-          isResizable
+          onLayoutChange={(newLayout: Layout[]) => { if (editMode) setLayout(newLayout) }}
+          isDraggable={editMode}
+          isResizable={editMode}
           draggableHandle=".drag-handle"
           margin={[12, 12] as [number, number]}
         >
@@ -105,6 +116,7 @@ export default function AlertsDashboardGrid({ data, filter }: Props) {
                   lastValues={d.lastValues}
                   config={getConfig(d.id)}
                   onConfigChange={setWidgetConfig}
+                  editMode={editMode}
                 />
             </div>
           ))}

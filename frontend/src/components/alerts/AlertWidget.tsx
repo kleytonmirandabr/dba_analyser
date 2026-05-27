@@ -26,6 +26,7 @@ interface AlertWidgetProps {
   config: WidgetConfig
   onConfigChange: (id: string, config: WidgetConfig) => void
   compact?: boolean
+  editMode?: boolean
 }
 
 const CHART_TYPES: { value: ChartType; label: string; icon: any }[] = [
@@ -51,10 +52,13 @@ const STATUS_COLORS = {
   pending: { bg: 'bg-gray-500/10', border: 'border-gray-500/30', text: 'text-gray-400', dot: 'bg-gray-400' },
 }
 
-export default function AlertWidget({ id, name, severity, currentStatus, connectionName, databaseName, lastCheckedAt, stats, timeline, lastValues, config, onConfigChange, compact }: AlertWidgetProps) {
+export default function AlertWidget({ id, name, severity, currentStatus, connectionName, databaseName, lastCheckedAt, stats, timeline, lastValues, config, onConfigChange, compact, editMode }: AlertWidgetProps) {
   const { t } = useTranslation()
   const [showSettings, setShowSettings] = useState(false)
   const colors = STATUS_COLORS[currentStatus as keyof typeof STATUS_COLORS] || STATUS_COLORS.pending
+
+  const tooltipStyle = { background: '#1f2937', border: '1px solid #374151', borderRadius: '8px', fontSize: '11px', color: '#e5e7eb', padding: '8px 12px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }
+  const formatLabel = (label: string) => { try { return new Date(label).toLocaleString() } catch { return label } }
 
   const renderChart = () => {
     const data = timeline.length > 1 ? timeline : []
@@ -70,10 +74,10 @@ export default function AlertWidget({ id, name, severity, currentStatus, connect
               <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" opacity={0.3} />
               <XAxis dataKey="time" tick={{ fontSize: 9, fill: 'var(--color-text-tertiary)' }} tickFormatter={t => t.slice(11, 16)} />
               <YAxis tick={{ fontSize: 9, fill: 'var(--color-text-tertiary)' }} width={30} />
-              <Tooltip contentStyle={{ background: 'var(--color-surface-elevated)', border: '1px solid var(--color-border)', borderRadius: '8px', fontSize: '11px' }} />
-              <Area type="monotone" dataKey="ok" stackId="1" stroke="#34d399" fill="#34d399" fillOpacity={0.3} />
-              <Area type="monotone" dataKey="triggered" stackId="1" stroke="#fbbf24" fill="#fbbf24" fillOpacity={0.3} />
-              <Area type="monotone" dataKey="error" stackId="1" stroke="#f87171" fill="#f87171" fillOpacity={0.3} />
+              <Tooltip contentStyle={tooltipStyle} labelFormatter={formatLabel} />
+              <Area type="monotone" dataKey="ok" stackId="1" stroke="#34d399" fill="#34d399" fillOpacity={0.3} name="OK" />
+              <Area type="monotone" dataKey="triggered" stackId="1" stroke="#fbbf24" fill="#fbbf24" fillOpacity={0.3} name="Disparados" />
+              <Area type="monotone" dataKey="error" stackId="1" stroke="#f87171" fill="#f87171" fillOpacity={0.3} name="Erros" />
             </AreaChart>
           </ResponsiveContainer>
         )
@@ -86,7 +90,7 @@ export default function AlertWidget({ id, name, severity, currentStatus, connect
                 const d = new Date(t); return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0')
               }} />
               <YAxis tick={{ fontSize: 9, fill: 'var(--color-text-tertiary)' }} width={30} />
-              <Tooltip contentStyle={{ background: 'var(--color-surface-elevated)', border: '1px solid var(--color-border)', borderRadius: '8px', fontSize: '11px' }} />
+              <Tooltip contentStyle={tooltipStyle} labelFormatter={formatLabel} />
               {lastValues.length > 2 
                 ? <Line type="monotone" dataKey="value" stroke="#60a5fa" strokeWidth={2} dot={false} />
                 : <>
@@ -105,10 +109,10 @@ export default function AlertWidget({ id, name, severity, currentStatus, connect
               <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" opacity={0.3} />
               <XAxis dataKey="time" tick={{ fontSize: 9, fill: 'var(--color-text-tertiary)' }} tickFormatter={t => t.slice(11, 16)} />
               <YAxis tick={{ fontSize: 9, fill: 'var(--color-text-tertiary)' }} width={30} />
-              <Tooltip contentStyle={{ background: 'var(--color-surface-elevated)', border: '1px solid var(--color-border)', borderRadius: '8px', fontSize: '11px' }} />
-              <Bar dataKey="ok" stackId="1" fill="#34d399" radius={[2, 2, 0, 0]} />
-              <Bar dataKey="triggered" stackId="1" fill="#fbbf24" radius={[2, 2, 0, 0]} />
-              <Bar dataKey="error" stackId="1" fill="#f87171" radius={[2, 2, 0, 0]} />
+              <Tooltip contentStyle={tooltipStyle} labelFormatter={formatLabel} />
+              <Bar dataKey="ok" stackId="1" fill="#34d399" radius={[2, 2, 0, 0]} name="OK" />
+              <Bar dataKey="triggered" stackId="1" fill="#fbbf24" radius={[2, 2, 0, 0]} name="Disparados" />
+              <Bar dataKey="error" stackId="1" fill="#f87171" radius={[2, 2, 0, 0]} name="Erros" />
             </BarChart>
           </ResponsiveContainer>
         )
@@ -165,13 +169,15 @@ export default function AlertWidget({ id, name, severity, currentStatus, connect
             'bg-blue-900/40 text-blue-400'
           }`}>{severity}</span>
         </div>
-        <button onClick={() => setShowSettings(!showSettings)} className="p-1 text-text-tertiary hover:text-text-primary rounded transition">
-          <Settings className="w-3.5 h-3.5" />
-        </button>
+        {editMode && (
+          <button onClick={() => setShowSettings(!showSettings)} className="p-1 text-text-tertiary hover:text-text-primary rounded transition">
+            <Settings className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
 
       {/* Settings panel */}
-      {showSettings && (
+      {showSettings && editMode && (
         <div className="px-3 py-2 border-b border-border/50 bg-surface-elevated/30 space-y-2">
           <div className="flex items-center gap-1">
             <span className="text-[9px] text-text-tertiary w-12">Gráfico:</span>
