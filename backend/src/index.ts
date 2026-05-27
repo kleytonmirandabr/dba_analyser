@@ -118,6 +118,11 @@ AppDataSource.initialize()
   .then(async () => {
     console.log('[DB] Connected to PostgreSQL');
     await seedDefaultAdmin();
+    // Permission system boot
+    const { registerFeatures } = await import('./services/feature-registry');
+    const { seedPermissions } = await import('./services/permission-seed');
+    await registerFeatures();
+    await seedPermissions();
     initAlertScheduler(io);
     initGrowthScheduler(io);
     initHealthCollector();
