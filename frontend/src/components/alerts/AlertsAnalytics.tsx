@@ -70,8 +70,8 @@ export default function AlertsAnalytics() {
             {byConnection.map((c: any, i: number) => (
               <div key={i} className="flex items-center gap-2 p-2 bg-surface rounded-lg">
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-text-primary truncate">{c.name}</p>
-                  <p className="text-[10px] text-text-tertiary">{c.db}</p>
+                  <p className="text-xs font-medium text-text-primary truncate">{c.db || c.name}</p>
+                  <p className="text-[10px] text-text-tertiary">{c.db ? c.name : ''}</p>
                 </div>
                 <div className="flex items-center gap-1.5 text-[10px]">
                   <span className="text-amber-600 font-bold">{c.triggered}</span>

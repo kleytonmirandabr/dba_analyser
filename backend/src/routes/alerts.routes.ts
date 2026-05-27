@@ -117,12 +117,14 @@ router.get('/analytics', authMiddleware, async (req: Request, res: Response) => 
       byDay[day].total++;
     }
 
-    // 2. Bancos com mais problemas
+    // 2. Bancos com mais problemas (extract from message [ConnName/DB] pattern)
     const byConnection: Record<string, { name: string; db: string; triggered: number; error: number; ok: number; total: number }> = {};
     for (const h of history) {
-      const connName = (h.alert as any)?.connection?.name || 'N/A';
-      const dbName = (h.alert as any)?.connection?.databaseName || 'N/A';
-      const key = connName + '/' + dbName;
+      // Try to extract connection/db from message pattern [Name]
+      const msgMatch = h.message?.match(/^\[([^\]]+)\]/);
+      const connName = msgMatch ? msgMatch[1] : ((h.alert as any)?.connection?.name || 'N/A');
+      const dbName = (h.alert as any)?.connection?.databaseName || '';
+      const key = msgMatch ? msgMatch[1] : (connName + '/' + dbName);
       if (!byConnection[key]) byConnection[key] = { name: connName, db: dbName, triggered: 0, error: 0, ok: 0, total: 0 };
       if (h.status === 'triggered') byConnection[key].triggered++;
       else if (h.status === 'error') byConnection[key].error++;

@@ -111,6 +111,7 @@ export default function AlertsDashboardGrid({ data, filter }: Props) {
                   connectionName={d.connectionName}
                   databaseName={d.databaseName}
                   lastCheckedAt={d.lastCheckedAt}
+                  lastMessage={d.lastMessage}
                   stats={d.stats}
                   timeline={d.timeline}
                   lastValues={d.lastValues}

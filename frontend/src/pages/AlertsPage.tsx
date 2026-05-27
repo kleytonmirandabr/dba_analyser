@@ -204,7 +204,7 @@ export default function AlertsPage() {
         </div>
       ) : view === 'table' ? (
         /* ─── INCIDENTS TABLE (grouped by rule) ─── */
-        <AlertIncidentsTable alerts={alerts} dashboard={dashboard} onEdit={a => { setEditAlert(a); setFormOpen(true) }} onTest={testAlert} onToggle={toggleEnabled} onDelete={deleteAlert} />
+        <AlertIncidentsTable key={alerts.map(a => a.lastCheckedAt).join()} alerts={alerts} dashboard={dashboard} onEdit={a => { setEditAlert(a); setFormOpen(true) }} onTest={testAlert} onToggle={toggleEnabled} onDelete={deleteAlert} />
       ) : (
         /* ─── LIST VIEW ─── */
         <div className="space-y-2">

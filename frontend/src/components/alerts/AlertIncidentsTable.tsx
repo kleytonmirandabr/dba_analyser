@@ -97,7 +97,14 @@ export default function AlertIncidentsTable({ alerts, dashboard, onEdit, onTest,
                         <Clock className="w-3 h-3 inline mr-1 text-text-tertiary" />
                         {new Date(h.checkedAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                       </td>
-                      <td className="px-4 py-2 text-text-secondary">{alert.connection?.databaseName || alert.connection?.name || '—'}</td>
+                      <td className="px-4 py-2 text-text-secondary">{
+                            (() => {
+                              // Extract [ConnName/DB] from message if present
+                              const match = h.message?.match(/^\[([^\]]+)\]/)
+                              if (match) return match[1]
+                              return alert.connection?.databaseName || alert.connection?.name || '—'
+                            })()
+                          }</td>
                       <td className="px-4 py-2">
                         <div className="flex items-center gap-1">
                           <StatusIcon status={h.status} />

@@ -1,7 +1,5 @@
-import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { Settings, X, TrendingUp, BarChart3, Activity, Gauge, Hash } from 'lucide-react'
-import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, RadialBarChart, RadialBar, PieChart, Pie, Cell } from 'recharts'
+import { useState, useMemo } from 'react'
+import { Settings, Database, Clock, AlertTriangle, CheckCircle } from 'lucide-react'
 
 export type ChartType = 'area' | 'line' | 'bar' | 'gauge' | 'stat'
 export type TimePeriod = '1h' | '6h' | '24h' | '7d' | '30d'
@@ -20,6 +18,7 @@ interface AlertWidgetProps {
   connectionName: string
   databaseName: string
   lastCheckedAt: string
+  lastMessage: string
   stats: { totalChecks: number; triggeredCount: number; errorCount: number; okCount: number; avgExecutionMs: number }
   timeline: { time: string; ok: number; triggered: number; error: number }[]
   lastValues: { time: string; value: number | null; status: string }[]
@@ -29,194 +28,160 @@ interface AlertWidgetProps {
   editMode?: boolean
 }
 
-const CHART_TYPES: { value: ChartType; label: string; icon: any }[] = [
-  { value: 'area', label: 'Área', icon: Activity },
-  { value: 'line', label: 'Linha', icon: TrendingUp },
-  { value: 'bar', label: 'Barras', icon: BarChart3 },
-  { value: 'gauge', label: 'Gauge', icon: Gauge },
-  { value: 'stat', label: 'Estatísticas', icon: Hash },
-]
-
-const PERIODS: { value: TimePeriod; label: string }[] = [
-  { value: '1h', label: '1h' },
-  { value: '6h', label: '6h' },
-  { value: '24h', label: '24h' },
-  { value: '7d', label: '7d' },
-  { value: '30d', label: '30d' },
-]
-
-const STATUS_COLORS = {
-  ok: { bg: 'bg-green-500/10', border: 'border-green-500/30', text: 'text-green-400', dot: 'bg-green-400' },
-  triggered: { bg: 'bg-amber-500/10', border: 'border-amber-500/30', text: 'text-amber-400', dot: 'bg-amber-400' },
-  error: { bg: 'bg-red-500/10', border: 'border-red-500/30', text: 'text-red-400', dot: 'bg-red-400' },
-  pending: { bg: 'bg-gray-500/10', border: 'border-gray-500/30', text: 'text-gray-400', dot: 'bg-gray-400' },
+function timeSince(date: string): string {
+  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000)
+  if (seconds < 60) return seconds + 's'
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return minutes + 'min'
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  if (hours < 24) return hours + 'h' + (mins > 0 ? mins + 'min' : '')
+  return Math.floor(hours / 24) + 'd ' + (hours % 24) + 'h'
 }
 
-export default function AlertWidget({ id, name, severity, currentStatus, connectionName, databaseName, lastCheckedAt, stats, timeline, lastValues, config, onConfigChange, compact, editMode }: AlertWidgetProps) {
-  const { t } = useTranslation()
-  const [showSettings, setShowSettings] = useState(false)
-  const colors = STATUS_COLORS[currentStatus as keyof typeof STATUS_COLORS] || STATUS_COLORS.pending
+export default function AlertWidget({ id, name, severity, currentStatus, connectionName, databaseName, lastCheckedAt, lastMessage, stats, timeline, lastValues, config, onConfigChange, compact, editMode }: AlertWidgetProps) {
+  // Parse lastMessage for multi-connection details
+  const details = useMemo(() => {
+    try {
+      const parsed = JSON.parse(lastMessage || '{}')
+      if (parsed.details) return parsed.details as { connName: string; database: string; status: string; message: string }[]
+    } catch {}
+    return null
+  }, [lastMessage])
 
-  const tooltipStyle = { background: '#1f2937', border: '1px solid #374151', borderRadius: '8px', fontSize: '11px', color: '#e5e7eb', padding: '8px 12px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }
-  const formatLabel = (label: string) => { try { return new Date(label).toLocaleString() } catch { return label } }
+  const problemDbs = details?.filter(d => d.status === 'triggered') || []
+  const errorDbs = details?.filter(d => d.status === 'error') || []
+  const okDbs = details?.filter(d => d.status === 'ok') || []
+  const totalDbs = details?.length || 1
 
-  const renderChart = () => {
-    const data = timeline.length > 1 ? timeline : []
-    if (data.length < 2 && config.chartType !== 'stat' && config.chartType !== 'gauge') {
-      return <div className="h-full flex items-center justify-center text-text-tertiary text-xs"><Activity className="w-4 h-4 mr-2" />Coletando dados...</div>
+  // Find first triggered time from timeline to calculate persistence
+  const firstTriggered = useMemo(() => {
+    // Find earliest consecutive triggered from the end of timeline
+    const reversed = [...timeline].reverse()
+    let firstTime = ''
+    for (const t of reversed) {
+      if (t.triggered > 0) firstTime = t.time
+      else break
     }
+    return firstTime
+  }, [timeline])
 
-    switch (config.chartType) {
-      case 'area':
-        return (
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" opacity={0.3} />
-              <XAxis dataKey="time" tick={{ fontSize: 9, fill: 'var(--color-text-tertiary)' }} tickFormatter={t => t.slice(11, 16)} />
-              <YAxis tick={{ fontSize: 9, fill: 'var(--color-text-tertiary)' }} width={30} />
-              <Tooltip contentStyle={tooltipStyle} labelFormatter={formatLabel} />
-              <Area type="monotone" dataKey="ok" stackId="1" stroke="#34d399" fill="#34d399" fillOpacity={0.3} name="OK" />
-              <Area type="monotone" dataKey="triggered" stackId="1" stroke="#fbbf24" fill="#fbbf24" fillOpacity={0.3} name="Disparados" />
-              <Area type="monotone" dataKey="error" stackId="1" stroke="#f87171" fill="#f87171" fillOpacity={0.3} name="Erros" />
-            </AreaChart>
-          </ResponsiveContainer>
-        )
-      case 'line':
-        return (
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={lastValues.length > 2 ? lastValues : data} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" opacity={0.3} />
-              <XAxis dataKey="time" tick={{ fontSize: 9, fill: 'var(--color-text-tertiary)' }} tickFormatter={t => {
-                const d = new Date(t); return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0')
-              }} />
-              <YAxis tick={{ fontSize: 9, fill: 'var(--color-text-tertiary)' }} width={30} />
-              <Tooltip contentStyle={tooltipStyle} labelFormatter={formatLabel} />
-              {lastValues.length > 2 
-                ? <Line type="monotone" dataKey="value" stroke="#60a5fa" strokeWidth={2} dot={false} />
-                : <>
-                    <Line type="monotone" dataKey="ok" stroke="#34d399" strokeWidth={1.5} dot={false} />
-                    <Line type="monotone" dataKey="triggered" stroke="#fbbf24" strokeWidth={1.5} dot={false} />
-                    <Line type="monotone" dataKey="error" stroke="#f87171" strokeWidth={1.5} dot={false} />
-                  </>
-              }
-            </LineChart>
-          </ResponsiveContainer>
-        )
-      case 'bar':
-        return (
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" opacity={0.3} />
-              <XAxis dataKey="time" tick={{ fontSize: 9, fill: 'var(--color-text-tertiary)' }} tickFormatter={t => t.slice(11, 16)} />
-              <YAxis tick={{ fontSize: 9, fill: 'var(--color-text-tertiary)' }} width={30} />
-              <Tooltip contentStyle={tooltipStyle} labelFormatter={formatLabel} />
-              <Bar dataKey="ok" stackId="1" fill="#34d399" radius={[2, 2, 0, 0]} name="OK" />
-              <Bar dataKey="triggered" stackId="1" fill="#fbbf24" radius={[2, 2, 0, 0]} name="Disparados" />
-              <Bar dataKey="error" stackId="1" fill="#f87171" radius={[2, 2, 0, 0]} name="Erros" />
-            </BarChart>
-          </ResponsiveContainer>
-        )
-      case 'gauge': {
-        const total = stats.totalChecks || 1
-        const okPct = Math.round((stats.okCount / total) * 100)
-        const gaugeData = [{ name: 'OK', value: okPct, fill: '#34d399' }]
-        return (
-          <div className="h-full flex flex-col items-center justify-center">
-            <ResponsiveContainer width="100%" height={compact ? 80 : 100}>
-              <RadialBarChart cx="50%" cy="100%" innerRadius="60%" outerRadius="90%" startAngle={180} endAngle={0} barSize={10} data={gaugeData}>
-                <RadialBar background={{ fill: 'var(--color-surface)' }} dataKey="value" cornerRadius={5} />
-              </RadialBarChart>
-            </ResponsiveContainer>
-            <p className="text-2xl font-bold text-green-400 -mt-4">{okPct}%</p>
-            <p className="text-[10px] text-text-tertiary">Disponibilidade</p>
-          </div>
-        )
-      }
-      case 'stat':
-        return (
-          <div className="h-full grid grid-cols-2 gap-2 p-2">
-            <div className="flex flex-col items-center justify-center bg-green-500/5 rounded-lg border border-green-500/20 p-2">
-              <p className="text-xl font-bold text-green-400">{stats.okCount}</p>
-              <p className="text-[9px] text-text-tertiary uppercase">OK</p>
-            </div>
-            <div className="flex flex-col items-center justify-center bg-amber-500/5 rounded-lg border border-amber-500/20 p-2">
-              <p className="text-xl font-bold text-amber-400">{stats.triggeredCount}</p>
-              <p className="text-[9px] text-text-tertiary uppercase">Alertas</p>
-            </div>
-            <div className="flex flex-col items-center justify-center bg-red-500/5 rounded-lg border border-red-500/20 p-2">
-              <p className="text-xl font-bold text-red-400">{stats.errorCount}</p>
-              <p className="text-[9px] text-text-tertiary uppercase">Erros</p>
-            </div>
-            <div className="flex flex-col items-center justify-center bg-blue-500/5 rounded-lg border border-blue-500/20 p-2">
-              <p className="text-xl font-bold text-blue-400">{stats.avgExecutionMs}ms</p>
-              <p className="text-[9px] text-text-tertiary uppercase">Média</p>
-            </div>
-          </div>
-        )
-    }
-  }
+  const severityColors = severity === 'critical' ? 'border-red-500/40 bg-red-50 dark:bg-red-950/20' :
+    severity === 'warning' ? 'border-amber-500/40 bg-amber-50 dark:bg-amber-950/20' :
+    'border-blue-500/40 bg-blue-50 dark:bg-blue-950/20'
 
   return (
-    <div className={`h-full flex flex-col bg-white dark:bg-gray-900/60 border ${colors.border} rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all`}>
-      {/* Header - drag handle */}
-      <div className="drag-handle cursor-grab active:cursor-grabbing flex items-center justify-between px-3 py-2 border-b border-border/50 bg-surface-elevated/50">
+    <div className={`h-full flex flex-col border rounded-xl overflow-hidden shadow-sm ${severityColors}`}>
+      {/* Header */}
+      <div className="drag-handle cursor-grab active:cursor-grabbing flex items-center justify-between px-3 py-2 border-b border-inherit bg-white/50 dark:bg-gray-900/50">
         <div className="flex items-center gap-2 min-w-0">
-          <div className={`w-2 h-2 rounded-full ${colors.dot} animate-pulse`} />
-          <span className="text-xs font-semibold text-text-primary truncate">{name}</span>
-          <span className={`text-[8px] px-1 py-0.5 rounded font-bold uppercase ${
-            severity === 'critical' ? 'bg-red-900/40 text-red-400' :
-            severity === 'warning' ? 'bg-amber-900/40 text-amber-400' :
-            'bg-blue-900/40 text-blue-400'
+          <span className={`w-2.5 h-2.5 rounded-full ${
+            currentStatus === 'ok' ? 'bg-green-500' :
+            currentStatus === 'triggered' ? 'bg-amber-500 animate-pulse' :
+            'bg-red-500 animate-pulse'
+          }`} />
+          <span className="text-xs font-bold text-text-primary truncate">{name}</span>
+          <span className={`text-[8px] px-1.5 py-0.5 rounded font-bold uppercase ${
+            severity === 'critical' ? 'bg-red-200 dark:bg-red-900/60 text-red-700 dark:text-red-300' :
+            severity === 'warning' ? 'bg-amber-200 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300' :
+            'bg-blue-200 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300'
           }`}>{severity}</span>
         </div>
         {editMode && (
-          <button onClick={() => setShowSettings(!showSettings)} className="p-1 text-text-tertiary hover:text-text-primary rounded transition">
-            <Settings className="w-3.5 h-3.5" />
-          </button>
+          <button className="p-1 text-text-tertiary hover:text-text-primary rounded"><Settings className="w-3.5 h-3.5" /></button>
         )}
       </div>
 
-      {/* Settings panel */}
-      {showSettings && editMode && (
-        <div className="px-3 py-2 border-b border-border/50 bg-surface-elevated/30 space-y-2">
-          <div className="flex items-center gap-1">
-            <span className="text-[9px] text-text-tertiary w-12">Gráfico:</span>
-            <div className="flex gap-0.5">
-              {CHART_TYPES.map(ct => (
-                <button key={ct.value} onClick={() => onConfigChange(id, { ...config, chartType: ct.value })}
-                  className={`p-1 rounded text-[9px] flex items-center gap-0.5 ${config.chartType === ct.value ? 'bg-blue-600 text-white' : 'text-text-tertiary hover:bg-surface-elevated'}`}
-                  title={ct.label}>
-                  <ct.icon className="w-3 h-3" />
-                </button>
-              ))}
+      {/* Main content */}
+      <div className="flex-1 min-h-0 p-3 overflow-y-auto">
+        {details && details.length > 1 ? (
+          /* Multi-connection alert: show databases */
+          <div className="space-y-2">
+            {/* Summary */}
+            <div className="flex items-center gap-3 text-xs">
+              {problemDbs.length > 0 && (
+                <span className="text-amber-700 dark:text-amber-400 font-bold">
+                  <AlertTriangle className="w-3 h-3 inline mr-0.5" />
+                  {problemDbs.length} de {totalDbs} bancos com problema
+                </span>
+              )}
+              {currentStatus === 'ok' && (
+                <span className="text-green-700 dark:text-green-400 font-bold">
+                  <CheckCircle className="w-3 h-3 inline mr-0.5" />
+                  Todos OK ({totalDbs})
+                </span>
+              )}
             </div>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="text-[9px] text-text-tertiary w-12">Período:</span>
-            <div className="flex gap-0.5">
-              {PERIODS.map(p => (
-                <button key={p.value} onClick={() => onConfigChange(id, { ...config, period: p.value })}
-                  className={`px-1.5 py-0.5 rounded text-[9px] ${config.period === p.value ? 'bg-blue-600 text-white' : 'text-text-tertiary hover:bg-surface-elevated'}`}>
-                  {p.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Chart area */}
-      <div className="flex-1 min-h-0 p-2">
-        {renderChart()}
+            {/* Problem databases */}
+            {problemDbs.length > 0 && (
+              <div className="space-y-1">
+                {problemDbs.slice(0, 8).map((d, i) => (
+                  <div key={i} className="flex items-center gap-2 px-2 py-1 bg-amber-100/50 dark:bg-amber-900/20 rounded text-[10px]">
+                    <Database className="w-3 h-3 text-amber-600" />
+                    <span className="font-medium text-text-primary">{d.database || d.connName}</span>
+                    <span className="text-text-tertiary ml-auto truncate max-w-[120px]">{d.message?.replace(/^\[[^\]]+\]\s*/, '')}</span>
+                  </div>
+                ))}
+                {problemDbs.length > 8 && (
+                  <p className="text-[9px] text-text-tertiary px-2">+{problemDbs.length - 8} mais...</p>
+                )}
+              </div>
+            )}
+
+            {/* Error databases */}
+            {errorDbs.length > 0 && (
+              <div className="space-y-1 mt-1">
+                {errorDbs.slice(0, 3).map((d, i) => (
+                  <div key={i} className="flex items-center gap-2 px-2 py-1 bg-red-100/50 dark:bg-red-900/20 rounded text-[10px]">
+                    <Database className="w-3 h-3 text-red-600" />
+                    <span className="font-medium text-text-primary">{d.database || d.connName}</span>
+                    <span className="text-red-600 text-[9px] ml-auto">ERRO</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* OK databases (collapsed) */}
+            {okDbs.length > 0 && (
+              <p className="text-[9px] text-green-700 dark:text-green-400 px-2 mt-1">
+                ✅ {okDbs.length} banco{okDbs.length > 1 ? 's' : ''} OK: {okDbs.slice(0, 5).map(d => d.database || d.connName).join(', ')}{okDbs.length > 5 ? '...' : ''}
+              </p>
+            )}
+          </div>
+        ) : (
+          /* Single connection alert */
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-xs">
+              <Database className="w-3.5 h-3.5 text-text-tertiary" />
+              <span className="font-medium text-text-primary">{databaseName || connectionName}</span>
+            </div>
+            {lastMessage && !lastMessage.startsWith('{') && (
+              <p className="text-[10px] text-text-secondary bg-surface rounded px-2 py-1.5">{lastMessage}</p>
+            )}
+            {lastValues.length > 0 && (
+              <div className="text-xs">
+                <span className="text-text-tertiary">Último valor: </span>
+                <span className="font-bold text-text-primary">{lastValues[lastValues.length - 1]?.value}</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Footer */}
-      <div className="px-3 py-1.5 border-t border-border/50 flex items-center justify-between text-[9px] text-text-tertiary bg-gray-50 dark:bg-gray-900/40">
+      {/* Footer with persistence info */}
+      <div className="px-3 py-1.5 border-t border-inherit flex items-center justify-between text-[9px] text-text-tertiary bg-white/30 dark:bg-gray-900/30">
         <div className="flex items-center gap-2">
-          <span className="font-medium">{connectionName}</span>
-          <span className="text-text-tertiary">•</span>
-          <span>OK: <b className="text-green-600 dark:text-green-400">{stats.okCount}</b></span>
-          <span>Erros: <b className="text-red-600 dark:text-red-400">{stats.errorCount}</b></span>
+          <span>{connectionName}</span>
+          {currentStatus === 'triggered' && firstTriggered && (
+            <>
+              <span>•</span>
+              <span className="text-amber-600 dark:text-amber-400 font-medium">
+                <Clock className="w-2.5 h-2.5 inline mr-0.5" />
+                Problema há {timeSince(firstTriggered)}
+              </span>
+            </>
+          )}
         </div>
         <span>{lastCheckedAt ? new Date(lastCheckedAt).toLocaleTimeString().slice(0, 5) : '—'}</span>
       </div>
