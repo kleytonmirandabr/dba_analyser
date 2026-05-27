@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react'
+import SqlEditor from '../components/editor/SqlEditor'
 import SearchableSelect from '../components/ui/SearchableSelect'
 import { useTranslation } from 'react-i18next'
-import { Bell, Plus, CheckCircle, AlertTriangle, XCircle, Clock, Loader2, X, Play, Pause, Trash2, Edit, ChevronRight, BarChart3, List, TrendingUp, Activity } from 'lucide-react'
+import { Bell, Plus, CheckCircle, AlertTriangle, XCircle, Clock, Loader2, X, Play, Pause, Trash2, Edit, ChevronRight, BarChart3, List, TrendingUp, Activity, RefreshCw } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area } from 'recharts'
 import api from '../lib/api'
 import AlertsDashboardGrid from '../components/alerts/AlertsDashboardGrid'
+import AlertsAnalytics from '../components/alerts/AlertsAnalytics'
+import AlertIncidentsTable from '../components/alerts/AlertIncidentsTable'
 
-type View = 'dashboard' | 'table' | 'list'
+type View = 'dashboard' | 'table' | 'list' | 'analytics'
 
 interface AlertDashboard {
   id: string; name: string; severity: string; currentStatus: string;
@@ -139,8 +142,15 @@ export default function AlertsPage() {
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition ${view === 'list' ? 'bg-blue-600 text-white' : 'text-text-secondary hover:text-text-primary'}`}>
               <Activity className="w-3.5 h-3.5" /> Cards
             </button>
+            <button onClick={() => setView('analytics')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition ${view === 'analytics' ? 'bg-blue-600 text-white' : 'text-text-secondary hover:text-text-primary'}`}>
+              <TrendingUp className="w-3.5 h-3.5" /> Analytics
+            </button>
           </div>
           <div className="flex items-center gap-2">
+            <button onClick={() => load()} title="Atualizar" className="p-1.5 text-text-tertiary hover:text-blue-500 rounded-lg border border-border hover:border-blue-300 transition">
+              <RefreshCw className="w-4 h-4" />
+            </button>
             <button onClick={() => setAutoRefresh(!autoRefresh)}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] rounded-lg border transition ${
                 autoRefresh ? 'border-green-300 dark:border-green-800 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'border-border text-text-tertiary'
@@ -193,83 +203,8 @@ export default function AlertsPage() {
           )}
         </div>
       ) : view === 'table' ? (
-        /* ─── TABLE VIEW ─── */
-        <div className="bg-white dark:bg-surface-elevated border border-border rounded-xl shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-border bg-gray-50 dark:bg-gray-900/50">
-                  <th className="px-3 py-2.5 text-left font-semibold text-text-secondary cursor-pointer hover:text-text-primary" onClick={() => { setSortCol('status'); setSortDir(d => d === 'asc' ? 'desc' : 'asc') }}>Status</th>
-                  <th className="px-3 py-2.5 text-left font-semibold text-text-secondary cursor-pointer hover:text-text-primary" onClick={() => { setSortCol('name'); setSortDir(d => d === 'asc' ? 'desc' : 'asc') }}>Nome</th>
-                  <th className="px-3 py-2.5 text-left font-semibold text-text-secondary">Severidade</th>
-                  <th className="px-3 py-2.5 text-left font-semibold text-text-secondary">Conexão</th>
-                  <th className="px-3 py-2.5 text-left font-semibold text-text-secondary cursor-pointer hover:text-text-primary" onClick={() => { setSortCol('lastCheckedAt'); setSortDir(d => d === 'asc' ? 'desc' : 'asc') }}>Último Check</th>
-                  <th className="px-3 py-2.5 text-center font-semibold text-text-secondary">Intervalo</th>
-                  <th className="px-3 py-2.5 text-center font-semibold text-text-secondary">Habilitado</th>
-                  <th className="px-3 py-2.5 text-right font-semibold text-text-secondary">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/50">
-                {[...alerts].sort((a, b) => {
-                  const dir = sortDir === 'asc' ? 1 : -1
-                  if (sortCol === 'name') return a.name.localeCompare(b.name) * dir
-                  if (sortCol === 'status') return a.currentStatus.localeCompare(b.currentStatus) * dir
-                  if (sortCol === 'lastCheckedAt') return ((a.lastCheckedAt || '') > (b.lastCheckedAt || '') ? 1 : -1) * dir
-                  return 0
-                }).map(a => (
-                  <tr key={a.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                    <td className="px-3 py-2.5">
-                      <div className="flex items-center gap-1.5">
-                        <span className={`w-2.5 h-2.5 rounded-full ${
-                          a.currentStatus === 'ok' ? 'bg-green-500' :
-                          a.currentStatus === 'triggered' ? 'bg-amber-500 animate-pulse' :
-                          a.currentStatus === 'error' ? 'bg-red-500 animate-pulse' : 'bg-gray-400'
-                        }`} />
-                        <span className={`font-medium capitalize ${
-                          a.currentStatus === 'ok' ? 'text-green-600 dark:text-green-400' :
-                          a.currentStatus === 'triggered' ? 'text-amber-600 dark:text-amber-400' :
-                          a.currentStatus === 'error' ? 'text-red-600 dark:text-red-400' : 'text-text-tertiary'
-                        }`}>{a.currentStatus === 'ok' ? 'OK' : a.currentStatus === 'triggered' ? 'Alerta' : a.currentStatus === 'error' ? 'Erro' : 'Pendente'}</span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-2.5 font-medium text-text-primary">{a.name}</td>
-                    <td className="px-3 py-2.5">
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase ${
-                        a.severity === 'critical' ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400' :
-                        a.severity === 'warning' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400' :
-                        'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400'
-                      }`}>{a.severity}</span>
-                    </td>
-                    <td className="px-3 py-2.5 text-text-secondary">{a.connection?.name || '—'}</td>
-                    <td className="px-3 py-2.5 text-text-tertiary">{a.lastCheckedAt ? new Date(a.lastCheckedAt).toLocaleString() : '—'}</td>
-                    <td className="px-3 py-2.5 text-center text-text-secondary">{a.intervalSeconds < 60 ? a.intervalSeconds + 's' : Math.round(a.intervalSeconds / 60) + 'min'}</td>
-                    <td className="px-3 py-2.5 text-center">
-                      <button onClick={() => toggleEnabled(a)} className={`w-8 h-4 rounded-full transition-colors relative ${a.enabled ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
-                        <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${a.enabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                      </button>
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <div className="flex items-center justify-end gap-0.5">
-                        <button onClick={() => testAlert(a.id)} className="p-1.5 text-text-tertiary hover:text-green-500 rounded transition" title="Testar">
-                          <Play className="w-3.5 h-3.5" />
-                        </button>
-                        <button onClick={() => { setEditAlert(a); setFormOpen(true) }} className="p-1.5 text-text-tertiary hover:text-blue-500 rounded transition" title="Editar">
-                          <Edit className="w-3.5 h-3.5" />
-                        </button>
-                        <button onClick={() => deleteAlert(a.id)} className="p-1.5 text-text-tertiary hover:text-red-500 rounded transition" title="Excluir">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {alerts.length === 0 && (
-            <div className="text-center py-12 text-text-secondary text-sm">Nenhum alerta configurado.</div>
-          )}
-        </div>
+        /* ─── INCIDENTS TABLE (grouped by rule) ─── */
+        <AlertIncidentsTable alerts={alerts} dashboard={dashboard} onEdit={a => { setEditAlert(a); setFormOpen(true) }} onTest={testAlert} onToggle={toggleEnabled} onDelete={deleteAlert} />
       ) : (
         /* ─── LIST VIEW ─── */
         <div className="space-y-2">
@@ -321,6 +256,9 @@ export default function AlertsPage() {
           ))}
         </div>
       )}
+
+      {/* ─── ANALYTICS VIEW ─── */}
+      {view === 'analytics' && <AlertsAnalytics />}
 
       {/* Test result toast */}
       {testToast && (
@@ -493,18 +431,23 @@ function AlertFormModal({ alert, onClose, onSaved }: { alert: Alert | null; onCl
   }
 
   const handleSubmit = async () => {
+    if (!form.name.trim()) { setError('Nome do alerta é obrigatório'); return }
+    if (!form.query.trim()) { setError('Query SQL é obrigatória'); return }
+    if (!form.connectionId) { setError('Selecione uma conexão'); return }
     setSaving(true); setError('')
     try {
       if (alert) {
         await api.put(`/api/alerts/${alert.id}`, form)
       } else {
-        await api.post('/api/alerts', { ...form, intervalSeconds: Number(form.intervalSeconds), connectionIds: form.connectionIds.length > 1 ? form.connectionIds : null })
+        await api.post('/api/alerts', { ...form, intervalSeconds: Number(form.intervalSeconds), threshold: form.threshold || null, operator: form.operator || null, connectionIds: form.connectionIds.length > 1 ? form.connectionIds : null })
       }
       onSaved()
     } catch (err: any) {
       const msg = err.response?.data?.error || err.message
+      const details = err.response?.data?.details
       const isSyntax = err.response?.data?.syntaxError
-      setError(isSyntax ? `🛡️ Erro de sintaxe SQL:\n${msg}` : msg)
+      const detailStr = details ? '\n' + details.map((d: any) => `• ${d.path?.join('.')}: ${d.message}`).join('\n') : ''
+      setError(isSyntax ? `🛡️ Erro de sintaxe SQL:\n${msg}` : msg + detailStr)
     }
     setSaving(false)
   }
@@ -514,7 +457,7 @@ function AlertFormModal({ alert, onClose, onSaved }: { alert: Alert | null; onCl
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-surface border border-border rounded-2xl shadow-2xl w-full max-w-xl mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="bg-surface border border-border rounded-2xl shadow-2xl w-full max-w-6xl mx-4 p-8 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-lg font-bold text-text-primary">{alert ? t('alerts.editAlert') : 'Novo Alerta'}</h2>
@@ -534,6 +477,11 @@ function AlertFormModal({ alert, onClose, onSaved }: { alert: Alert | null; onCl
             <div><label className={labelCls}>Nome do Alerta</label><input className={inputCls} value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} placeholder="Ex: Não recebe VIAGEM" /></div>
             <div>
               <label className={labelCls}>Databases para monitorar</label>
+              <div className="flex items-center gap-2 mb-1">
+                <button type="button" onClick={() => setForm(f => ({ ...f, connectionIds: connections.filter(c => c.databaseName).map(c => c.id), connectionId: f.connectionId || connections[0]?.id }))} className="text-[10px] text-blue-600 hover:underline">Selecionar todos</button>
+                <span className="text-text-tertiary text-[10px]">|</span>
+                <button type="button" onClick={() => setForm(f => ({ ...f, connectionIds: [] }))} className="text-[10px] text-red-600 hover:underline">Limpar</button>
+              </div>
               <div className="max-h-[180px] overflow-y-auto bg-surface-elevated border border-border rounded-lg p-2 space-y-1">
                 {connections.filter(c => c.databaseName).map(c => {
                   const checked = form.connectionIds.includes(c.id) || form.connectionId === c.id
@@ -583,7 +531,7 @@ function AlertFormModal({ alert, onClose, onSaved }: { alert: Alert | null; onCl
                 ]}
               />
             </div>
-            <button onClick={() => setStep(2)} className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition">Próximo →</button>
+            <button onClick={() => { if (!form.name.trim()) { setError('Preencha o nome do alerta'); return } if (!form.connectionId) { setError('Selecione ao menos uma conexão'); return } setError(''); setStep(2) }} className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition">Próximo →</button>
           </div>
         )}
 
@@ -591,9 +539,9 @@ function AlertFormModal({ alert, onClose, onSaved }: { alert: Alert | null; onCl
           <div className="space-y-4">
             <div>
               <label className={labelCls}>Query SQL (apenas SELECT)</label>
-              <textarea className={`${inputCls} h-32 font-mono text-xs`} value={form.query}
-                onChange={e => setForm(f => ({...f, query: e.target.value}))}
-                placeholder="SELECT COUNT(*) FROM tabela WHERE condição..." />
+              <div className="border border-border rounded-lg overflow-hidden" style={{ height: '200px' }}>
+                <SqlEditor value={form.query} onChange={v => setForm(f => ({...f, query: v}))} placeholder="SELECT COUNT(*) FROM tabela WHERE condição..." dbType="mssql" />
+              </div>
             </div>
             <div className="flex gap-2">
               <button onClick={testQuery} disabled={testing || !form.query}

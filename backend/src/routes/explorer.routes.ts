@@ -112,13 +112,14 @@ router.get('/:connId/functions', authMiddleware, async (req: Request, res: Respo
   } catch (err: any) { return res.status(500).json({ error: err.message }); }
 });
 
-// GET /api/explorer/:connId/triggers?schema=public
+// GET /api/explorer/:connId/triggers?schema=public&table=tableName
 router.get('/:connId/triggers', authMiddleware, async (req: Request, res: Response) => {
   try {
     const schema = (req.query.schema as string) || 'public';
+    const table = req.query.table as string | undefined;
     const { adapter, error } = await getAdapter(req.params.connId);
     if (error) return res.status(404).json({ error });
-    const data = await adapter.listTriggers(schema);
+    const data = await adapter.listTriggers(schema, table);
     await adapter.disconnect();
     return res.json({ data });
   } catch (err: any) { return res.status(500).json({ error: err.message }); }

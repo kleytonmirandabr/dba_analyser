@@ -118,13 +118,16 @@ export class PostgresAdapter implements DatabaseAdapter {
     return rows.map((r: any) => ({ ...r, columns: [], unique: r.definition?.includes('UNIQUE') || false }));
   }
 
-  async listTriggers(schema = 'public'): Promise<TriggerInfo[]> {
+  async listTriggers(schema = 'public', table?: string): Promise<TriggerInfo[]> {
+    const params: any[] = [schema];
+    let filter = 'WHERE trigger_schema = $1';
+    if (table) { filter += ' AND event_object_table = $2'; params.push(table); }
     const rows = await this.query(`
       SELECT trigger_name as name, event_object_table as table,
              action_timing as timing, event_manipulation as event,
              action_statement as definition
-      FROM information_schema.triggers WHERE trigger_schema = $1 ORDER BY trigger_name
-    `, [schema]);
+      FROM information_schema.triggers ${filter} ORDER BY trigger_name
+    `, params);
     return rows;
   }
 

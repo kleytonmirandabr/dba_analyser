@@ -81,6 +81,7 @@ export default function QueryPage() {
   // Tree state (Explorer)
   const [tree, setTree] = useState<TreeNode[]>([])
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [selectedNodeId, setSelectedNodeId] = useState<string>('')
   const [treeSearch, setTreeSearch] = useState('')
   const [treeWidth, setTreeWidth] = useState(() => Number(localStorage.getItem('dba-tree-width') || '280'))
   const [showTree, setShowTree] = useState(true)
@@ -97,7 +98,11 @@ export default function QueryPage() {
   const [abortController, setAbortController] = useState<AbortController | null>(null)
 
   // Results
-  const [resultView, setResultView] = useState<'grid' | 'json' | 'compare'>('grid')
+  const [resultView, setResultView] = useState<'grid' | 'json' | 'compare' | 'plan' | 'advisor'>('grid')
+  const [planData, setPlanData] = useState<any>(null)
+  const [advisorData, setAdvisorData] = useState<any>(null)
+  const [advisorLoading, setAdvisorLoading] = useState(false)
+  const [activeResultSet, setActiveResultSet] = useState(0)
   const [prevResult, setPrevResult] = useState<any>(null)
   const [page, setPage] = useState(0)
   const [colWidths, setColWidths] = useState<Record<string, number>>({})
@@ -184,6 +189,15 @@ export default function QueryPage() {
       } else if (node.type === 'table') {
         const { data } = await api.get(`/api/explorer/${node.connId}/columns/${schema}/${node.table}`)
         children = data.data.map((c: any) => ({ id: `${node.id}.${c.name}`, label: `${c.name} (${c.type})${c.isPrimaryKey ? ' 🔑' : ''}`, type: 'column' as NodeType, connId: node.connId, schema }))
+        // Load triggers for this table (like SSMS)
+        try {
+          const { data: trgData } = await api.get(`/api/explorer/${node.connId}/triggers?schema=${schema}&table=${node.table}`)
+          if (trgData.data?.length > 0) {
+            children.push({ id: `${node.id}:triggers`, label: `Triggers (${trgData.data.length})`, type: 'triggers_folder' as NodeType, connId: node.connId, schema, loaded: true,
+              children: trgData.data.map((t: any) => ({ id: `${node.id}:trg.${t.name}`, label: `${t.name} ${t.is_enabled === 0 || t.is_enabled === false ? '⛔' : '✅'}`, type: 'trigger' as NodeType, connId: node.connId, schema, meta: { definition: t.definition, event: t.event, timing: t.timing, enabled: t.is_enabled !== 0 && t.is_enabled !== false } }))
+            })
+          }
+        } catch {}
       }
       // Update tree immutably
       const updateNode = (nodes: TreeNode[]): TreeNode[] => nodes.map(n => n.id === node.id ? { ...n, children, loaded: true } : { ...n, children: n.children ? updateNode(n.children) : undefined })
@@ -197,6 +211,11 @@ export default function QueryPage() {
       next.add(node.id)
       if (!node.loaded) {
         if (node.type === 'connection') await loadSchemas(node.connId!)
+        else if (node.type === 'schema') {
+          // Schema children (folders) are pre-populated, just mark loaded
+          const markLoaded = (nodes: TreeNode[]): TreeNode[] => nodes.map(n => n.id === node.id ? { ...n, loaded: true } : { ...n, children: n.children ? markLoaded(n.children) : undefined })
+          setTree(prev => markLoaded(prev))
+        }
         else await loadChildren(node)
       }
     }
@@ -232,19 +251,29 @@ export default function QueryPage() {
     return (
       <div key={node.id}>
         <div
-          className={`flex items-center gap-1 px-1.5 py-[3px] rounded cursor-pointer text-[12px] transition-colors ${isActive ? 'bg-blue-50 dark:bg-blue-900/20 font-medium' : 'hover:bg-gray-100 dark:hover:bg-gray-800/50'}`}
+          className={`flex items-center gap-1 px-1.5 py-[3px] rounded cursor-pointer text-[12px] transition-colors ${selectedNodeId === node.id ? 'bg-blue-100 dark:bg-blue-900/40 font-medium ring-1 ring-blue-300 dark:ring-blue-700' : isActive ? 'bg-blue-50 dark:bg-blue-900/20 font-medium' : 'hover:bg-gray-100 dark:hover:bg-gray-800/50'}`}
           style={{ paddingLeft: `${depth * 14 + 4}px` }}
+          draggable={['table','view','column','function','trigger'].includes(node.type)}
+          onDragStart={(e) => {
+            const text = node.type === 'table' || node.type === 'view' ? `${node.schema}.${node.label}` : node.type === 'column' ? node.label.split(' (')[0] : node.label
+            e.dataTransfer.setData('text/plain', text)
+            e.dataTransfer.effectAllowed = 'copy'
+          }}
           onClick={() => {
+            setSelectedNodeId(node.id)
             if (hasChildren) toggleNode(node)
             if (isConn) selectConnection(node.connId!)
             if (node.type === 'table') {
-              // Double-click inserts table name
               selectConnection(node.connId!)
             }
           }}
           onDoubleClick={() => {
             if (node.type === 'table') updateTab({ sql: activeTab.sql + (activeTab.sql ? '\n' : '') + `SELECT TOP 100 * FROM ${node.schema}.${node.label};` })
             if (node.type === 'view') updateTab({ sql: activeTab.sql + (activeTab.sql ? '\n' : '') + `SELECT TOP 100 * FROM ${node.schema}.${node.label};` })
+            if (node.type === 'trigger' && node.meta?.definition) {
+              const header = `-- Trigger: ${node.label.replace(' ✅','').replace(' ⛔','')}\n-- Status: ${node.meta.enabled ? 'ENABLED' : 'DISABLED'}\n-- Event: ${node.meta.timing || ''} ${node.meta.event || ''}\n-- ─────────────────────────────────────\n\n`
+              updateTab({ sql: header + node.meta.definition })
+            }
           }}
         >
           {hasChildren ? (
@@ -288,7 +317,7 @@ export default function QueryPage() {
     const timer = setInterval(() => updateTab({ elapsed: Math.floor((Date.now() - start) / 1000) }), 1000)
     try {
       const { data } = await api.post(`/api/query/${activeTab.connectionId}/execute`, { sql, limit: 5000 }, { signal: ctrl.signal })
-      if (data.data.success) { updateTab({ result: data.data, history: [{ sql: sql.trim(), time: new Date().toLocaleTimeString(), duration: data.data.durationMs }, ...activeTab.history.slice(0, 49)] }); setPage(0) }
+      if (data.data.success) { updateTab({ result: data.data, history: [{ sql: sql.trim(), time: new Date().toLocaleTimeString(), duration: data.data.durationMs }, ...activeTab.history.slice(0, 49)] }); setPage(0); setActiveResultSet(0) }
       else updateTab({ error: data.data.error || 'Erro' })
     } catch (err: any) {
       updateTab({ error: err.code === 'ERR_CANCELED' ? 'Cancelado pelo usuário' : (err.response?.data?.error || err.message) })
@@ -300,6 +329,26 @@ export default function QueryPage() {
   const executeSelected = (sel: string) => runQuery(sel)
   const stopExec = () => { abortController?.abort(); setAbortController(null) }
   const explainQuery = () => { if (!activeTab.sql.trim()) return; const conn = connections.find(c => c.id === activeTab.connectionId); runQuery(conn?.dbType === 'sqlserver' ? `SET SHOWPLAN_TEXT ON; ${activeTab.sql}` : `EXPLAIN ${activeTab.sql}`) }
+  const explainAnalyze = async () => {
+    if (!activeTab.connectionId || !activeTab.sql.trim()) return
+    updateTab({ loading: true, error: '' })
+    try {
+      const { data } = await api.post(`/api/advisor/${activeTab.connectionId}/analyze`, { sql: activeTab.sql, analyze: true })
+      setPlanData(data.data?.explainPlan || data.data)
+      setResultView('plan')
+    } catch (err: any) { updateTab({ error: err.response?.data?.error || err.message }) }
+    updateTab({ loading: false })
+  }
+  const analyzePerformance = async () => {
+    if (!activeTab.connectionId || !activeTab.sql.trim()) return
+    setAdvisorLoading(true); updateTab({ error: '' })
+    try {
+      const { data } = await api.post(`/api/advisor/${activeTab.connectionId}/analyze`, { sql: activeTab.sql, analyze: true })
+      setAdvisorData(data.data)
+      setResultView('advisor')
+    } catch (err: any) { updateTab({ error: err.response?.data?.error || err.message }) }
+    setAdvisorLoading(false)
+  }
   const formatSql = () => { try { updateTab({ sql: formatSQL(activeTab.sql, { language: 'transactsql', tabWidth: 2, keywordCase: 'upper' }) }) } catch {} }
 
   // Tabs
@@ -323,7 +372,8 @@ export default function QueryPage() {
   }, [activeTab.sql, activeTab.connectionId, activeTabId, tabs])
 
   const connObj = connections.find(c => c.id === activeTab.connectionId)
-  const allRows = activeTab.result?.rows || []
+  const resultSets = activeTab.result?.resultSets as any[][] | undefined
+  const allRows = resultSets ? (resultSets[activeResultSet] || []) : (activeTab.result?.rows || [])
   const totalPages = Math.ceil(allRows.length / ROWS_PER_PAGE)
   const pagedRows = allRows.slice(page * ROWS_PER_PAGE, (page + 1) * ROWS_PER_PAGE)
   const headers = allRows.length > 0 ? Object.keys(allRows[0]) : []
@@ -417,9 +467,11 @@ export default function QueryPage() {
           {activeTab.loading ? (
             <button onClick={stopExec} className="flex items-center gap-1 px-2.5 py-1 bg-red-600 text-white text-[11px] font-medium rounded-md"><Square className="w-3 h-3 fill-current" /> Parar{activeTab.elapsed > 0 ? ` ${activeTab.elapsed}s` : ''}</button>
           ) : (
-            <button onClick={execute} disabled={!activeTab.connectionId} className="flex items-center gap-1 px-2.5 py-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:text-gray-500 text-white text-[11px] font-medium rounded-md transition"><Play className="w-3 h-3" /> Executar</button>
+            <ToolbarBtn icon={Play} label="Executar (F5)" onClick={execute} disabled={!activeTab.connectionId} />
           )}
-          <button onClick={explainQuery} disabled={!activeTab.connectionId} className="flex items-center gap-1 px-2 py-1 text-[11px] text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 rounded-md border border-purple-200 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/40 disabled:opacity-40"><Zap className="w-3 h-3" /> Explain</button>
+          <ToolbarBtn icon={Zap} label="Explain (Ctrl+Shift+E)" onClick={explainQuery} disabled={!activeTab.connectionId} />
+            <ToolbarBtn icon={FileText} label="Plano de Execução" onClick={explainAnalyze} disabled={!activeTab.connectionId || activeTab.loading} />
+            <ToolbarBtn icon={advisorLoading ? Loader2 : AlertCircle} label="Analisar Performance" onClick={analyzePerformance} disabled={!activeTab.connectionId || advisorLoading} />
 
           <div className="w-px h-5 bg-gray-300 dark:bg-gray-700 mx-1" />
 
@@ -496,9 +548,15 @@ export default function QueryPage() {
             {allRows.length > 0 && (
               <div className="flex items-center gap-2 px-2 py-1 border-b border-border bg-gray-50 dark:bg-gray-900/50 flex-shrink-0">
                 <div className="flex bg-gray-200/50 dark:bg-gray-800 rounded p-0.5">
+                  {resultSets && resultSets.length > 1 && resultSets.map((_, i) => (
+                    <button key={i} onClick={() => { setActiveResultSet(i); setPage(0) }} className={`px-2 py-0.5 text-[10px] rounded ${activeResultSet === i ? 'bg-blue-100 dark:bg-blue-900/30 font-medium text-blue-700 dark:text-blue-300' : 'text-text-tertiary hover:text-text-secondary'}`}>Result {i + 1}</button>
+                  ))}
+                  {resultSets && resultSets.length > 1 && <span className="w-px h-3 bg-border mx-1" />}
                   <button onClick={() => setResultView('grid')} className={`px-2 py-0.5 text-[10px] rounded ${resultView === 'grid' ? 'bg-white dark:bg-surface shadow font-medium text-text-primary' : 'text-text-tertiary'}`}>Grid</button>
                   <button onClick={() => setResultView('json')} className={`px-2 py-0.5 text-[10px] rounded ${resultView === 'json' ? 'bg-white dark:bg-surface shadow font-medium text-text-primary' : 'text-text-tertiary'}`}>JSON</button>
                   {prevResult && <button onClick={() => setResultView('compare')} className={`px-2 py-0.5 text-[10px] rounded ${resultView === 'compare' ? 'bg-white dark:bg-surface shadow font-medium text-text-primary' : 'text-text-tertiary'}`}>Diff</button>}
+                  {planData && <button onClick={() => setResultView('plan')} className={`px-2 py-0.5 text-[10px] rounded ${resultView === 'plan' ? 'bg-white dark:bg-surface shadow font-medium text-text-primary' : 'text-text-tertiary'}`}>📊 Plano</button>}
+                  {advisorData && <button onClick={() => setResultView('advisor')} className={`px-2 py-0.5 text-[10px] rounded ${resultView === 'advisor' ? 'bg-white dark:bg-surface shadow font-medium text-text-primary' : 'text-text-tertiary'}`}>💡 Performance</button>}
                 </div>
                 {totalPages > 1 && (
                   <div className="flex items-center gap-1 ml-auto">
@@ -579,7 +637,75 @@ export default function QueryPage() {
                 </div>
               )}
 
-              {activeTab.result && allRows.length === 0 && (
+              {/* ─── Plano de Execução ─── */}
+              {resultView === 'plan' && planData && (
+                <div className="p-3 text-[11px] overflow-auto max-h-[500px]">
+                  <h4 className="font-semibold text-sm mb-2 text-amber-700 dark:text-amber-400">📊 Plano de Execução (EXPLAIN ANALYZE)</h4>
+                  {planData.plan && (function renderNode(node: any, depth: number = 0): any {
+                    const costPct = node.totalCost ? Math.min(100, (node.actualTime || node.totalCost) / (planData.plan.totalCost || 1) * 100) : 0
+                    const isSlow = costPct > 50
+                    const isSeqScan = node.nodeType?.includes('Seq Scan') || node.nodeType?.includes('Table Scan')
+                    return (
+                      <div key={node.nodeType + depth + Math.random()} style={{ marginLeft: depth * 16 }} className="mb-1">
+                        <div className={`flex items-center gap-2 px-2 py-1 rounded ${isSlow ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800' : isSeqScan ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800' : 'bg-surface-elevated border border-border'}`}>
+                          <span className={`font-mono font-bold ${isSlow ? 'text-red-600 dark:text-red-400' : isSeqScan ? 'text-amber-600 dark:text-amber-400' : 'text-text-primary'}`}>{node.nodeType}</span>
+                          {node.relation && <span className="text-blue-600 dark:text-blue-400 font-medium">on {node.relation}</span>}
+                          <span className="text-text-tertiary ml-auto">
+                            cost={node.startupCost?.toFixed(1)}..{node.totalCost?.toFixed(1)}
+                            {node.actualTime != null && <> actual={node.actualTime.toFixed(2)}ms</>}
+                            {node.planRows != null && <> rows={node.planRows.toLocaleString()}</>}
+                          </span>
+                          {isSlow && <span className="text-[9px] font-bold text-red-600 bg-red-100 dark:bg-red-900/50 px-1.5 rounded">LENTO</span>}
+                          {isSeqScan && <span className="text-[9px] font-bold text-amber-600 bg-amber-100 dark:bg-amber-900/50 px-1.5 rounded">FULL SCAN</span>}
+                        </div>
+                        {node.filter && <div style={{ marginLeft: depth * 16 + 16 }} className="text-[10px] text-text-tertiary">Filter: {node.filter}</div>}
+                        {node.indexCond && <div style={{ marginLeft: depth * 16 + 16 }} className="text-[10px] text-green-600">Index Cond: {node.indexCond}</div>}
+                        {node.children?.map((c: any, i: number) => renderNode(c, depth + 1))}
+                      </div>
+                    )
+                  })(planData.plan)}
+                  {planData.executionTime != null && <div className="mt-3 p-2 bg-surface-elevated rounded border border-border text-xs">⏱ Execution Time: <strong>{planData.executionTime.toFixed(2)}ms</strong> | Planning Time: {planData.planningTime?.toFixed(2) || '?'}ms</div>}
+                  {!planData.plan && <pre className="font-mono text-[10px] whitespace-pre-wrap">{JSON.stringify(planData, null, 2)}</pre>}
+                </div>
+              )}
+
+              {/* ─── Análise de Performance ─── */}
+              {resultView === 'advisor' && advisorData && (
+                <div className="p-3 text-[11px] overflow-auto max-h-[500px]">
+                  <div className="flex items-center gap-2 mb-3">
+                    <h4 className="font-semibold text-sm">💡 Análise de Performance</h4>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${advisorData.severity === 'critical' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : advisorData.severity === 'warning' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : advisorData.severity === 'info' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'}`}>
+                      {advisorData.severity === 'critical' ? '🔴 Crítico' : advisorData.severity === 'warning' ? '🟡 Atenção' : advisorData.severity === 'info' ? '🔵 Info' : '🟢 OK'}
+                    </span>
+                  </div>
+                  {advisorData.summary && <p className="text-xs text-text-secondary mb-3 p-2 bg-surface-elevated rounded border border-border">{advisorData.summary}</p>}
+                  {advisorData.suggestions?.length > 0 && (
+                    <div className="space-y-2">
+                      <h5 className="font-semibold text-xs text-text-primary">Sugestões de Otimização:</h5>
+                      {advisorData.suggestions.map((s: any, i: number) => (
+                        <div key={i} className={`p-3 rounded-lg border ${s.impact === 'high' ? 'border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-900/10' : s.impact === 'medium' ? 'border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/10' : 'border-border bg-surface-elevated'}`}>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${s.type === 'index' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : s.type === 'rewrite' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'}`}>{s.type}</span>
+                            <span className="font-medium text-text-primary">{s.title}</span>
+                            <span className={`ml-auto text-[9px] font-bold ${s.impact === 'high' ? 'text-red-600' : s.impact === 'medium' ? 'text-amber-600' : 'text-text-tertiary'}`}>impacto {s.impact}</span>
+                          </div>
+                          <p className="text-text-secondary text-[11px]">{s.description}</p>
+                          {s.sql && <pre className="mt-2 p-2 bg-gray-900 text-green-400 text-[10px] font-mono rounded overflow-x-auto">{s.sql}</pre>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {advisorData.optimizedQuery && (
+                    <div className="mt-3">
+                      <h5 className="font-semibold text-xs text-text-primary mb-1">Query Otimizada Sugerida:</h5>
+                      <pre className="p-2 bg-gray-900 text-green-400 text-[10px] font-mono rounded overflow-x-auto whitespace-pre-wrap">{advisorData.optimizedQuery}</pre>
+                    </div>
+                  )}
+                  {(!advisorData.suggestions || advisorData.suggestions.length === 0) && <p className="text-center text-text-tertiary py-4">✅ Nenhum problema de performance detectado! Query está otimizada.</p>}
+                </div>
+              )}
+
+              {activeTab.result && allRows.length === 0 && resultView !== 'plan' && resultView !== 'advisor' && (
                 <div className="p-4 text-center text-xs text-text-secondary">✓ Executada com sucesso • {activeTab.result.rowsAffected ?? 0} linhas afetadas • {activeTab.result.durationMs}ms</div>
               )}
 

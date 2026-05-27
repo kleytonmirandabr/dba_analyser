@@ -92,6 +92,98 @@ router.get('/dashboard', authMiddleware, async (req: Request, res: Response) => 
   }
 });
 
+// GET /api/alerts/analytics — deep analytics for charts
+router.get('/analytics', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const days = parseInt(req.query.days as string) || 30;
+    const fromDate = new Date();
+    fromDate.setDate(fromDate.getDate() - days);
+
+    const history = await historyRepo()
+      .createQueryBuilder('h')
+      .leftJoinAndSelect('h.alert', 'a')
+      .leftJoin('a.connection', 'c')
+      .addSelect(['c.name', 'c.databaseName'])
+      .where('h.checkedAt >= :from', { from: fromDate.toISOString() })
+      .orderBy('h.checkedAt', 'ASC')
+      .getMany();
+
+    // 1. Alertas por dia (triggered/ok/error)
+    const byDay: Record<string, { date: string; ok: number; triggered: number; error: number; total: number }> = {};
+    for (const h of history) {
+      const day = new Date(h.checkedAt).toISOString().slice(0, 10);
+      if (!byDay[day]) byDay[day] = { date: day, ok: 0, triggered: 0, error: 0, total: 0 };
+      byDay[day][h.status as 'ok'|'triggered'|'error']++;
+      byDay[day].total++;
+    }
+
+    // 2. Bancos com mais problemas
+    const byConnection: Record<string, { name: string; db: string; triggered: number; error: number; ok: number; total: number }> = {};
+    for (const h of history) {
+      const connName = (h.alert as any)?.connection?.name || 'N/A';
+      const dbName = (h.alert as any)?.connection?.databaseName || 'N/A';
+      const key = connName + '/' + dbName;
+      if (!byConnection[key]) byConnection[key] = { name: connName, db: dbName, triggered: 0, error: 0, ok: 0, total: 0 };
+      if (h.status === 'triggered') byConnection[key].triggered++;
+      else if (h.status === 'error') byConnection[key].error++;
+      else byConnection[key].ok++;
+      byConnection[key].total++;
+    }
+
+    // 3. Heatmap: hora × dia da semana
+    const heatmap: Array<{ dow: number; hour: number; count: number }> = [];
+    const heatGrid: Record<string, number> = {};
+    for (const h of history) {
+      if (h.status !== 'triggered') continue;
+      const d = new Date(h.checkedAt);
+      const key = d.getDay() + '-' + d.getHours();
+      heatGrid[key] = (heatGrid[key] || 0) + 1;
+    }
+    for (const [k, count] of Object.entries(heatGrid)) {
+      const [dow, hour] = k.split('-').map(Number);
+      heatmap.push({ dow, hour, count });
+    }
+
+    // 4. Por alerta (ranking)
+    const byAlert: Record<string, { name: string; severity: string; triggered: number; error: number; ok: number; total: number; avgMs: number; sumMs: number }> = {};
+    for (const h of history) {
+      const key = h.alertId;
+      if (!byAlert[key]) byAlert[key] = { name: h.alert?.name || '?', severity: h.alert?.severity || 'info', triggered: 0, error: 0, ok: 0, total: 0, avgMs: 0, sumMs: 0 };
+      if (h.status === 'triggered') byAlert[key].triggered++;
+      else if (h.status === 'error') byAlert[key].error++;
+      else byAlert[key].ok++;
+      byAlert[key].total++;
+      byAlert[key].sumMs += h.executionMs || 0;
+    }
+    for (const a of Object.values(byAlert)) { a.avgMs = a.total > 0 ? Math.round(a.sumMs / a.total) : 0; }
+
+    // 5. Tempo de execução por dia (tendência)
+    const execByDay: Record<string, { date: string; avgMs: number; maxMs: number; count: number; sumMs: number }> = {};
+    for (const h of history) {
+      const day = new Date(h.checkedAt).toISOString().slice(0, 10);
+      if (!execByDay[day]) execByDay[day] = { date: day, avgMs: 0, maxMs: 0, count: 0, sumMs: 0 };
+      execByDay[day].sumMs += h.executionMs || 0;
+      execByDay[day].maxMs = Math.max(execByDay[day].maxMs, h.executionMs || 0);
+      execByDay[day].count++;
+    }
+    for (const d of Object.values(execByDay)) { d.avgMs = d.count > 0 ? Math.round(d.sumMs / d.count) : 0; }
+
+    return res.json({
+      data: {
+        period: { from: fromDate.toISOString(), to: new Date().toISOString(), days },
+        totalExecutions: history.length,
+        byDay: Object.values(byDay).sort((a, b) => a.date.localeCompare(b.date)),
+        byConnection: Object.values(byConnection).sort((a, b) => b.triggered - a.triggered),
+        byAlert: Object.values(byAlert).sort((a, b) => b.triggered - a.triggered),
+        heatmap,
+        executionTrend: Object.values(execByDay).sort((a, b) => a.date.localeCompare(b.date)),
+      }
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 router.get('/summary', authMiddleware, async (req: Request, res: Response) => {
   const triggered = await alertRepo().count({ where: { currentStatus: 'triggered', enabled: true } });
   const error = await alertRepo().count({ where: { currentStatus: 'error', enabled: true } });

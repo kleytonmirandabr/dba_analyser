@@ -17,7 +17,7 @@ export interface FunctionInfo { schema: string; name: string; language: string; 
 export interface ViewInfo { schema: string; name: string; definition: string; }
 export interface ActiveQuery { pid: number; username: string; database: string; state: string; query: string; durationMs: number; waitEvent?: string; }
 export interface LockInfo { blockedPid: number; blockedQuery: string; blockingPid: number; blockingQuery: string; lockType: string; durationMs?: number; }
-export interface ExecutionResult { success: boolean; rowsAffected?: number; rows?: any[]; error?: string; durationMs: number; }
+export interface ExecutionResult { success: boolean; rowsAffected?: number; rows?: any[]; resultSets?: any[][]; error?: string; durationMs: number; }
 
 // === Health Monitoring Types ===
 export interface TableHealth {
@@ -135,7 +135,7 @@ export interface DatabaseAdapter {
   listTables(schema?: string): Promise<TableInfo[]>;
   listColumns(schema: string, table: string): Promise<ColumnInfo[]>;
   listIndexes(schema: string, table: string): Promise<IndexInfo[]>;
-  listTriggers(schema?: string): Promise<TriggerInfo[]>;
+  listTriggers(schema?: string, table?: string): Promise<TriggerInfo[]>;
   listProcedures(schema?: string): Promise<ProcedureInfo[]>;
   listFunctions(schema?: string): Promise<FunctionInfo[]>;
   listViews(schema?: string): Promise<ViewInfo[]>;

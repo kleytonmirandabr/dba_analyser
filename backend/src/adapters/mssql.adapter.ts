@@ -100,13 +100,16 @@ export class MSSQLAdapter implements DatabaseAdapter {
       GROUP BY i.name, t.name, i.is_unique`);
   }
 
-  async listTriggers(schema = 'dbo'): Promise<TriggerInfo[]> {
-    return this.query(`SELECT tr.name, t.name as [table], 'AFTER' as timing,
-      te.type_desc as event, OBJECT_DEFINITION(tr.object_id) as definition
+  async listTriggers(schema = 'dbo', table?: string): Promise<TriggerInfo[]> {
+    const tableFilter = table ? ` AND t.name = '${table}'` : '';
+    return this.query(`SELECT tr.name, t.name as [table],
+      CASE WHEN tr.is_instead_of_trigger = 1 THEN 'INSTEAD OF' ELSE 'AFTER' END as timing,
+      STUFF((SELECT ', ' + te2.type_desc FROM sys.trigger_events te2 WHERE te2.object_id = tr.object_id FOR XML PATH('')), 1, 2, '') as event,
+      OBJECT_DEFINITION(tr.object_id) as definition,
+      CASE WHEN tr.is_disabled = 1 THEN 0 ELSE 1 END as is_enabled
       FROM sys.triggers tr JOIN sys.tables t ON tr.parent_id = t.object_id
       JOIN sys.schemas s ON t.schema_id = s.schema_id
-      LEFT JOIN sys.trigger_events te ON tr.object_id = te.object_id
-      WHERE s.name = '${schema}' ORDER BY tr.name`);
+      WHERE s.name = '${schema}'${tableFilter} ORDER BY tr.name`);
   }
 
   async listProcedures(schema = 'dbo'): Promise<ProcedureInfo[]> {
@@ -363,6 +366,10 @@ export class MSSQLAdapter implements DatabaseAdapter {
     const start = Date.now();
     try {
       const result = await this.pool!.request().query(sql);
+      // Support multiple resultsets (sp_help, etc.)
+      if (result.recordsets && result.recordsets.length > 1) {
+        return { success: true, rowsAffected: result.rowsAffected[0] || 0, rows: result.recordsets[0], resultSets: result.recordsets, durationMs: Date.now() - start };
+      }
       return { success: true, rowsAffected: result.rowsAffected[0] || 0, rows: result.recordset, durationMs: Date.now() - start };
     } catch (err: any) { return { success: false, error: err.message, durationMs: Date.now() - start }; }
   }

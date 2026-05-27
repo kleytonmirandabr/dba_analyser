@@ -46,11 +46,13 @@ interface SqlEditorProps {
 const lightTheme = EditorView.theme({
   '&': { backgroundColor: '#ffffff', color: '#1f2937', fontSize: '13px' },
   '.cm-gutters': { backgroundColor: '#f9fafb', borderRight: '1px solid #e5e7eb', color: '#9ca3af' },
-  '.cm-activeLineGutter': { backgroundColor: '#eff6ff' },
-  '.cm-activeLine': { backgroundColor: '#eff6ff' },
+  '.cm-activeLineGutter': { backgroundColor: 'transparent' },
+  '.cm-activeLine': { backgroundColor: 'transparent' },
   '.cm-cursor': { borderLeftColor: '#1f2937' },
-  '.cm-selectionBackground': { backgroundColor: '#93c5fd !important' },
-  '&.cm-focused .cm-selectionBackground': { backgroundColor: '#60a5fa !important', color: '#1e3a5f !important' },
+  '.cm-selectionBackground': { backgroundColor: '#add6ff !important' },
+  '&.cm-focused .cm-selectionBackground': { backgroundColor: '#add6ff !important' },
+  '.cm-content': { caretColor: '#000' },
+  '&.cm-focused': { outline: 'none' },
   '.cm-matchingBracket': { backgroundColor: '#bbf7d0', outline: '1px solid #86efac' },
   '.cm-foldGutter': { width: '12px' },
   '.cm-searchMatch': { backgroundColor: '#fef08a', outline: '1px solid #fde047' },
@@ -180,6 +182,7 @@ function buildCompletionSource(completions?: { tables: TableCompletion[] }) {
 export default function SqlEditor({ value, onChange, onExecute, onExecuteSelected, onViewReady, placeholder, completions, dbType, height }: SqlEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
+  const isInternalChange = useRef(false)
   const theme = useThemeStore(s => s.theme)
   const onChangeRef = useRef(onChange)
   const onExecuteRef = useRef(onExecute)
@@ -318,6 +321,7 @@ export default function SqlEditor({ value, onChange, onExecute, onExecuteSelecte
         // Change listener
         EditorView.updateListener.of(update => {
           if (update.docChanged) {
+            isInternalChange.current = true
             onChangeRef.current(update.state.doc.toString())
           }
         }),
@@ -374,6 +378,10 @@ export default function SqlEditor({ value, onChange, onExecute, onExecuteSelecte
 
   // Sync external value changes
   useEffect(() => {
+    if (isInternalChange.current) {
+      isInternalChange.current = false
+      return
+    }
     const view = viewRef.current
     if (!view) return
     const current = view.state.doc.toString()
@@ -383,6 +391,6 @@ export default function SqlEditor({ value, onChange, onExecute, onExecuteSelecte
   }, [value])
 
   return (
-    <div ref={editorRef} className="w-full h-full [&_.cm-editor]:h-full [&_.cm-editor]:outline-none [&_.cm-scroller]:overflow-auto [&_.cm-tooltip]:z-50" style={height ? { height } : undefined} />
+    <div ref={editorRef} className="w-full h-full [&_.cm-editor]:h-full [&_.cm-editor]:outline-none [&_.cm-scroller]:overflow-auto [&_.cm-tooltip]:z-50 [&_.cm-selectionLayer]:pointer-events-none [&_.cm-content]:select-auto" style={height ? { height } : undefined} />
   )
 }
