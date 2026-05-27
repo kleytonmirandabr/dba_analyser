@@ -215,6 +215,36 @@ router.post('/:id/select-databases', authMiddleware, requireRole('admin'), async
   }
 });
 
+// POST /api/connections/:id/bulk-credentials — Update credentials for this connection AND all connections with same host:port
+router.post('/:id/bulk-credentials', authMiddleware, requireRole('admin'), async (req: Request, res: Response) => {
+  try {
+    const conn = await connRepo().findOne({ where: { id: req.params.id } });
+    if (!conn) return res.status(404).json({ error: 'Conexão não encontrada' });
+
+    const { username, password } = req.body;
+    if (!username || !password) return res.status(400).json({ error: 'username e password são obrigatórios' });
+
+    // Find all connections with same host:port
+    const siblings = await connRepo().find({ where: { host: conn.host, port: conn.port } });
+
+    let updated = 0;
+    for (const sibling of siblings) {
+      const { encrypted: passEnc, salt: passSalt } = encrypt(password);
+      const { encrypted: userEnc, salt: userSalt } = encrypt(username);
+      sibling.passwordEncrypted = passEnc;
+      sibling.passwordSalt = passSalt;
+      sibling.usernameEncrypted = userEnc;
+      sibling.usernameSalt = userSalt;
+      await connRepo().save(sibling);
+      updated++;
+    }
+
+    return res.json({ data: { updated, host: conn.host, port: conn.port } });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // DELETE /api/connections/:id
 router.delete('/:id', authMiddleware, requireRole('admin'), async (req: Request, res: Response) => {
   const result = await connRepo().delete(req.params.id);

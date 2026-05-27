@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import SearchableSelect from '../components/ui/SearchableSelect'
 import { useTranslation } from 'react-i18next'
-import { Plug, Plus, Trash2, Pencil, CheckCircle2, XCircle, Loader2, Database, Server, Search, ChevronDown, ChevronRight, FolderOpen } from 'lucide-react'
+import { Plug, Plus, Trash2, Pencil, CheckCircle2, XCircle, Loader2, Database, Server, Search, ChevronDown, ChevronRight, FolderOpen, Key } from 'lucide-react'
 import api from '../lib/api'
 
 interface Connection {
@@ -22,6 +22,10 @@ export default function ConnectionsPage() {
   const [testing, setTesting] = useState<string | null>(null)
   const [testResult, setTestResult] = useState<Record<string, { ok: boolean; version?: string; error?: string }>>({})
   const [editingConn, setEditingConn] = useState<Connection | null>(null)
+  const [bulkCredConn, setBulkCredConn] = useState<Connection | null>(null)
+  const [bulkCred, setBulkCred] = useState({ username: '', password: '' })
+  const [bulkLoading, setBulkLoading] = useState(false)
+  const [bulkResult, setBulkResult] = useState<string | null>(null)
   const [discoverConn, setDiscoverConn] = useState<Connection | null>(null)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
 
@@ -71,6 +75,17 @@ export default function ConnectionsPage() {
       next.has(parentId) ? next.delete(parentId) : next.add(parentId)
       return next
     })
+  }
+
+  const bulkUpdateCredentials = async () => {
+    if (!bulkCredConn || !bulkCred.username || !bulkCred.password) return
+    setBulkLoading(true); setBulkResult(null)
+    try {
+      const { data } = await api.post(`/api/connections/${bulkCredConn.id}/bulk-credentials`, bulkCred)
+      setBulkResult(`✅ ${data.data.updated} conexões atualizadas com sucesso!`)
+      setTimeout(() => { setBulkCredConn(null); setBulkResult(null); setBulkCred({ username: '', password: '' }); load() }, 2000)
+    } catch (err: any) { setBulkResult('❌ Erro: ' + (err.response?.data?.error || err.message)) }
+    setBulkLoading(false)
   }
 
   const testConnection = async (id: string) => {
@@ -201,6 +216,10 @@ export default function ConnectionsPage() {
                       className="px-3 py-1.5 text-xs bg-surface-elevated hover:bg-surface-active text-text-secondary rounded-lg transition">
                       {testing === parent.id ? <Loader2 className="w-3 h-3 animate-spin" /> : t('connections.test')}
                     </button>
+                    <button onClick={() => { setBulkCredConn(parent); setBulkCred({ username: '', password: '' }); setBulkResult(null) }} title="Re-salvar credenciais (todas as conexões deste servidor)"
+                      className="p-1.5 text-text-tertiary hover:text-amber-400 transition">
+                      <Key className="w-4 h-4" />
+                    </button>
                     <button onClick={() => setDiscoverConn(parent)} title={t('connections.discover')}
                       className="p-1.5 text-text-tertiary hover:text-green-400 transition">
                       <Search className="w-4 h-4" />
@@ -233,6 +252,35 @@ export default function ConnectionsPage() {
 
       {showForm && <ConnectionForm onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); load() }} />}
       {editingConn && <ConnectionForm connection={editingConn} onClose={() => setEditingConn(null)} onSaved={() => { setEditingConn(null); load() }} />}
+      {/* Bulk Credentials Dialog */}
+      {bulkCredConn && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-surface rounded-xl shadow-2xl w-96 p-6 border border-border">
+            <h3 className="text-sm font-bold text-text-primary mb-1">🔑 Atualizar Credenciais em Lote</h3>
+            <p className="text-xs text-text-secondary mb-4">Atualiza o usuário/senha de TODAS as conexões em <b>{bulkCredConn.host}:{bulkCredConn.port}</b></p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-text-secondary font-medium">Usuário</label>
+                <input value={bulkCred.username} onChange={e => setBulkCred(c => ({ ...c, username: e.target.value }))}
+                  className="w-full mt-1 px-3 py-2 text-sm bg-gray-50 dark:bg-surface-elevated border border-border rounded-lg text-text-primary" placeholder="sa" />
+              </div>
+              <div>
+                <label className="text-xs text-text-secondary font-medium">Senha</label>
+                <input type="password" value={bulkCred.password} onChange={e => setBulkCred(c => ({ ...c, password: e.target.value }))}
+                  className="w-full mt-1 px-3 py-2 text-sm bg-gray-50 dark:bg-surface-elevated border border-border rounded-lg text-text-primary" placeholder="••••••" />
+              </div>
+              {bulkResult && <p className={`text-xs ${bulkResult.startsWith('✅') ? 'text-green-600' : 'text-red-500'}`}>{bulkResult}</p>}
+              <div className="flex gap-2 pt-2">
+                <button onClick={() => setBulkCredConn(null)} className="flex-1 px-3 py-2 text-sm bg-gray-100 dark:bg-surface-elevated text-text-secondary rounded-lg">Cancelar</button>
+                <button onClick={bulkUpdateCredentials} disabled={bulkLoading || !bulkCred.username || !bulkCred.password}
+                  className="flex-1 px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium rounded-lg transition">
+                  {bulkLoading ? 'Atualizando...' : 'Atualizar Todas'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {discoverConn && <DatabaseDiscovery connection={discoverConn} existingDatabases={connections.filter(c => c.host === discoverConn.host && c.port === discoverConn.port && c.databaseName).map(c => c.databaseName)} onClose={() => setDiscoverConn(null)} onSaved={() => { setDiscoverConn(null); load() }} />}
     </div>
   )
