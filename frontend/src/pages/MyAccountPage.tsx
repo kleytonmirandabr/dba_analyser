@@ -44,10 +44,14 @@ const COUNTRIES_PHONE = [
 ];
 
 const LANGUAGES = [
-  { value: '', label: 'Usar padrão do cliente' },
-  { value: 'pt-BR', label: 'Português (Brasil)' },
-  { value: 'en-US', label: 'English (US)' },
-  { value: 'es-ES', label: 'Español' },
+  { value: 'pt-BR', label: 'Português (Brasil)', flag: '🇧🇷' },
+  { value: 'en-US', label: 'English (US)', flag: '🇺🇸' },
+  { value: 'es-ES', label: 'Español', flag: '🇪🇸' },
+  { value: 'fr-FR', label: 'Français', flag: '🇫🇷' },
+  { value: 'de-DE', label: 'Deutsch', flag: '🇩🇪' },
+  { value: 'it-IT', label: 'Italiano', flag: '🇮🇹' },
+  { value: 'ja-JP', label: '日本語', flag: '🇯🇵' },
+  { value: 'zh-CN', label: '中文', flag: '🇨🇳' },
 ];
 
 function applyPhoneMask(value: string, mask: string): string {
@@ -103,10 +107,6 @@ function TimezoneSelect({ value, onChange }: { value: string; onChange: (v: stri
             </div>
           </div>
           <div className="max-h-48 overflow-y-auto">
-            <button type="button" onClick={() => { onChange(''); setOpen(false); setSearch(''); }}
-              className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 text-muted-foreground">
-              Usar padrão do cliente
-            </button>
             {filtered.map(tz => (
               <button key={tz.value} type="button" onClick={() => { onChange(tz.value); setOpen(false); setSearch(''); }}
                 className={`w-full text-left px-3 py-2 text-sm hover:bg-muted/50 flex items-center justify-between ${value === tz.value ? 'bg-blue-50 dark:bg-blue-950/30' : ''}`}>
@@ -179,6 +179,36 @@ function PhoneInput({ value, onChange }: { value: string; onChange: (v: string) 
   );
 }
 
+function LanguageSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => { function close(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); } document.addEventListener('mousedown', close); return () => document.removeEventListener('mousedown', close); }, []);
+  const filtered = useMemo(() => { if (!search) return LANGUAGES; const q = search.toLowerCase(); return LANGUAGES.filter(l => l.label.toLowerCase().includes(q) || l.value.toLowerCase().includes(q)); }, [search]);
+  const selected = LANGUAGES.find(l => l.value === value);
+  return (
+    <div className="relative" ref={ref}>
+      <button type="button" onClick={() => setOpen(!open)} className="w-full border border-border rounded px-3 py-2 bg-background text-left flex items-center justify-between text-sm">
+        {selected ? <span className="flex items-center gap-2"><span>{selected.flag}</span><span className="font-medium">{selected.label}</span></span> : <span className="text-muted-foreground">Selecione o idioma...</span>}
+        <ChevronDown className="w-4 h-4 text-muted-foreground" />
+      </button>
+      {open && (
+        <div className="absolute z-50 top-full mt-1 w-full bg-background border border-border rounded-lg shadow-lg overflow-hidden">
+          <div className="p-2 border-b border-border"><div className="relative"><Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" /><input className="w-full pl-8 pr-3 py-1.5 border border-border rounded bg-background text-sm" placeholder="Buscar idioma..." value={search} onChange={e => setSearch(e.target.value)} autoFocus /></div></div>
+          <div className="max-h-48 overflow-y-auto">
+            {filtered.map(l => (
+              <button key={l.value} type="button" onClick={() => { onChange(l.value); setOpen(false); setSearch(''); }} className={`w-full text-left px-3 py-2 text-sm hover:bg-muted/50 flex items-center gap-2 ${value === l.value ? 'bg-blue-50 dark:bg-blue-950/30' : ''}`}>
+                <span>{l.flag}</span><span>{l.label}</span>
+              </button>
+            ))}
+            {filtered.length === 0 && <p className="px-3 py-4 text-sm text-muted-foreground text-center">Nenhum resultado</p>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function MyAccountPage() {
   const { user, loadUser } = useAuthStore();
   const [form, setForm] = useState({ name: '', email: '', phone: '', preferredLanguage: '', preferredTimezone: '' });
@@ -215,6 +245,8 @@ export default function MyAccountPage() {
     if (!form.name.trim()) errs.name = 'Nome é obrigatório';
     if (!form.email.trim()) errs.email = 'Email é obrigatório';
     else if (!validateEmail(form.email)) errs.email = 'Email inválido (ex: usuario@dominio.com)';
+    if (!form.preferredTimezone) errs.timezone = 'Timezone é obrigatório';
+    if (!form.preferredLanguage) errs.language = 'Idioma é obrigatório';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   }
@@ -264,14 +296,14 @@ export default function MyAccountPage() {
             <PhoneInput value={form.phone} onChange={v => setForm({...form, phone: v})} />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1"><Globe className="w-3 h-3" /> Timezone (override pessoal)</label>
-            <TimezoneSelect value={form.preferredTimezone} onChange={v => setForm({...form, preferredTimezone: v})} />
+            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1"><Globe className="w-3 h-3" /> Timezone <span className="text-red-500">*</span></label>
+            <TimezoneSelect value={form.preferredTimezone} onChange={v => { setForm({...form, preferredTimezone: v}); setErrors({...errors, timezone: ''}); }} />
+            {errors.timezone && <p className="text-xs text-red-500 mt-1">{errors.timezone}</p>}
           </div>
           <div className="col-span-2">
-            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1"><Languages className="w-3 h-3" /> Idioma (override pessoal)</label>
-            <select className="w-full border border-border rounded px-3 py-2 bg-background" value={form.preferredLanguage} onChange={e => setForm({...form, preferredLanguage: e.target.value})}>
-              {LANGUAGES.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
-            </select>
+            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1"><Languages className="w-3 h-3" /> Idioma <span className="text-red-500">*</span></label>
+            <LanguageSelect value={form.preferredLanguage} onChange={v => { setForm({...form, preferredLanguage: v}); setErrors({...errors, language: ''}); }} />
+            {errors.language && <p className="text-xs text-red-500 mt-1">{errors.language}</p>}
           </div>
         </div>
         <div className="flex justify-end mt-4">
