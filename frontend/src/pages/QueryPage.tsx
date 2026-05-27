@@ -442,6 +442,7 @@ export default function QueryPage() {
                 }`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${tab.loading ? 'bg-amber-500 animate-pulse' : tab.error ? 'bg-red-500' : tab.result ? 'bg-green-500' : 'bg-gray-400'}`} />
                 {tab.title}
+                {tab.connectionId && (() => { const c = connections.find(c => c.id === tab.connectionId); return c ? <span className="text-[9px] text-text-tertiary ml-1 opacity-70">{c.databaseName || c.name}</span> : null })()}
                 {tabs.length > 1 && <button onClick={e => { e.stopPropagation(); closeTab(tab.id) }} className="ml-1 p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700"><X className="w-2.5 h-2.5" /></button>}
               </div>
             ))}

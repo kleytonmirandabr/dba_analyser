@@ -48,7 +48,7 @@ export default function AlertsAnalytics() {
 
       {/* Row 1: Alertas por dia + Bancos com mais problemas */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <div className="xl:col-span-2 bg-white dark:bg-surface-elevated border border-border rounded-xl p-4">
+        <div className="xl:col-span-2 bg-surface dark:bg-surface-elevated border border-border rounded-xl p-4">
           <h3 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-1.5"><Calendar className="w-4 h-4 text-blue-500" /> Alertas por Dia</h3>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={byDay} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
@@ -64,7 +64,7 @@ export default function AlertsAnalytics() {
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-white dark:bg-surface-elevated border border-border rounded-xl p-4">
+        <div className="bg-surface dark:bg-surface-elevated border border-border rounded-xl p-4">
           <h3 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-1.5"><Database className="w-4 h-4 text-purple-500" /> Bancos com Mais Problemas</h3>
           <div className="space-y-2 max-h-[220px] overflow-y-auto">
             {byConnection.map((c: any, i: number) => (
@@ -90,7 +90,7 @@ export default function AlertsAnalytics() {
 
       {/* Row 2: Tempo de execução + Ranking de alertas */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <div className="bg-white dark:bg-surface-elevated border border-border rounded-xl p-4">
+        <div className="bg-surface dark:bg-surface-elevated border border-border rounded-xl p-4">
           <h3 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-1.5"><Clock className="w-4 h-4 text-green-500" /> Tempo de Execução (tendência)</h3>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={executionTrend} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
@@ -105,7 +105,7 @@ export default function AlertsAnalytics() {
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-white dark:bg-surface-elevated border border-border rounded-xl p-4">
+        <div className="bg-surface dark:bg-surface-elevated border border-border rounded-xl p-4">
           <h3 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-1.5"><AlertTriangle className="w-4 h-4 text-amber-500" /> Ranking de Alertas</h3>
           <div className="space-y-2 max-h-[200px] overflow-y-auto">
             {byAlert.map((a: any, i: number) => (
@@ -127,7 +127,7 @@ export default function AlertsAnalytics() {
 
       {/* Row 3: Heatmap */}
       {heatmap.length > 0 && (
-        <div className="bg-white dark:bg-surface-elevated border border-border rounded-xl p-4">
+        <div className="bg-surface dark:bg-surface-elevated border border-border rounded-xl p-4">
           <h3 className="text-sm font-semibold text-text-primary mb-3">🔥 Heatmap — Horários com Mais Alertas Disparados</h3>
           <div className="overflow-x-auto">
             <div className="grid gap-0.5" style={{ gridTemplateColumns: 'auto repeat(24, 1fr)', minWidth: '600px' }}>

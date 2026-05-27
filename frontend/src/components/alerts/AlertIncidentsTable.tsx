@@ -46,7 +46,7 @@ export default function AlertIncidentsTable({ alerts, dashboard, onEdit, onTest,
       .slice(0, 10)
 
     return (
-      <div key={alert.id} className="bg-white dark:bg-surface-elevated border border-border rounded-xl overflow-hidden">
+      <div key={alert.id} className="bg-surface dark:bg-surface-elevated border border-border rounded-xl overflow-hidden">
         {/* Header row */}
         <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/30 transition" onClick={() => toggle(alert.id)}>
           {isExpanded ? <ChevronDown className="w-4 h-4 text-text-tertiary" /> : <ChevronRight className="w-4 h-4 text-text-tertiary" />}

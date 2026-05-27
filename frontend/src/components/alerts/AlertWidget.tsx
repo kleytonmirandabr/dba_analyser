@@ -66,14 +66,14 @@ export default function AlertWidget({ id, name, severity, currentStatus, connect
     return firstTime
   }, [timeline])
 
-  const severityColors = severity === 'critical' ? 'border-red-500/40 bg-red-50 dark:bg-red-950/20' :
-    severity === 'warning' ? 'border-amber-500/40 bg-amber-50 dark:bg-amber-950/20' :
-    'border-blue-500/40 bg-blue-50 dark:bg-blue-950/20'
+  const severityColors = severity === 'critical' ? 'border-red-500/40 bg-red-50 dark:bg-red-950/30' :
+    severity === 'warning' ? 'border-amber-500/40 bg-amber-50 dark:bg-amber-950/30' :
+    'border-blue-500/40 bg-blue-50 dark:bg-blue-950/30'
 
   return (
     <div className={`h-full flex flex-col border rounded-xl overflow-hidden shadow-sm ${severityColors}`}>
       {/* Header */}
-      <div className="drag-handle cursor-grab active:cursor-grabbing flex items-center justify-between px-3 py-2 border-b border-inherit bg-white/50 dark:bg-gray-900/50">
+      <div className="drag-handle cursor-grab active:cursor-grabbing flex items-center justify-between px-3 py-2 border-b border-inherit bg-white/50 dark:bg-gray-900/60">
         <div className="flex items-center gap-2 min-w-0">
           <span className={`w-2.5 h-2.5 rounded-full ${
             currentStatus === 'ok' ? 'bg-green-500' :
@@ -117,7 +117,7 @@ export default function AlertWidget({ id, name, severity, currentStatus, connect
             {problemDbs.length > 0 && (
               <div className="space-y-1">
                 {problemDbs.slice(0, 8).map((d, i) => (
-                  <div key={i} className="flex items-center gap-2 px-2 py-1 bg-amber-100/50 dark:bg-amber-900/20 rounded text-[10px]">
+                  <div key={i} className="flex items-center gap-2 px-2 py-1 bg-amber-100/60 dark:bg-amber-900/30 rounded text-[10px]">
                     <Database className="w-3 h-3 text-amber-600" />
                     <span className="font-medium text-text-primary">{d.database || d.connName}</span>
                     <span className="text-text-tertiary ml-auto truncate max-w-[120px]">{d.message?.replace(/^\[[^\]]+\]\s*/, '')}</span>
@@ -133,7 +133,7 @@ export default function AlertWidget({ id, name, severity, currentStatus, connect
             {errorDbs.length > 0 && (
               <div className="space-y-1 mt-1">
                 {errorDbs.slice(0, 3).map((d, i) => (
-                  <div key={i} className="flex items-center gap-2 px-2 py-1 bg-red-100/50 dark:bg-red-900/20 rounded text-[10px]">
+                  <div key={i} className="flex items-center gap-2 px-2 py-1 bg-red-100/60 dark:bg-red-900/30 rounded text-[10px]">
                     <Database className="w-3 h-3 text-red-600" />
                     <span className="font-medium text-text-primary">{d.database || d.connName}</span>
                     <span className="text-red-600 text-[9px] ml-auto">ERRO</span>
