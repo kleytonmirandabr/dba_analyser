@@ -30,6 +30,8 @@ import UsersPage from './pages/UsersPage'
 import MyAccountPage from './pages/MyAccountPage'
 import HeartbeatPage from './pages/HeartbeatPage'
 import NotificationsPage from './pages/NotificationsPage'
+import HelpCenterPage from './pages/HelpCenterPage'
+import MTTRPage from './pages/MTTRPage'
 import VPNSetupWizard from './components/wizard/VPNSetupWizard'
 import { Loader2 } from 'lucide-react'
 
@@ -90,6 +92,8 @@ export default function App() {
           <Route path="my-account" element={<MyAccountPage />} />
           <Route path="heartbeat" element={<HeartbeatPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
+          <Route path="help" element={<HelpCenterPage />} />
+          <Route path="mttr" element={<MTTRPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

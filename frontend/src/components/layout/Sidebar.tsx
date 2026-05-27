@@ -1,6 +1,6 @@
 import { useLocation, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Database, LayoutDashboard, Plug, Activity, HeartPulse, Bell, TrendingUp, Terminal, GitCompareArrows, Play, Wifi, Stethoscope, Brain, FileText, GitBranch, HardDrive, History } from 'lucide-react'
+import { Database, LayoutDashboard, Plug, Activity, HeartPulse, Bell, TrendingUp, Terminal, GitCompareArrows, Play, Wifi, Stethoscope, Brain, FileText, GitBranch, HardDrive, History, Clock } from 'lucide-react'
 import { useAuthStore } from '../../stores/auth.store'
 
 interface SidebarProps {
@@ -24,6 +24,7 @@ export default function Sidebar({ collapsed }: SidebarProps) {
     { to: '/alerts', icon: Bell, label: t('nav.alerts'), feature: 'alerts.view' },
     { to: '/availability', icon: HeartPulse, label: 'Disponibilidade', feature: 'availability.view' },
     { to: '/heartbeat', icon: Activity, label: 'Heartbeat', feature: 'monitor.view' },
+    { to: '/mttr', icon: Clock, label: 'MTTR', feature: 'alerts.view' },
     { to: '/growth', icon: TrendingUp, label: t('nav.growth'), feature: 'growth.view' },
     { to: '/backup', icon: HardDrive, label: t('nav.backup'), feature: 'backup.view' },
     { to: '/advisor', icon: Brain, label: t('nav.advisor'), feature: 'dashboard.view' },
@@ -58,7 +59,7 @@ export default function Sidebar({ collapsed }: SidebarProps) {
       {/* Version at bottom */}
       <div className="border-t border-border px-4 py-2">
         {!collapsed ? (
-          <p className="text-[10px] text-muted-foreground text-center">v2.4.1</p>
+          <p className="text-[10px] text-muted-foreground text-center">v2.5.0</p>
         ) : (
           <p className="text-[10px] text-muted-foreground text-center">2.3</p>
         )}
