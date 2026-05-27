@@ -136,6 +136,7 @@ export default function ReportsPage() {
 }
 
 function ScheduleModal({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation()
   const [name, setName] = useState(t('reports.weeklyReport'))
   const [frequency, setFrequency] = useState('weekly')
   const [dayOfWeek, setDayOfWeek] = useState(1)

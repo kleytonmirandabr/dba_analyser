@@ -48,6 +48,7 @@ function ToolbarBtn({ icon: Icon, label, onClick, disabled }: { icon: any; label
 
 // === Export Menu ===
 function ExportMenu({ rows }: { rows: any[] }) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 

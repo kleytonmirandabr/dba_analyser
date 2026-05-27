@@ -254,6 +254,7 @@ export default function AlertsPage() {
 // ─── Alert Form Modal ─────────────────────────────────────────────────────────
 // ─── History Panel with filter ───────────────────────────────────────────────
 function HistoryPanel({ history, loading }: { history: any[]; loading: boolean }) {
+  const { t } = useTranslation()
   const [filter, setFilter] = useState<'problems' | 'all'>('problems')
 
   if (loading) return <Loader2 className="w-4 h-4 animate-spin text-blue-500" />

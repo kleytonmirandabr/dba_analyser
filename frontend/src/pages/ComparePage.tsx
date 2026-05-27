@@ -142,6 +142,7 @@ export default function ComparePage() {
 }
 
 function TablesSection({ tables }: { tables: TableDiff[] }) {
+  const { t } = useTranslation()
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
   const toggle = (name: string) => {
@@ -235,6 +236,7 @@ function CodeWithLines({ code, color }: { code: string; color: 'green' | 'red' }
 }
 
 function DiffView({ source, target }: { source?: string; target?: string }) {
+  const { t } = useTranslation()
   const srcLines = (source || '').split('\n')
   const tgtLines = (target || '').split('\n')
 
@@ -287,6 +289,7 @@ function computeLineDiff(src: string[], tgt: string[]): DiffLine[] {
 }
 
 function ObjectsSection({ objects, type }: { objects: ObjectDiff[]; type: string }) {
+  const { t } = useTranslation()
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
   const toggle = (name: string) => {

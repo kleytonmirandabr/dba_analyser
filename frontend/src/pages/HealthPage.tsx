@@ -69,6 +69,7 @@ export default function HealthPage() {
 }
 
 function OverviewTab({ connId }: { connId: string }) {
+  const { t } = useTranslation()
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -126,6 +127,7 @@ function OverviewTab({ connId }: { connId: string }) {
 }
 
 function TablesTab({ connId }: { connId: string }) {
+  const { t } = useTranslation()
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -182,6 +184,7 @@ function TablesTab({ connId }: { connId: string }) {
 }
 
 function QueriesTab({ connId }: { connId: string }) {
+  const { t } = useTranslation()
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -231,6 +234,7 @@ function QueriesTab({ connId }: { connId: string }) {
 }
 
 function IndexesTab({ connId }: { connId: string }) {
+  const { t } = useTranslation()
   const [unused, setUnused] = useState<any[]>([])
   const [missing, setMissing] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
