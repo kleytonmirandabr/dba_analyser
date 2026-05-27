@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User, Save, Lock, Eye, EyeOff, CheckCircle2, Globe, Languages } from 'lucide-react';
-import api from '../services/api';
+import api from '../lib/api';
 import { useAuthStore } from '../stores/auth.store';
 
 const TIMEZONES = [

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Shield, Plus, Pencil, Trash2, Check, Minus } from 'lucide-react';
-import api from '../services/api';
+import api from '../lib/api';
 
 interface Profile { id: string; name: string; description?: string; clientId?: string; isDefault: boolean; features?: string[]; }
 interface Feature { id: string; code: string; name: string; description: string; module: string; moduleOrder: number; featureOrder: number; }
@@ -17,18 +17,18 @@ export default function ProfilesPage() {
   useEffect(() => { load(); loadFeatures(); }, []);
 
   async function load() {
-    const { data } = await api.get('/profiles');
+    const { data } = await api.get('/api/profiles');
     setProfiles(data);
   }
 
   async function loadFeatures() {
-    const { data } = await api.get('/features');
+    const { data } = await api.get('/api/features');
     setFeatures(data.features);
     setGrouped(data.grouped);
   }
 
   async function openEdit(p: Profile) {
-    const { data } = await api.get(`/profiles/${p.id}`);
+    const { data } = await api.get(`/api/profiles/${p.id}`);
     setForm({ name: data.name, description: data.description || '', isDefault: data.isDefault, features: data.features || [] });
     setEditing(p);
     setShowForm(true);
@@ -37,9 +37,9 @@ export default function ProfilesPage() {
   async function save() {
     if (!form.name) return alert('Nome obrigatório');
     if (editing) {
-      await api.put(`/profiles/${editing.id}`, form);
+      await api.put(`/api/profiles/${editing.id}`, form);
     } else {
-      await api.post('/profiles', form);
+      await api.post('/api/profiles', form);
     }
     setShowForm(false); setEditing(null); setForm({ name: '', description: '', isDefault: false, features: [] });
     load();
@@ -47,7 +47,7 @@ export default function ProfilesPage() {
 
   async function remove(id: string) {
     if (!confirm('Deseja excluir este perfil?')) return;
-    await api.delete(`/profiles/${id}`);
+    await api.delete(`/api/profiles/${id}`);
     load();
   }
 

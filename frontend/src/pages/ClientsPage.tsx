@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Building2, Plus, Pencil, Trash2, Globe, Languages } from 'lucide-react';
-import api from '../services/api';
+import api from '../lib/api';
 
 const TIMEZONES = [
   'America/Sao_Paulo', 'America/Manaus', 'America/Bahia', 'America/Fortaleza',
@@ -45,16 +45,16 @@ export default function ClientsPage() {
   useEffect(() => { load(); }, []);
 
   async function load() {
-    const { data } = await api.get('/clients');
+    const { data } = await api.get('/api/clients');
     setClients(data);
   }
 
   async function save() {
     if (!form.name || !form.code || !form.timezone || !form.language || !form.country) return alert('Preencha os campos obrigatórios');
     if (editing) {
-      await api.put(`/clients/${editing.id}`, form);
+      await api.put(`/api/clients/${editing.id}`, form);
     } else {
-      await api.post('/clients', form);
+      await api.post('/api/clients', form);
     }
     setShowForm(false); setEditing(null);
     setForm({ timezone: 'America/Sao_Paulo', language: 'pt-BR', country: 'BR', dateFormat: 'DD/MM/YYYY', timeFormat: '24h', maxUsers: 10, maxConnections: 20, isActive: true });
@@ -63,7 +63,7 @@ export default function ClientsPage() {
 
   async function remove(id: string) {
     if (!confirm('Deseja realmente excluir este cliente?')) return;
-    await api.delete(`/clients/${id}`);
+    await api.delete(`/api/clients/${id}`);
     load();
   }
 

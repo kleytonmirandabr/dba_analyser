@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Bell, Plus, Pencil, Trash2, Send, TestTube2 } from 'lucide-react';
-import api from '../services/api';
+import api from '../lib/api';
 
 interface Channel {
   id: string; name: string; type: 'telegram' | 'email' | 'webhook' | 'slack';
@@ -17,22 +17,22 @@ export default function NotificationsPage() {
   const [form, setForm] = useState<any>({ type: 'telegram', config: {}, isActive: true, severity: 'all' });
 
   useEffect(() => { load(); }, []);
-  async function load() { const { data } = await api.get('/notifications'); setChannels(data); }
+  async function load() { const { data } = await api.get('/api/notifications'); setChannels(data); }
 
   async function save() {
     if (!form.name || !form.type) return alert('Preencha nome e tipo');
-    if (editing) { await api.put(`/notifications/${editing.id}`, form); }
-    else { await api.post('/notifications', form); }
+    if (editing) { await api.put(`/api/notifications/${editing.id}`, form); }
+    else { await api.post('/api/notifications', form); }
     setShowForm(false); setEditing(null); load();
   }
 
   async function remove(id: string) {
     if (!confirm('Excluir canal?')) return;
-    await api.delete(`/notifications/${id}`); load();
+    await api.delete(`/api/notifications/${id}`); load();
   }
 
   async function test() {
-    await api.post('/notifications/test', {});
+    await api.post('/api/notifications/test', {});
     alert('Notificação de teste enviada!');
   }
 

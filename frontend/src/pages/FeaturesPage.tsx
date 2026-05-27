@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Key, Search } from 'lucide-react';
-import api from '../services/api';
+import api from '../lib/api';
 
 interface Feature { code: string; name: string; description: string; module: string; }
 
@@ -9,7 +9,7 @@ export default function FeaturesPage() {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    api.get('/features').then(({ data }) => setGrouped(data.grouped));
+    api.get('/api/features').then(({ data }) => setGrouped(data.grouped));
   }, []);
 
   const filtered = Object.entries(grouped).reduce((acc, [module, feats]) => {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Activity, RefreshCw, Circle, AlertTriangle, XCircle, Clock, Zap } from 'lucide-react';
-import api from '../services/api';
+import api from '../lib/api';
 
 interface HeartbeatResult {
   connectionId: string; connectionName: string; databaseName: string;
@@ -17,7 +17,7 @@ export default function HeartbeatPage() {
   async function check() {
     setLoading(true);
     try {
-      const { data } = await api.get('/heartbeat/status');
+      const { data } = await api.get('/api/heartbeat/status');
       setResults(data);
     } catch { }
     setLoading(false);

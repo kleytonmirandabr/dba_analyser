@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Users, Plus, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
-import api from '../services/api';
+import api from '../lib/api';
 
 interface UserItem {
   id: string; name: string; username: string; email?: string; phone?: string;
@@ -25,11 +25,11 @@ export default function UsersPage() {
   useEffect(() => { load(); loadMeta(); }, []);
 
   async function load() {
-    const { data } = await api.get('/users');
+    const { data } = await api.get('/api/users');
     setUsers(data);
   }
   async function loadMeta() {
-    const [c, p] = await Promise.all([api.get('/clients'), api.get('/profiles')]);
+    const [c, p] = await Promise.all([api.get('/api/clients'), api.get('/api/profiles')]);
     setClients(c.data);
     setProfiles(p.data);
   }
@@ -40,9 +40,9 @@ export default function UsersPage() {
     if (editing) {
       const payload = { ...form };
       if (!payload.password) delete payload.password;
-      await api.put(`/users/${editing.id}`, payload);
+      await api.put(`/api/users/${editing.id}`, payload);
     } else {
-      await api.post('/users', form);
+      await api.post('/api/users', form);
     }
     setShowForm(false); setEditing(null); setForm({ isActive: true });
     load();
@@ -50,7 +50,7 @@ export default function UsersPage() {
 
   async function remove(id: string) {
     if (!confirm('Deseja excluir este usuário?')) return;
-    await api.delete(`/users/${id}`);
+    await api.delete(`/api/users/${id}`);
     load();
   }
 
