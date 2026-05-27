@@ -92,6 +92,132 @@ router.get('/dashboard', authMiddleware, async (req: Request, res: Response) => 
   }
 });
 
+// GET /api/alerts/availability — SLA/uptime per connection
+router.get('/availability', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const hours = parseInt(req.query.hours as string) || 24;
+    const fromDate = new Date(Date.now() - hours * 3600000);
+
+    const alerts = await alertRepo().find({ relations: ['connection'] });
+    if (alerts.length === 0) return res.json({ data: [] });
+
+    // Get all history in period
+    const history = await historyRepo()
+      .createQueryBuilder('h')
+      .where('h.checkedAt >= :from', { from: fromDate.toISOString() })
+      .orderBy('h.checkedAt', 'ASC')
+      .getMany();
+
+    // Group history by alertId, then figure out per-connection availability
+    // For multi-connection alerts, parse message to get per-db status
+    const connMap: Record<string, {
+      connId: string; connName: string; databaseName: string;
+      checks: { time: Date; status: string }[];
+      alertName: string;
+    }> = {};
+
+    for (const alert of alerts) {
+      const alertHistory = history.filter(h => h.alertId === alert.id);
+      const connIds = alert.connectionIds && alert.connectionIds.length > 0 ? alert.connectionIds : [alert.connectionId];
+
+      // If single connection
+      if (connIds.length === 1 || !alert.connectionIds) {
+        const key = alert.connectionId;
+        if (!connMap[key]) {
+          connMap[key] = {
+            connId: key,
+            connName: alert.connection?.name || 'N/A',
+            databaseName: (alert.connection as any)?.databaseName || '',
+            checks: [],
+            alertName: alert.name,
+          };
+        }
+        for (const h of alertHistory) {
+          connMap[key].checks.push({ time: new Date(h.checkedAt), status: h.status });
+        }
+      } else {
+        // Multi-connection: try to parse per-db from message
+        for (const h of alertHistory) {
+          // Each history entry's message might contain [ConnName] prefix
+          const msgMatch = h.message?.match(/^\[([^\]]+)\]/);
+          const dbKey = msgMatch ? msgMatch[1] : alert.connectionId;
+          if (!connMap[dbKey]) {
+            connMap[dbKey] = {
+              connId: dbKey,
+              connName: msgMatch ? msgMatch[1] : (alert.connection?.name || 'N/A'),
+              databaseName: msgMatch ? msgMatch[1] : ((alert.connection as any)?.databaseName || ''),
+              checks: [],
+              alertName: alert.name,
+            };
+          }
+          connMap[dbKey].checks.push({ time: new Date(h.checkedAt), status: h.status });
+        }
+      }
+    }
+
+    // Calculate availability per connection
+    const result = Object.values(connMap).map(conn => {
+      const total = conn.checks.length;
+      const okChecks = conn.checks.filter(c => c.status === 'ok').length;
+      const triggeredChecks = conn.checks.filter(c => c.status === 'triggered').length;
+      const errorChecks = conn.checks.filter(c => c.status === 'error').length;
+      const availability = total > 0 ? (okChecks / total) * 100 : 100;
+
+      // Monitoring since
+      const firstCheck = conn.checks[0]?.time || new Date();
+      const lastCheck = conn.checks[conn.checks.length - 1]?.time || new Date();
+      const monitoringHours = (lastCheck.getTime() - firstCheck.getTime()) / 3600000;
+
+      // Current streak
+      let streakStatus = conn.checks[conn.checks.length - 1]?.status || 'unknown';
+      let streakStart = lastCheck;
+      for (let i = conn.checks.length - 2; i >= 0; i--) {
+        if (conn.checks[i].status === streakStatus) {
+          streakStart = conn.checks[i].time;
+        } else break;
+      }
+      const currentStreakMinutes = Math.round((Date.now() - streakStart.getTime()) / 60000);
+
+      // Timeline: group into buckets for the bar
+      const bucketCount = Math.min(48, Math.max(12, Math.round(hours)));
+      const bucketMs = (hours * 3600000) / bucketCount;
+      const timeline: { hour: string; status: string }[] = [];
+      for (let i = 0; i < bucketCount; i++) {
+        const bucketStart = fromDate.getTime() + i * bucketMs;
+        const bucketEnd = bucketStart + bucketMs;
+        const bucketChecks = conn.checks.filter(c => c.time.getTime() >= bucketStart && c.time.getTime() < bucketEnd);
+        let status = 'ok';
+        if (bucketChecks.length === 0) status = 'ok';
+        else if (bucketChecks.some(c => c.status === 'error')) status = 'error';
+        else if (bucketChecks.some(c => c.status === 'triggered')) {
+          status = bucketChecks.every(c => c.status === 'triggered') ? 'triggered' : 'mixed';
+        }
+        timeline.push({ hour: new Date(bucketStart).toISOString().slice(11, 16), status });
+      }
+
+      return {
+        connId: conn.connId,
+        connName: conn.connName,
+        databaseName: conn.databaseName,
+        totalChecks: total,
+        okChecks, triggeredChecks, errorChecks,
+        availability: Math.round(availability * 10) / 10,
+        monitoringSince: firstCheck.toISOString(),
+        monitoringHours: Math.round(monitoringHours * 10) / 10,
+        currentStatus: streakStatus,
+        currentStreakMinutes,
+        currentStreakStart: streakStart.toISOString(),
+        lastCheckAt: lastCheck.toISOString(),
+        timeline,
+      };
+    });
+
+    return res.json({ data: result.sort((a, b) => a.availability - b.availability) });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/alerts/analytics — deep analytics for charts
 router.get('/analytics', authMiddleware, async (req: Request, res: Response) => {
   try {

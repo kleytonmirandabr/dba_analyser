@@ -15,6 +15,7 @@ import SettingsPage from './pages/SettingsPage'
 import VPNPage from './pages/VPNPage'
 import HealthPage from './pages/HealthPage'
 import AlertsPage from './pages/AlertsPage'
+import AvailabilityPage from './pages/AvailabilityPage'
 import GrowthPage from './pages/GrowthPage'
 import AdvisorPage from './pages/AdvisorPage'
 import ReportsPage from './pages/ReportsPage'
@@ -64,6 +65,7 @@ export default function App() {
             <Route path="monitor" element={<MonitorPage />} />
           <Route path="health" element={<HealthPage />} />
           <Route path="alerts" element={<AlertsPage />} />
+          <Route path="availability" element={<AvailabilityPage />} />
           <Route path="growth" element={<GrowthPage />} />
           <Route path="advisor" element={<AdvisorPage />} />
           <Route path="reports" element={<ReportsPage />} />

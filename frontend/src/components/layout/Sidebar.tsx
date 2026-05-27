@@ -19,6 +19,7 @@ export default function Sidebar() {
     { to: '/diagnostics', icon: Stethoscope, label: t('nav.diagnostics') },
     { to: '/health', icon: HeartPulse, label: t('nav.health') },
     { to: '/alerts', icon: Bell, label: t('nav.alerts') },
+    { to: '/availability', icon: HeartPulse, label: 'Disponibilidade' },
     { to: '/growth', icon: TrendingUp, label: t('nav.growth') },
     { to: '/backup', icon: HardDrive, label: t('nav.backup') },
     { to: '/advisor', icon: Brain, label: t('nav.advisor') },
