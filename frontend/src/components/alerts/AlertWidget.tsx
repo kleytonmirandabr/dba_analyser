@@ -1,6 +1,15 @@
 import { useState, useMemo } from 'react'
 import { Settings, Database, Clock, AlertTriangle, CheckCircle } from 'lucide-react'
 
+function formatDuration(mins: number): string {
+  if (mins < 60) return `${mins}min`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h < 24) return `${h}h ${m}m`;
+  const d = Math.floor(h / 24);
+  return `${d}d ${h % 24}h`;
+}
+
 export type ChartType = 'area' | 'line' | 'bar' | 'gauge' | 'stat'
 export type TimePeriod = '1h' | '6h' | '24h' | '7d' | '30d'
 
