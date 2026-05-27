@@ -152,14 +152,18 @@ export default function AvailabilityPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex gap-px h-6 rounded overflow-hidden">
                     {item.timeline.map((t, i) => (
-                      <div key={i} title={`🕐 ${new Date(t.hour).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} — ${t.status === 'ok' ? '✅ Online' : t.status === 'triggered' ? '⚠️ Problema' : '❌ Erro'}`}
-                        className={`flex-1 cursor-pointer hover:opacity-80 transition-opacity ${
+                      <div key={i}
+                        className={`flex-1 cursor-pointer hover:scale-y-125 hover:z-10 transition-transform relative group ${
                           t.status === 'ok' ? 'bg-green-400 dark:bg-green-600' :
                           t.status === 'triggered' ? 'bg-amber-400 dark:bg-amber-500' :
                           t.status === 'error' ? 'bg-red-400 dark:bg-red-500' :
                           'bg-amber-300 dark:bg-amber-600'
                         }`}
-                      />
+                      >
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 dark:bg-gray-800 text-white text-[10px] rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+                          {t.hour} — {t.status === 'ok' ? '✅ Online' : t.status === 'triggered' ? '⚠️ Problema' : '❌ Erro'}
+                        </div>
+                      </div>
                     ))}
                   </div>
                   <div className="flex justify-between mt-0.5">
