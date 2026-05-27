@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { authMiddleware, requireRole } from '../middleware/auth.middleware';
+import { authMiddleware } from '../middleware/auth.middleware';
+import { requireFeature } from '../middleware/feature.middleware';
 import { AppDataSource } from '../config/database';
 import { ExecutionRequest } from '../entities/execution-request.entity';
 import { Connection } from '../entities/connection.entity';
@@ -81,7 +82,7 @@ router.post('/submit', authMiddleware, async (req: Request, res: Response) => {
 });
 
 // POST /api/execution/:id/approve
-router.post('/:id/approve', authMiddleware, requireRole('admin', 'dba'), async (req: Request, res: Response) => {
+router.post('/:id/approve', authMiddleware, requireFeature('query.write'), async (req: Request, res: Response) => {
   const request = await execRepo().findOne({ where: { id: req.params.id } });
   if (!request) return res.status(404).json({ error: 'Solicitação não encontrada' });
   if (request.status !== 'pending') return res.status(400).json({ error: `Status atual: ${request.status}. Só é possível aprovar solicitações pendentes.` });
@@ -100,7 +101,7 @@ router.post('/:id/approve', authMiddleware, requireRole('admin', 'dba'), async (
 });
 
 // POST /api/execution/:id/reject
-router.post('/:id/reject', authMiddleware, requireRole('admin', 'dba'), async (req: Request, res: Response) => {
+router.post('/:id/reject', authMiddleware, requireFeature('query.write'), async (req: Request, res: Response) => {
   const request = await execRepo().findOne({ where: { id: req.params.id } });
   if (!request) return res.status(404).json({ error: 'Solicitação não encontrada' });
   if (request.status !== 'pending') return res.status(400).json({ error: 'Só é possível rejeitar solicitações pendentes.' });
@@ -118,7 +119,7 @@ router.post('/:id/reject', authMiddleware, requireRole('admin', 'dba'), async (r
 });
 
 // POST /api/execution/:id/execute
-router.post('/:id/execute', authMiddleware, requireRole('admin', 'dba'), async (req: Request, res: Response) => {
+router.post('/:id/execute', authMiddleware, requireFeature('query.write'), async (req: Request, res: Response) => {
   const request = await execRepo().findOne({ where: { id: req.params.id } });
   if (!request) return res.status(404).json({ error: 'Solicitação não encontrada' });
   if (request.status !== 'approved') return res.status(400).json({ error: 'Só é possível executar solicitações aprovadas.' });

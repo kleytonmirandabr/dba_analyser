@@ -32,6 +32,7 @@ import schemaVersionRoutes from './routes/schema-version.routes';
 import clientsRoutes from './routes/clients.routes';
 import profilesRoutes from './routes/profiles.routes';
 import featuresRoutes from './routes/features.routes';
+import usersRoutes from './routes/users.routes';
 import { initMonitorSocket } from './services/monitor.ws';
 
 dotenv.config();
@@ -93,6 +94,7 @@ app.use('/api/audit', auditRoutes);
 app.use('/api/clients', clientsRoutes);
 app.use('/api/profiles', profilesRoutes);
 app.use('/api/features', featuresRoutes);
+app.use('/api/users', usersRoutes);
 app.use('/api/diagnostics', diagnosticsRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/schema-versions', schemaVersionRoutes);

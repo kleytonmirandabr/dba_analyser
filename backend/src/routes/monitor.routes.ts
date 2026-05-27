@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { authMiddleware, requireRole } from '../middleware/auth.middleware';
+import { authMiddleware } from '../middleware/auth.middleware';
+import { requireFeature } from '../middleware/feature.middleware';
 import { AppDataSource } from '../config/database';
 import { Connection } from '../entities/connection.entity';
 import { getConnCredentials } from '../utils/credentials';
@@ -37,7 +38,7 @@ router.get('/:connId/locks', authMiddleware, async (req: Request, res: Response)
 });
 
 // POST /api/monitor/:connId/kill/:pid
-router.post('/:connId/kill/:pid', authMiddleware, requireRole('admin', 'dba'), async (req: Request, res: Response) => {
+router.post('/:connId/kill/:pid', authMiddleware, requireFeature('monitor.kill'), async (req: Request, res: Response) => {
   try {
     const conn = await connRepo().findOne({ where: { id: req.params.connId, isActive: true } });
     if (!conn) return res.status(404).json({ error: 'Conexão não encontrada' });

@@ -29,7 +29,8 @@ export default function Sidebar() {
     { to: '/schema-versions', icon: History, label: t('nav.versioning') },
     { to: '/audit', icon: Shield, label: t('nav.audit') },
     { to: '/clients', icon: Building2, label: 'Clientes' },
-    { to: '/profiles', icon: Users, label: 'Perfis' },
+    { to: '/users', icon: Users, label: 'Usuários' },
+    { to: '/profiles', icon: Shield, label: 'Perfis' },
     { to: '/features', icon: Key, label: 'Funcionalidades' },
     { to: '/settings', icon: Settings, label: t('nav.settings') },
   ]

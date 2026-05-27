@@ -26,6 +26,7 @@ import LoginPage from './pages/LoginPage'
 import ClientsPage from './pages/ClientsPage'
 import ProfilesPage from './pages/ProfilesPage'
 import FeaturesPage from './pages/FeaturesPage'
+import UsersPage from './pages/UsersPage'
 import VPNSetupWizard from './components/wizard/VPNSetupWizard'
 import { Loader2 } from 'lucide-react'
 
@@ -82,6 +83,7 @@ export default function App() {
           <Route path="clients" element={<ClientsPage />} />
           <Route path="profiles" element={<ProfilesPage />} />
           <Route path="features" element={<FeaturesPage />} />
+          <Route path="users" element={<UsersPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
