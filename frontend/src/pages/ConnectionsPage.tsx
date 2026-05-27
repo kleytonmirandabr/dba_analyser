@@ -135,18 +135,22 @@ export default function ConnectionsPage() {
             {testResult[conn.id].ok ? 'OK' : t('connections.failed')}
           </span>
         )}
-        <button onClick={() => testConnection(conn.id)} disabled={testing === conn.id}
-          className="px-3 py-1.5 text-xs bg-surface-elevated hover:bg-surface-active text-text-secondary rounded-lg transition">
-          {testing === conn.id ? <Loader2 className="w-3 h-3 animate-spin" /> : t('connections.test')}
-        </button>
-        <button onClick={() => setDiscoverConn(conn)} title={t('connections.discover')}
-          className="p-1.5 text-text-tertiary hover:text-green-400 transition">
-          <Search className="w-4 h-4" />
-        </button>
-        <button onClick={() => setEditingConn(conn)}
-          className="p-1.5 text-text-tertiary hover:text-blue-400 transition">
-          <Pencil className="w-4 h-4" />
-        </button>
+        {!isChild && (
+          <>
+            <button onClick={() => testConnection(conn.id)} disabled={testing === conn.id}
+              className="px-3 py-1.5 text-xs bg-surface-elevated hover:bg-surface-active text-text-secondary rounded-lg transition">
+              {testing === conn.id ? <Loader2 className="w-3 h-3 animate-spin" /> : t('connections.test')}
+            </button>
+            <button onClick={() => setDiscoverConn(conn)} title={t('connections.discover')}
+              className="p-1.5 text-text-tertiary hover:text-green-400 transition">
+              <Search className="w-4 h-4" />
+            </button>
+            <button onClick={() => setEditingConn(conn)}
+              className="p-1.5 text-text-tertiary hover:text-blue-400 transition">
+              <Pencil className="w-4 h-4" />
+            </button>
+          </>
+        )}
         <button onClick={() => deleteConnection(conn.id)}
           className="p-1.5 text-text-tertiary hover:text-red-400 transition">
           <Trash2 className="w-4 h-4" />
