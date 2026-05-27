@@ -33,6 +33,8 @@ import clientsRoutes from './routes/clients.routes';
 import profilesRoutes from './routes/profiles.routes';
 import featuresRoutes from './routes/features.routes';
 import usersRoutes from './routes/users.routes';
+import heartbeatRoutes from './routes/heartbeat.routes';
+import notificationsRoutes from './routes/notifications.routes';
 import { initMonitorSocket } from './services/monitor.ws';
 
 dotenv.config();
@@ -95,6 +97,8 @@ app.use('/api/clients', clientsRoutes);
 app.use('/api/profiles', profilesRoutes);
 app.use('/api/features', featuresRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/heartbeat', heartbeatRoutes);
+app.use('/api/notifications', notificationsRoutes);
 app.use('/api/diagnostics', diagnosticsRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/schema-versions', schemaVersionRoutes);

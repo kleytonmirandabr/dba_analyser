@@ -123,6 +123,19 @@ async function runAlertCheck(alertId: string) {
       message: triggered.map(t => t.database).join(', '),
       timestamp: new Date().toISOString(),
     });
+
+    // Send notifications
+    import('../services/notification.service').then(({ sendNotifications }) => {
+      sendNotifications({
+        title: `${alert.severity === 'critical' ? '🔴' : '🟡'} ${alert.name}`,
+        message: `${triggered.length} banco(s) com problema: ${triggered.map(t => t.database).join(', ')}`,
+        severity: alert.severity as any,
+        alertId: alert.id,
+        alertName: alert.name,
+        databases: triggered.map(t => t.database),
+        timestamp: new Date().toISOString(),
+      }).catch(err => console.error('[Notification] Error:', err.message));
+    });
   }
 }
 
