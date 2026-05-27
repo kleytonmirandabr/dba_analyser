@@ -177,7 +177,7 @@ export default function GrowthPage() {
           />
           <div className="flex items-center gap-2">
             {lastSnapshotTime && !snapshotting && (
-              <span className="text-[10px] text-green-400 bg-green-900/20 border border-green-800/50 px-2 py-1 rounded-full">
+              <span className="text-[10px] text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/20 border border-green-200 dark:border-green-800/50 px-2 py-1 rounded-full">
                 ✓ {lastSnapshotTime}
               </span>
             )}
@@ -192,14 +192,14 @@ export default function GrowthPage() {
 
       {/* Progress bar */}
       {snapProgress && (
-        <div className="mb-4 p-4 bg-gray-900/80 border border-border rounded-xl backdrop-blur">
+        <div className="mb-4 p-4 bg-gray-100 dark:bg-gray-900/80 border border-border rounded-xl backdrop-blur">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-text-secondary font-medium">
               {snapProgress.pct < 100
                 ? `⏳ Capturando ${snapProgress.done}/${snapProgress.total} databases...`
                 : t('growth.snapshotDone')}
             </span>
-            <span className="text-xs font-mono text-blue-400 font-bold">{snapProgress.pct}%</span>
+            <span className="text-xs font-mono text-blue-600 dark:text-blue-400 font-bold">{snapProgress.pct}%</span>
           </div>
           <div className="w-full h-2.5 bg-surface-elevated rounded-full overflow-hidden">
             <div
@@ -237,7 +237,7 @@ export default function GrowthPage() {
 
       {/* Anomalies Banner */}
       {anomalies.length > 0 && (
-        <div className="mb-4 p-4 bg-red-950/30 border border-red-900/40 rounded-xl">
+        <div className="mb-4 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 rounded-xl">
           <h3 className="text-sm font-semibold text-red-400 mb-2 flex items-center gap-2">
             <AlertTriangle className="w-4 h-4" /> {anomalies.length} anomalia{anomalies.length > 1 ? 's' : ''} detectada{anomalies.length > 1 ? 's' : ''}
           </h3>
@@ -255,10 +255,10 @@ export default function GrowthPage() {
 
       {/* First snapshot banner */}
       {data.length > 0 && data.every(t => t.dailyDelta === 0 && t.avgDailyGrowth === 0) && !loading && (
-        <div className="mb-4 p-4 bg-blue-950/20 border border-blue-800/30 rounded-xl flex items-start gap-3">
+        <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/30 rounded-xl flex items-start gap-3">
           <span className="text-xl">📊</span>
           <div>
-            <p className="text-sm font-medium text-blue-300">Primeiro snapshot coletado!</p>
+            <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Primeiro snapshot coletado!</p>
             <p className="text-xs text-text-secondary mt-1">
               Os dados de <strong>Delta</strong>, <strong>Média/dia</strong> e <strong>Tendência</strong> aparecerão a partir do próximo snapshot.
               O sistema coleta automaticamente à meia-noite (UTC).
@@ -289,7 +289,7 @@ export default function GrowthPage() {
             <div className="flex items-center gap-2">
               <Filter className="w-3.5 h-3.5 text-blue-400" />
               {Object.entries(filterInputs).filter(([,v]) => v).map(([col, val]) => (
-                <span key={col} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-900/30 border border-blue-700/40 rounded-full text-[11px] text-blue-300">
+                <span key={col} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-100 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700/40 rounded-full text-[11px] text-blue-700 dark:text-blue-300">
                   {columns.find(c => c.key === col)?.label}: <span className="text-text-primary font-medium">"{val}"</span>
                   <button onClick={() => setFilterInputs(f => { const n = {...f}; delete n[col]; return n })} className="hover:text-red-400 transition">
                     <X className="w-3 h-3" />
@@ -311,7 +311,7 @@ export default function GrowthPage() {
       {loading ? (
         <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-blue-500" /></div>
       ) : data.length === 0 ? (
-        <div className="p-8 bg-surface border border-border rounded-xl text-center">
+        <div className="p-8 bg-white dark:bg-gray-900/50 border border-border rounded-xl text-center">
           <Database className="w-12 h-12 text-gray-600 mx-auto mb-3" />
           <p className="text-text-secondary">{t('growth.noSnapshots')}</p>
           <p className="text-xs text-gray-600 mt-1">Clique "Snapshot Agora" para coletar o primeiro.</p>
