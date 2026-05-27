@@ -1,16 +1,16 @@
 import { useLocation, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useState } from 'react'
-import { Database, LayoutDashboard, Plug, Activity, HeartPulse, Bell, TrendingUp, Terminal, GitCompareArrows, Play, Wifi, Stethoscope, Brain, FileText, GitBranch, HardDrive, History, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { Database, LayoutDashboard, Plug, Activity, HeartPulse, Bell, TrendingUp, Terminal, GitCompareArrows, Play, Wifi, Stethoscope, Brain, FileText, GitBranch, HardDrive, History } from 'lucide-react'
 import { useAuthStore } from '../../stores/auth.store'
 
-export default function Sidebar() {
+interface SidebarProps {
+  collapsed: boolean
+}
+
+export default function Sidebar({ collapsed }: SidebarProps) {
   const location = useLocation()
   const { t } = useTranslation()
-  const { hasFeature, user } = useAuthStore()
-  const [collapsed, setCollapsed] = useState(() => localStorage.getItem('dba-sidebar-collapsed') === 'true')
-
-  const toggle = () => { const next = !collapsed; setCollapsed(next); localStorage.setItem('dba-sidebar-collapsed', String(next)) }
+  const { hasFeature } = useAuthStore()
 
   const navItems = [
     { to: '/', icon: LayoutDashboard, label: t('nav.dashboard'), feature: 'dashboard.view' },
@@ -33,7 +33,6 @@ export default function Sidebar() {
     { to: '/schema-versions', icon: History, label: t('nav.versioning'), feature: 'comparator.view' },
   ]
 
-  // Filter by feature permission
   const visibleItems = navItems.filter(item => !item.feature || hasFeature(item.feature))
 
   return (
@@ -56,10 +55,13 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="border-t border-border p-2">
-        <button onClick={toggle} className="p-2 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-gray-100 dark:hover:bg-gray-800 transition w-full flex items-center justify-center" title={collapsed ? 'Expandir menu' : 'Recolher menu'}>
-          {collapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
-        </button>
+      {/* Version at bottom */}
+      <div className="border-t border-border px-4 py-2">
+        {!collapsed ? (
+          <p className="text-[10px] text-muted-foreground text-center">v2.3.0</p>
+        ) : (
+          <p className="text-[10px] text-muted-foreground text-center">2.3</p>
+        )}
       </div>
     </aside>
   )
