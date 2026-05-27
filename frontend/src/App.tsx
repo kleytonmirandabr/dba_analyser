@@ -33,6 +33,9 @@ import NotificationsPage from './pages/NotificationsPage'
 import HelpCenterPage from './pages/HelpCenterPage'
 import MTTRPage from './pages/MTTRPage'
 import VPNSetupWizard from './components/wizard/VPNSetupWizard'
+import K8sDashboardPage from './pages/K8sDashboardPage'
+import K8sClustersPage from './pages/K8sClustersPage'
+import K8sDeploymentsPage from './pages/K8sDeploymentsPage'
 import { Loader2 } from 'lucide-react'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -94,6 +97,14 @@ export default function App() {
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="help" element={<HelpCenterPage />} />
           <Route path="mttr" element={<MTTRPage />} />
+          {/* K8s / DevOps Module */}
+          <Route path="k8s" element={<K8sDashboardPage />} />
+          <Route path="k8s/clusters" element={<K8sClustersPage />} />
+          <Route path="k8s/deployments" element={<K8sDeploymentsPage />} />
+          <Route path="k8s/pods" element={<K8sDashboardPage />} />
+          <Route path="k8s/nodes" element={<K8sDashboardPage />} />
+          <Route path="k8s/services" element={<K8sDashboardPage />} />
+          <Route path="k8s/ingress" element={<K8sDashboardPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

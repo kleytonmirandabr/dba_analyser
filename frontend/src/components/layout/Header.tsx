@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import api from '../../lib/api'
 import NotificationBell from './NotificationBell'
 import LanguageSelector from './LanguageSelector'
+import ModuleSwitcher from './ModuleSwitcher'
 
 interface HeaderProps {
   sidebarCollapsed: boolean
@@ -66,6 +67,7 @@ export default function Header({ sidebarCollapsed, onToggleSidebar }: HeaderProp
       {/* Right */}
       <div className="flex items-center gap-3">
         <NotificationBell />
+        <ModuleSwitcher />
         <LanguageSelector />
 
         <button onClick={toggle}
