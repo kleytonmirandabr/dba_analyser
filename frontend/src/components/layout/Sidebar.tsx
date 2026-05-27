@@ -47,7 +47,7 @@ export default function Sidebar() {
         ))}
       </nav>
       <div className="p-3 border-t border-border">
-        <p className="text-[10px] text-gray-500 dark:text-gray-600 text-center">DBA Analyser v1.8.1</p>
+        <p className="text-[10px] text-gray-500 dark:text-gray-600 text-center">DBA Analyser v1.9.0</p>
       </div>
     </aside>
   )

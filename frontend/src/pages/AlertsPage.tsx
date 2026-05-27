@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Bell, Plus, CheckCircle, AlertTriangle, XCircle, Clock, Loader2, X, Play, Pause, Trash2, Edit, ChevronRight, BarChart3, List, TrendingUp, Activity } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area } from 'recharts'
 import api from '../lib/api'
+import AlertsDashboardGrid from '../components/alerts/AlertsDashboardGrid'
 
 type View = 'dashboard' | 'list'
 
@@ -33,6 +34,7 @@ export default function AlertsPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [editAlert, setEditAlert] = useState<Alert | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [dashFilter, setDashFilter] = useState<{ severity?: string; status?: string; connection?: string }>({})
   const [history, setHistory] = useState<any[]>([])
   const [histLoading, setHistLoading] = useState(false)
 
@@ -149,106 +151,33 @@ export default function AlertsPage() {
         <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-blue-500" /></div>
       ) : view === 'dashboard' ? (
         /* ─── DASHBOARD VIEW ─── */
-        <div className="space-y-4">
-          {dashboard.length === 0 && (
+        <div>
+          {/* Filters */}
+          <div className="flex items-center gap-2 mb-4">
+            <select value={dashFilter.severity || ''} onChange={e => setDashFilter(f => ({ ...f, severity: e.target.value || undefined }))}
+              className="text-xs bg-surface-elevated border border-border rounded-lg px-2 py-1.5 text-text-secondary">
+              <option value="">Todas Severidades</option>
+              <option value="critical">Critical</option>
+              <option value="warning">Warning</option>
+              <option value="info">Info</option>
+            </select>
+            <select value={dashFilter.status || ''} onChange={e => setDashFilter(f => ({ ...f, status: e.target.value || undefined }))}
+              className="text-xs bg-surface-elevated border border-border rounded-lg px-2 py-1.5 text-text-secondary">
+              <option value="">Todos Status</option>
+              <option value="ok">OK</option>
+              <option value="triggered">Disparados</option>
+              <option value="error">Erro</option>
+            </select>
+          </div>
+          {dashboard.length === 0 ? (
             <div className="text-center py-16 bg-gray-100/30 dark:bg-gray-900/30 border border-border rounded-xl">
               <Bell className="w-12 h-12 text-gray-700 mx-auto mb-3" />
               <p className="text-text-secondary">{t('alerts.noAlerts')}</p>
               <p className="text-xs text-gray-600 mt-1">Crie um alerta para monitorar seus bancos.</p>
             </div>
+          ) : (
+            <AlertsDashboardGrid data={dashboard} filter={dashFilter} />
           )}
-          {dashboard.map(d => (
-            <div key={d.id} className="bg-gray-900/40 border border-border/60 rounded-xl overflow-hidden">
-              {/* Alert header */}
-              <div className="flex items-center justify-between p-4 border-b border-border/50">
-                <div className="flex items-center gap-3">
-                  {statusIcon(d.currentStatus)}
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-text-primary font-semibold text-sm">{d.name}</span>
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
-                        d.severity === 'critical' ? 'bg-red-900/40 text-red-400 border border-red-800/50' :
-                        d.severity === 'warning' ? 'bg-amber-900/40 text-amber-400 border border-amber-800/50' :
-                        'bg-blue-900/40 text-blue-400 border border-blue-800/50'
-                      }`}>{d.severity}</span>
-                    </div>
-                    <p className="text-[11px] text-text-tertiary mt-0.5">
-                      {d.connectionName} • {d.databaseName} • Último check: {d.lastCheckedAt ? new Date(d.lastCheckedAt).toLocaleString() : '—'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 text-xs">
-                  <div className="text-center">
-                    <p className="text-text-tertiary">Checks</p>
-                    <p className="text-text-primary font-bold">{d.stats.totalChecks}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-text-tertiary">OK</p>
-                    <p className="text-green-400 font-bold">{d.stats.okCount}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-text-tertiary">Alertas</p>
-                    <p className="text-amber-400 font-bold">{d.stats.triggeredCount}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-text-tertiary">Erros</p>
-                    <p className="text-red-400 font-bold">{d.stats.errorCount}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-text-tertiary">Média</p>
-                    <p className="text-text-secondary font-bold">{d.stats.avgExecutionMs}ms</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Chart */}
-              <div className="p-4">
-                {d.timeline.length > 1 ? (
-                  <div className="h-[120px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={d.timeline} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                        <XAxis dataKey="time" tick={{ fontSize: 9, fill: '#6b7280' }} tickFormatter={(t) => t.slice(11, 16)} />
-                        <YAxis tick={{ fontSize: 9, fill: '#6b7280' }} />
-                        <Tooltip
-                          contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: '8px', fontSize: '11px' }}
-                          labelFormatter={(l) => new Date(l).toLocaleString()}
-                        />
-                        <Area type="monotone" dataKey="ok" stackId="1" stroke="#34d399" fill="#34d399" fillOpacity={0.3} name="OK" />
-                        <Area type="monotone" dataKey="triggered" stackId="1" stroke="#fbbf24" fill="#fbbf24" fillOpacity={0.3} name="Disparados" />
-                        <Area type="monotone" dataKey="error" stackId="1" stroke="#f87171" fill="#f87171" fillOpacity={0.3} name="Erros" />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                ) : (
-                  <div className="h-[80px] flex items-center justify-center text-gray-600 text-xs">
-                    <Activity className="w-4 h-4 mr-2" /> Coletando dados... o gráfico aparecerá com mais verificações.
-                  </div>
-                )}
-
-                {/* Value timeline for scalar alerts */}
-                {d.lastValues.length > 2 && (
-                  <div className="mt-3 h-[80px] border-t border-border/50 pt-3">
-                    <p className="text-[10px] text-text-tertiary mb-1">Valor retornado ao longo do tempo:</p>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={d.lastValues} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                        <XAxis dataKey="time" tick={{ fontSize: 9, fill: '#6b7280' }} tickFormatter={(t) => new Date(t).toLocaleTimeString().slice(0, 5)} />
-                        <YAxis tick={{ fontSize: 9, fill: '#6b7280' }} />
-                        <Tooltip contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: '8px', fontSize: '11px' }} />
-                        <Line type="monotone" dataKey="value" stroke="#60a5fa" strokeWidth={2} dot={false} name="Valor" />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
-
-                {/* Last message / per-db results */}
-                <div className="mt-3">
-                  <AlertMessage message={d.lastMessage} lastChecked={d.lastCheckedAt} />
-                </div>
-              </div>
-            </div>
-          ))}
         </div>
       ) : (
         /* ─── LIST VIEW ─── */
