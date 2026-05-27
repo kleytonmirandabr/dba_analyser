@@ -20,6 +20,7 @@ import { UserActivityLog } from '../entities/user-activity-log.entity';
 import { AuditLogV2 } from '../entities/audit-log-v2.entity';
 import { NotificationChannel } from '../entities/notification-channel.entity';
 import { AuditSubscriber } from '../subscribers/audit.subscriber';
+import { K8sCluster } from '../entities/K8sCluster.entity';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -29,7 +30,7 @@ export const AppDataSource = new DataSource({
   entities: [User, Connection, ExecutionRequest, AuditLog, Alert, AlertHistory, TableSnapshot,
     QueryAdvice,
     ReportSchedule, TableGrowthRule, HealthSnapshot, BackupJob, SchemaSnapshot,
-    Client, Feature, Profile, ProfileFeature, UserActivityLog, AuditLogV2, NotificationChannel],
+    Client, Feature, Profile, ProfileFeature, UserActivityLog, AuditLogV2, NotificationChannel, K8sCluster],
   subscribers: [AuditSubscriber],
   migrations: ['dist/migrations/*.js'],
 });

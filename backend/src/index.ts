@@ -37,6 +37,7 @@ import heartbeatRoutes from './routes/heartbeat.routes';
 import twoFactorRoutes from './routes/two-factor.routes';
 import reportsPdfRoutes from './routes/reports-pdf.routes';
 import notificationsRoutes from './routes/notifications.routes';
+import k8sRoutes from './routes/k8s.routes';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 import { initMonitorSocket } from './services/monitor.ws';
@@ -110,6 +111,7 @@ app.use('/api/2fa', twoFactorRoutes);
 app.use('/api/reports/pdf', reportsPdfRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/diagnostics', diagnosticsRoutes);
+app.use('/api/k8s', k8sRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/schema-versions', schemaVersionRoutes);
 
