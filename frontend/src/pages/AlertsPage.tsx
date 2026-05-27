@@ -6,7 +6,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import api from '../lib/api'
 import AlertsDashboardGrid from '../components/alerts/AlertsDashboardGrid'
 
-type View = 'dashboard' | 'list'
+type View = 'dashboard' | 'table' | 'list'
 
 interface AlertDashboard {
   id: string; name: string; severity: string; currentStatus: string;
@@ -35,6 +35,10 @@ export default function AlertsPage() {
   const [editAlert, setEditAlert] = useState<Alert | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [dashFilter, setDashFilter] = useState<{ severity?: string; status?: string; connection?: string }>({})
+  const [autoRefresh, setAutoRefresh] = useState(true)
+  const [countdown, setCountdown] = useState(30)
+  const [sortCol, setSortCol] = useState<string>('name')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [history, setHistory] = useState<any[]>([])
   const [histLoading, setHistLoading] = useState(false)
 
@@ -52,6 +56,18 @@ export default function AlertsPage() {
   }
 
   useEffect(() => { load() }, [])
+
+  // Auto-refresh
+  useEffect(() => {
+    if (!autoRefresh) return
+    const interval = setInterval(() => {
+      setCountdown(c => {
+        if (c <= 1) { load(); return 30 }
+        return c - 1
+      })
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [autoRefresh])
 
   const toggleEnabled = async (alert: Alert) => {
     await api.put(`/api/alerts/${alert.id}`, { enabled: !alert.enabled })
@@ -112,12 +128,25 @@ export default function AlertsPage() {
           {/* View toggle */}
           <div className="flex bg-surface-elevated rounded-lg p-0.5 border border-border">
             <button onClick={() => setView('dashboard')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition ${view === 'dashboard' ? 'bg-blue-600 text-white' : 'text-text-secondary hover:text-white'}`}>
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition ${view === 'dashboard' ? 'bg-blue-600 text-white' : 'text-text-secondary hover:text-text-primary'}`}>
               <BarChart3 className="w-3.5 h-3.5" /> Dashboard
             </button>
+            <button onClick={() => setView('table')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition ${view === 'table' ? 'bg-blue-600 text-white' : 'text-text-secondary hover:text-text-primary'}`}>
+              <List className="w-3.5 h-3.5" /> Tabela
+            </button>
             <button onClick={() => setView('list')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition ${view === 'list' ? 'bg-blue-600 text-white' : 'text-text-secondary hover:text-white'}`}>
-              <List className="w-3.5 h-3.5" /> Lista
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition ${view === 'list' ? 'bg-blue-600 text-white' : 'text-text-secondary hover:text-text-primary'}`}>
+              <Activity className="w-3.5 h-3.5" /> Cards
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setAutoRefresh(!autoRefresh)}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] rounded-lg border transition ${
+                autoRefresh ? 'border-green-300 dark:border-green-800 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'border-border text-text-tertiary'
+              }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${autoRefresh ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+              {autoRefresh ? countdown + 's' : 'Auto'}
             </button>
           </div>
           <button onClick={() => { setEditAlert(null); setFormOpen(true) }}
@@ -161,6 +190,84 @@ export default function AlertsPage() {
             </div>
           ) : (
             <AlertsDashboardGrid data={dashboard} filter={dashFilter} />
+          )}
+        </div>
+      ) : view === 'table' ? (
+        /* ─── TABLE VIEW ─── */
+        <div className="bg-white dark:bg-surface-elevated border border-border rounded-xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-border bg-gray-50 dark:bg-gray-900/50">
+                  <th className="px-3 py-2.5 text-left font-semibold text-text-secondary cursor-pointer hover:text-text-primary" onClick={() => { setSortCol('status'); setSortDir(d => d === 'asc' ? 'desc' : 'asc') }}>Status</th>
+                  <th className="px-3 py-2.5 text-left font-semibold text-text-secondary cursor-pointer hover:text-text-primary" onClick={() => { setSortCol('name'); setSortDir(d => d === 'asc' ? 'desc' : 'asc') }}>Nome</th>
+                  <th className="px-3 py-2.5 text-left font-semibold text-text-secondary">Severidade</th>
+                  <th className="px-3 py-2.5 text-left font-semibold text-text-secondary">Conexão</th>
+                  <th className="px-3 py-2.5 text-left font-semibold text-text-secondary cursor-pointer hover:text-text-primary" onClick={() => { setSortCol('lastCheckedAt'); setSortDir(d => d === 'asc' ? 'desc' : 'asc') }}>Último Check</th>
+                  <th className="px-3 py-2.5 text-center font-semibold text-text-secondary">Intervalo</th>
+                  <th className="px-3 py-2.5 text-center font-semibold text-text-secondary">Habilitado</th>
+                  <th className="px-3 py-2.5 text-right font-semibold text-text-secondary">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/50">
+                {[...alerts].sort((a, b) => {
+                  const dir = sortDir === 'asc' ? 1 : -1
+                  if (sortCol === 'name') return a.name.localeCompare(b.name) * dir
+                  if (sortCol === 'status') return a.currentStatus.localeCompare(b.currentStatus) * dir
+                  if (sortCol === 'lastCheckedAt') return ((a.lastCheckedAt || '') > (b.lastCheckedAt || '') ? 1 : -1) * dir
+                  return 0
+                }).map(a => (
+                  <tr key={a.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`w-2.5 h-2.5 rounded-full ${
+                          a.currentStatus === 'ok' ? 'bg-green-500' :
+                          a.currentStatus === 'triggered' ? 'bg-amber-500 animate-pulse' :
+                          a.currentStatus === 'error' ? 'bg-red-500 animate-pulse' : 'bg-gray-400'
+                        }`} />
+                        <span className={`font-medium capitalize ${
+                          a.currentStatus === 'ok' ? 'text-green-600 dark:text-green-400' :
+                          a.currentStatus === 'triggered' ? 'text-amber-600 dark:text-amber-400' :
+                          a.currentStatus === 'error' ? 'text-red-600 dark:text-red-400' : 'text-text-tertiary'
+                        }`}>{a.currentStatus === 'ok' ? 'OK' : a.currentStatus === 'triggered' ? 'Alerta' : a.currentStatus === 'error' ? 'Erro' : 'Pendente'}</span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2.5 font-medium text-text-primary">{a.name}</td>
+                    <td className="px-3 py-2.5">
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase ${
+                        a.severity === 'critical' ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400' :
+                        a.severity === 'warning' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400' :
+                        'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400'
+                      }`}>{a.severity}</span>
+                    </td>
+                    <td className="px-3 py-2.5 text-text-secondary">{a.connection?.name || '—'}</td>
+                    <td className="px-3 py-2.5 text-text-tertiary">{a.lastCheckedAt ? new Date(a.lastCheckedAt).toLocaleString() : '—'}</td>
+                    <td className="px-3 py-2.5 text-center text-text-secondary">{a.intervalSeconds < 60 ? a.intervalSeconds + 's' : Math.round(a.intervalSeconds / 60) + 'min'}</td>
+                    <td className="px-3 py-2.5 text-center">
+                      <button onClick={() => toggleEnabled(a)} className={`w-8 h-4 rounded-full transition-colors relative ${a.enabled ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                        <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${a.enabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                      </button>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center justify-end gap-0.5">
+                        <button onClick={() => testAlert(a.id)} className="p-1.5 text-text-tertiary hover:text-green-500 rounded transition" title="Testar">
+                          <Play className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => { setEditAlert(a); setFormOpen(true) }} className="p-1.5 text-text-tertiary hover:text-blue-500 rounded transition" title="Editar">
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => deleteAlert(a.id)} className="p-1.5 text-text-tertiary hover:text-red-500 rounded transition" title="Excluir">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {alerts.length === 0 && (
+            <div className="text-center py-12 text-text-secondary text-sm">Nenhum alerta configurado.</div>
           )}
         </div>
       ) : (
