@@ -156,7 +156,11 @@ export default function QueryPage() {
         ]
       }))
       setTree(prev => prev.map(n => n.id === `conn:${connId}` ? { ...n, children: schemas, loaded: true } : n))
-    } catch {}
+    } catch (err: any) {
+      const msg = err.response?.data?.error || 'Erro ao conectar'
+      const errorNode: TreeNode = { id: `${connId}:error`, label: '⚠ ' + (msg.includes('decriptar') ? 'Credenciais inválidas - re-salve a conexão' : msg), type: 'column' as NodeType, connId }
+      setTree(prev => prev.map(n => n.id === `conn:${connId}` ? { ...n, children: [errorNode], loaded: true } : n))
+    }
   }
 
   const loadChildren = async (node: TreeNode) => {
