@@ -152,23 +152,7 @@ export default function AlertsPage() {
       ) : view === 'dashboard' ? (
         /* ─── DASHBOARD VIEW ─── */
         <div>
-          {/* Filters */}
-          <div className="flex items-center gap-2 mb-4">
-            <select value={dashFilter.severity || ''} onChange={e => setDashFilter(f => ({ ...f, severity: e.target.value || undefined }))}
-              className="text-xs bg-surface-elevated border border-border rounded-lg px-2 py-1.5 text-text-secondary">
-              <option value="">Todas Severidades</option>
-              <option value="critical">Critical</option>
-              <option value="warning">Warning</option>
-              <option value="info">Info</option>
-            </select>
-            <select value={dashFilter.status || ''} onChange={e => setDashFilter(f => ({ ...f, status: e.target.value || undefined }))}
-              className="text-xs bg-surface-elevated border border-border rounded-lg px-2 py-1.5 text-text-secondary">
-              <option value="">Todos Status</option>
-              <option value="ok">OK</option>
-              <option value="triggered">Disparados</option>
-              <option value="error">Erro</option>
-            </select>
-          </div>
+          {/* Filters handled by grid */}
           {dashboard.length === 0 ? (
             <div className="text-center py-16 bg-gray-100/30 dark:bg-gray-900/30 border border-border rounded-xl">
               <Bell className="w-12 h-12 text-gray-700 mx-auto mb-3" />

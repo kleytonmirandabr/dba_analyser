@@ -56,8 +56,8 @@ export default function AlertsDashboardGrid({ data, filter }: Props) {
   return (
     <div ref={containerRef}>
       {/* Toolbar */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
           <button onClick={() => setEditMode(!editMode)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
               editMode ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-surface-elevated text-text-secondary border border-border hover:border-blue-500/50'

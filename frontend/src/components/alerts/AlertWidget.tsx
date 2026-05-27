@@ -157,7 +157,7 @@ export default function AlertWidget({ id, name, severity, currentStatus, connect
   }
 
   return (
-    <div className={`h-full flex flex-col bg-surface border ${colors.border} rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow`}>
+    <div className={`h-full flex flex-col bg-white dark:bg-gray-900/60 border ${colors.border} rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all`}>
       {/* Header - drag handle */}
       <div className="drag-handle cursor-grab active:cursor-grabbing flex items-center justify-between px-3 py-2 border-b border-border/50 bg-surface-elevated/50">
         <div className="flex items-center gap-2 min-w-0">
@@ -211,8 +211,13 @@ export default function AlertWidget({ id, name, severity, currentStatus, connect
       </div>
 
       {/* Footer */}
-      <div className="px-3 py-1.5 border-t border-border/50 flex items-center justify-between text-[9px] text-text-tertiary">
-        <span>{connectionName}</span>
+      <div className="px-3 py-1.5 border-t border-border/50 flex items-center justify-between text-[9px] text-text-tertiary bg-gray-50 dark:bg-gray-900/40">
+        <div className="flex items-center gap-2">
+          <span className="font-medium">{connectionName}</span>
+          <span className="text-text-tertiary">•</span>
+          <span>OK: <b className="text-green-600 dark:text-green-400">{stats.okCount}</b></span>
+          <span>Erros: <b className="text-red-600 dark:text-red-400">{stats.errorCount}</b></span>
+        </div>
         <span>{lastCheckedAt ? new Date(lastCheckedAt).toLocaleTimeString().slice(0, 5) : '—'}</span>
       </div>
     </div>
