@@ -349,6 +349,7 @@ function AlertMessage({ message, lastChecked }: { message: string | null | undef
 }
 
 function AlertFormModal({ alert, onClose, onSaved }: { alert: Alert | null; onClose: () => void; onSaved: () => void }) {
+  const { t } = useTranslation()
   const [connections, setConnections] = useState<any[]>([])
   const [step, setStep] = useState(1)
   const [form, setForm] = useState({
