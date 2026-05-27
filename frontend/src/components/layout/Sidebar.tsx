@@ -1,7 +1,7 @@
 import { useLocation, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
-import { Database, LayoutDashboard, Plug, Activity, HeartPulse, Bell, TrendingUp, Terminal, GitCompareArrows, Play, Shield, Settings, Wifi, Stethoscope, Brain, FileText, GitBranch, HardDrive, History, PanelLeftClose, PanelLeftOpen, Building2, Users, Key, User } from 'lucide-react'
+import { Database, LayoutDashboard, Plug, Activity, HeartPulse, Bell, TrendingUp, Terminal, GitCompareArrows, Play, Wifi, Stethoscope, Brain, FileText, GitBranch, HardDrive, History, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { useAuthStore } from '../../stores/auth.store'
 
 export default function Sidebar() {
@@ -24,7 +24,6 @@ export default function Sidebar() {
     { to: '/alerts', icon: Bell, label: t('nav.alerts'), feature: 'alerts.view' },
     { to: '/availability', icon: HeartPulse, label: 'Disponibilidade', feature: 'availability.view' },
     { to: '/heartbeat', icon: Activity, label: 'Heartbeat', feature: 'monitor.view' },
-    { to: '/notifications', icon: Bell, label: 'Notificações', feature: 'alerts.manage' },
     { to: '/growth', icon: TrendingUp, label: t('nav.growth'), feature: 'growth.view' },
     { to: '/backup', icon: HardDrive, label: t('nav.backup'), feature: 'backup.view' },
     { to: '/advisor', icon: Brain, label: t('nav.advisor'), feature: 'dashboard.view' },
@@ -32,13 +31,6 @@ export default function Sidebar() {
     { to: '/executions', icon: Play, label: t('nav.executions'), feature: 'query.execute' },
     { to: '/compare', icon: GitCompareArrows, label: t('nav.compare'), feature: 'comparator.view' },
     { to: '/schema-versions', icon: History, label: t('nav.versioning'), feature: 'comparator.view' },
-    { to: '/audit', icon: Shield, label: t('nav.audit'), feature: 'admin.audit' },
-    { to: '/clients', icon: Building2, label: 'Clientes', feature: 'admin.clients' },
-    { to: '/users', icon: Users, label: 'Usuários', feature: 'admin.users' },
-    { to: '/profiles', icon: Shield, label: 'Perfis', feature: 'admin.profiles' },
-    { to: '/features', icon: Key, label: 'Funcionalidades', feature: 'admin.profiles' },
-    { to: '/my-account', icon: User, label: 'Minha Conta', feature: null },
-    { to: '/settings', icon: Settings, label: t('nav.settings'), feature: 'admin.settings' },
   ]
 
   // Filter by feature permission
