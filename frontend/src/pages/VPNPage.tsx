@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Wifi, WifiOff, Upload, Trash2, Loader2, CheckCircle2, AlertCircle, Shield, Key, Server, Terminal, X } from 'lucide-react'
+import { Wifi, WifiOff, Upload, Trash2, Loader2, CheckCircle2, AlertCircle, Shield, Key, Server, Terminal, X, RotateCcw } from 'lucide-react'
 import api from '../lib/api'
 
 interface VPNStatus {
@@ -146,6 +146,27 @@ export default function VPNPage() {
     }
   }
 
+  const handleRestart = async () => {
+    setMessage(null)
+    setConnecting(true)
+    setConnectStep('Reiniciando container VPN...')
+    try {
+      await api.post('/api/vpn/restart')
+      setShowLogs(true)
+      setConnectStep(t('vpn.startingContainer'))
+      pollRef.current = setInterval(loadStatus, 3000)
+      stepTimers.current.push(setTimeout(() => setConnectStep(t('vpn.authenticating')), 4000))
+      stepTimers.current.push(setTimeout(() => setConnectStep(t('vpn.establishingTunnel')), 8000))
+      stepTimers.current.push(setTimeout(() => setConnectStep(t('vpn.verifyingConnectivity')), 12000))
+      stepTimers.current.push(setTimeout(() => {
+        if (!status.connected) stopConnecting()
+      }, 30000))
+    } catch (err: any) {
+      stopConnecting()
+      setMessage({ type: 'error', text: err.response?.data?.error || 'Erro ao reiniciar container VPN' })
+    }
+  }
+
   const handleRemove = async () => {
     if (!confirm(t('vpn.confirmRemove'))) return
     try {
@@ -209,9 +230,9 @@ export default function VPNPage() {
                 {status.connected ? `${t('vpn.tunnelActive')} • IP: ${status.ip || t('vpn.gettingIp')}` : connecting ? connectStep : status.configUploaded ? t('vpn.readyToConnect') : t('vpn.uploadOvpn')}
               </p>
             </div>
-            {status.configUploaded && !connecting && (
+            {!connecting && (
               <div className="flex gap-2">
-                {!status.connected && (
+                {status.configUploaded && !status.connected && (
                   <button onClick={handleConnect} className="px-4 py-2 text-xs bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition flex items-center gap-1.5">
                     <Wifi className="w-3.5 h-3.5" /> Conectar
                   </button>
@@ -221,6 +242,9 @@ export default function VPNPage() {
                     <WifiOff className="w-3.5 h-3.5" /> Desconectar
                   </button>
                 )}
+                <button onClick={handleRestart} title="Reiniciar container VPN" className="px-4 py-2 text-xs bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg transition flex items-center gap-1.5">
+                  <RotateCcw className="w-3.5 h-3.5" /> Reiniciar
+                </button>
               </div>
             )}
           </div>

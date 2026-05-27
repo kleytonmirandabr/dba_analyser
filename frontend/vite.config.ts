@@ -8,15 +8,15 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://172.18.0.1:3030',
+        target: 'http://backend:3030',
         changeOrigin: true,
       },
       '/health': {
-        target: 'http://172.18.0.1:3030',
+        target: 'http://backend:3030',
         changeOrigin: true,
       },
       '/socket.io': {
-        target: 'http://172.18.0.1:3030',
+        target: 'http://backend:3030',
         ws: true,
       },
     },
