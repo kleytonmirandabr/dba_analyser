@@ -1,0 +1,146 @@
+# ═══════════════════════════════════════════════════════════════════
+# DBA Analyser — Read-Only ClusterRole for AKS Monitoring
+# ═══════════════════════════════════════════════════════════════════
+# Apply this in your AKS cluster:
+#   kubectl apply -f k8s-readonly-rbac.yaml
+#
+# This grants ONLY read access (get, list, watch).
+# The application CANNOT create, update, delete, or patch any resource.
+# ═══════════════════════════════════════════════════════════════════
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dba-analyser-monitor
+  labels:
+    app: dba-analyser
+    purpose: monitoring-readonly
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dba-analyser-readonly
+  namespace: dba-analyser-monitor
+  labels:
+    app: dba-analyser
+    access: readonly
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: dba-analyser-readonly
+  labels:
+    app: dba-analyser
+    access: readonly
+rules:
+  # Core resources — READ ONLY
+  - apiGroups: [""]
+    resources:
+      - pods
+      - pods/status
+      - pods/log
+      - services
+      - endpoints
+      - nodes
+      - nodes/status
+      - namespaces
+      - events
+      - configmaps
+      - persistentvolumeclaims
+      - persistentvolumes
+      - resourcequotas
+      - limitranges
+      - replicationcontrollers
+      - serviceaccounts
+    verbs: ["get", "list", "watch"]
+
+  # Apps — READ ONLY
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - deployments/status
+      - replicasets
+      - statefulsets
+      - daemonsets
+    verbs: ["get", "list", "watch"]
+
+  # Networking — READ ONLY
+  - apiGroups: ["networking.k8s.io"]
+    resources:
+      - ingresses
+      - ingresses/status
+      - networkpolicies
+    verbs: ["get", "list", "watch"]
+
+  # Batch — READ ONLY
+  - apiGroups: ["batch"]
+    resources:
+      - jobs
+      - cronjobs
+    verbs: ["get", "list", "watch"]
+
+  # Autoscaling — READ ONLY
+  - apiGroups: ["autoscaling"]
+    resources:
+      - horizontalpodautoscalers
+    verbs: ["get", "list", "watch"]
+
+  # Metrics — READ ONLY
+  - apiGroups: ["metrics.k8s.io"]
+    resources:
+      - pods
+      - nodes
+    verbs: ["get", "list"]
+
+  # Storage — READ ONLY
+  - apiGroups: ["storage.k8s.io"]
+    resources:
+      - storageclasses
+      - volumeattachments
+    verbs: ["get", "list", "watch"]
+
+  # RBAC — READ ONLY (view roles, not modify)
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources:
+      - roles
+      - rolebindings
+      - clusterroles
+      - clusterrolebindings
+    verbs: ["get", "list", "watch"]
+
+  # Version info
+  - nonResourceURLs: ["/version", "/healthz", "/readyz"]
+    verbs: ["get"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: dba-analyser-readonly-binding
+  labels:
+    app: dba-analyser
+    access: readonly
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: dba-analyser-readonly
+subjects:
+  - kind: ServiceAccount
+    name: dba-analyser-readonly
+    namespace: dba-analyser-monitor
+
+---
+# Generate the token for this ServiceAccount:
+# kubectl create token dba-analyser-readonly -n dba-analyser-monitor --duration=8760h
+#
+# Or create a long-lived secret:
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dba-analyser-readonly-token
+  namespace: dba-analyser-monitor
+  annotations:
+    kubernetes.io/service-account.name: dba-analyser-readonly
+type: kubernetes.io/service-account-token

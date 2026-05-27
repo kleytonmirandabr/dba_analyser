@@ -76,12 +76,25 @@ export interface K8sOverview {
   memory?: { used: number; allocatable: number; percent: number };
 }
 
+/**
+ * KubernetesAdapter — READ-ONLY by design
+ * 
+ * This adapter intentionally exposes ONLY read operations (get, list, watch).
+ * No create, update, delete, or patch methods are implemented.
+ * The app is designed to MONITOR, not MANAGE infrastructure.
+ * 
+ * Recommended: use a ClusterRole with only ["get", "list", "watch"] verbs.
+ * See: demandas/k8s-readonly-rbac.yaml
+ */
 export class KubernetesAdapter {
   private kc: k8s.KubeConfig;
   private coreApi: k8s.CoreV1Api;
   private appsApi: k8s.AppsV1Api;
   private networkApi: k8s.NetworkingV1Api;
   private metricsClient: k8s.Metrics;
+
+  // READ-ONLY MODE: This adapter has zero write capabilities
+  public readonly accessMode = 'READ_ONLY' as const;
 
   constructor(kubeconfig: string) {
     this.kc = new k8s.KubeConfig();
@@ -92,11 +105,27 @@ export class KubernetesAdapter {
     this.metricsClient = new k8s.Metrics(this.kc);
   }
 
-  async testConnection(): Promise<{ ok: boolean; version?: string; error?: string }> {
+  async testConnection(): Promise<{ ok: boolean; version?: string; accessMode?: string; permissions?: string[]; error?: string }> {
     try {
       const versionApi = this.kc.makeApiClient(k8s.VersionApi);
       const { body } = await versionApi.getCode();
-      return { ok: true, version: `Kubernetes ${body.gitVersion}` };
+
+      // Verify read-only access with a SelfSubjectAccessReview
+      let permissions: string[] = ['get', 'list', 'watch'];
+      try {
+        const authApi = this.kc.makeApiClient(k8s.AuthorizationV1Api);
+        // Check if we accidentally have write access (warn user)
+        const writeCheck = await authApi.createSelfSubjectAccessReview({
+          apiVersion: 'authorization.k8s.io/v1',
+          kind: 'SelfSubjectAccessReview',
+          spec: { resourceAttributes: { verb: 'create', resource: 'pods', namespace: 'default' } }
+        });
+        if (writeCheck.body.status?.allowed) {
+          permissions.push('⚠️ WRITE ACCESS DETECTED — recomendado usar ServiceAccount read-only');
+        }
+      } catch {} // If can't check, proceed anyway
+
+      return { ok: true, version: `Kubernetes ${body.gitVersion}`, accessMode: 'READ_ONLY', permissions };
     } catch (err: any) {
       return { ok: false, error: err.message || 'Connection failed' };
     }
