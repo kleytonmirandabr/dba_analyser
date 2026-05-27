@@ -1,0 +1,6 @@
+export { default as SmartSideBySide } from './SmartSideBySide'
+export { default as UnifiedDiffView } from './UnifiedDiffView'
+export { default as TablesSection } from './TablesSection'
+export { default as ObjectsSection } from './ObjectsSection'
+export { computeAlignedDiff, computeWordHighlights } from './DiffAlgorithm'
+export type { FullDiff, TableDiff, ObjectDiff, ColumnDiff, Connection, AlignedPair } from './types'
