@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { authMiddleware, requireRole } from '../middleware/auth.middleware';
+import { authMiddleware } from '../middleware/auth.middleware';
+import { requireFeature } from '../middleware/feature.middleware';
 import { vpnService } from '../services/vpn.service';
 
 const router = Router();
@@ -11,7 +12,7 @@ router.get('/status', authMiddleware, async (_req: Request, res: Response) => {
 });
 
 // POST /api/vpn/upload
-router.post('/upload', authMiddleware, requireRole('admin'), async (req: Request, res: Response) => {
+router.post('/upload', authMiddleware, requireFeature('vpn.manage'), async (req: Request, res: Response) => {
   try {
     const { ovpnContent, username, password } = req.body;
     if (!ovpnContent) return res.status(400).json({ error: 'Conteúdo do arquivo .ovpn é obrigatório' });
@@ -26,14 +27,14 @@ router.post('/upload', authMiddleware, requireRole('admin'), async (req: Request
 });
 
 // DELETE /api/vpn/config
-router.delete('/config', authMiddleware, requireRole('admin'), async (_req: Request, res: Response) => {
+router.delete('/config', authMiddleware, requireFeature('vpn.manage'), async (_req: Request, res: Response) => {
   await vpnService.removeConfig();
   return res.json({ data: { message: 'Configuração VPN removida' } });
 });
 
 
 // POST /api/vpn/connect - restart VPN container to apply config
-router.post('/connect', authMiddleware, requireRole('admin'), async (_req: Request, res: Response) => {
+router.post('/connect', authMiddleware, requireFeature('vpn.manage'), async (_req: Request, res: Response) => {
   try {
     const { execSync } = require('child_process');
     // Try to restart VPN container
@@ -54,7 +55,7 @@ router.post('/connect', authMiddleware, requireRole('admin'), async (_req: Reque
 });
 
 // POST /api/vpn/disconnect - stop VPN container
-router.post('/disconnect', authMiddleware, requireRole('admin'), async (_req: Request, res: Response) => {
+router.post('/disconnect', authMiddleware, requireFeature('vpn.manage'), async (_req: Request, res: Response) => {
   try {
     const { exec } = require('child_process');
     await new Promise<void>((resolve, reject) => {
@@ -70,7 +71,7 @@ router.post('/disconnect', authMiddleware, requireRole('admin'), async (_req: Re
 });
 
 // GET /api/vpn/logs - get VPN container logs
-router.get('/logs', authMiddleware, requireRole('admin'), async (req: Request, res: Response) => {
+router.get('/logs', authMiddleware, requireFeature('vpn.manage'), async (req: Request, res: Response) => {
   try {
     const { execSync } = require('child_process');
     const lines = parseInt(req.query.lines as string) || 50;

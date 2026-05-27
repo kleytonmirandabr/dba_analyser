@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { authMiddleware, requireRole } from '../middleware/auth.middleware';
+import { authMiddleware } from '../middleware/auth.middleware';
+import { requireFeature } from '../middleware/feature.middleware';
 import { AppDataSource } from '../config/database';
 import { Connection } from '../entities/connection.entity';
 import { TableGrowthRule } from '../entities/table-growth-rule.entity';
@@ -73,7 +74,7 @@ router.get('/:connectionId/anomalies', authMiddleware, async (req: Request, res:
 });
 
 // POST /api/growth/snapshot — trigger manual snapshot
-router.post('/snapshot', authMiddleware, requireRole('admin'), async (req: Request, res: Response) => {
+router.post('/snapshot', authMiddleware, requireFeature('growth.snapshot'), async (req: Request, res: Response) => {
   try {
     const anomalies = await runManualSnapshot();
     return res.json({ data: { message: 'Snapshot realizado', anomalies } });
@@ -83,7 +84,7 @@ router.post('/snapshot', authMiddleware, requireRole('admin'), async (req: Reque
 });
 
 // GET /api/growth/snapshot/stream — SSE progress stream for snapshot
-router.get('/snapshot/stream', authMiddleware, requireRole('admin'), async (req: Request, res: Response) => {
+router.get('/snapshot/stream', authMiddleware, requireFeature('growth.snapshot'), async (req: Request, res: Response) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
@@ -123,7 +124,7 @@ router.get('/:connectionId/rules', authMiddleware, async (req: Request, res: Res
 });
 
 // POST /api/growth/:connectionId/rules — create/update rule
-router.post('/:connectionId/rules', authMiddleware, requireRole('admin'), async (req: Request, res: Response) => {
+router.post('/:connectionId/rules', authMiddleware, requireFeature('growth.snapshot'), async (req: Request, res: Response) => {
   try {
     const { schemaName, tableName, maxDailyGrowthPct, maxDailyGrowthRows, minDailyGrowthRows, maxShrinkPct } = req.body;
 
@@ -155,7 +156,7 @@ router.post('/:connectionId/rules', authMiddleware, requireRole('admin'), async 
 });
 
 // DELETE /api/growth/rules/:id
-router.delete('/rules/:id', authMiddleware, requireRole('admin'), async (req: Request, res: Response) => {
+router.delete('/rules/:id', authMiddleware, requireFeature('growth.snapshot'), async (req: Request, res: Response) => {
   await ruleRepo().delete(req.params.id);
   return res.json({ data: { deleted: true } });
 });

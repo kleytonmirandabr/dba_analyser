@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { authMiddleware, requireRole } from '../middleware/auth.middleware';
+import { authMiddleware } from '../middleware/auth.middleware';
+import { requireFeature } from '../middleware/feature.middleware';
 import { AppDataSource } from '../config/database';
 import { Alert } from '../entities/alert.entity';
 import { AlertHistory } from '../entities/alert-history.entity';
@@ -347,7 +348,7 @@ const createSchema = z.object({
   notifyChannels: z.array(z.string()).default(['ui']),
 });
 
-router.post('/', authMiddleware, requireRole('admin'), async (req: Request, res: Response) => {
+router.post('/', authMiddleware, requireFeature('alerts.manage'), async (req: Request, res: Response) => {
   try {
     const data = createSchema.parse(req.body);
 
@@ -403,7 +404,7 @@ router.post('/', authMiddleware, requireRole('admin'), async (req: Request, res:
 });
 
 // PUT /api/alerts/:id — update alert
-router.put('/:id', authMiddleware, requireRole('admin'), async (req: Request, res: Response) => {
+router.put('/:id', authMiddleware, requireFeature('alerts.manage'), async (req: Request, res: Response) => {
   try {
     const alert = await alertRepo().findOne({ where: { id: req.params.id } });
     if (!alert) return res.status(404).json({ error: 'Alerta não encontrado' });
@@ -467,7 +468,7 @@ router.put('/:id', authMiddleware, requireRole('admin'), async (req: Request, re
 });
 
 // DELETE /api/alerts/:id
-router.delete('/:id', authMiddleware, requireRole('admin'), async (req: Request, res: Response) => {
+router.delete('/:id', authMiddleware, requireFeature('alerts.manage'), async (req: Request, res: Response) => {
   unscheduleAlert(req.params.id);
   const result = await alertRepo().delete(req.params.id);
   if (result.affected === 0) return res.status(404).json({ error: 'Não encontrado' });

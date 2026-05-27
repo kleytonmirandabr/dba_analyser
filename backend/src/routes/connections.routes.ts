@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { authMiddleware, requireRole } from '../middleware/auth.middleware';
+import { authMiddleware } from '../middleware/auth.middleware';
+import { requireFeature } from '../middleware/feature.middleware';
 import { AppDataSource } from '../config/database';
 import { Connection } from '../entities/connection.entity';
 import { encrypt, decrypt } from '../config/encryption';
@@ -36,7 +37,7 @@ const createSchema = z.object({
   groupName: z.string().optional(),
 });
 
-router.post('/', authMiddleware, requireRole('admin'), async (req: Request, res: Response) => {
+router.post('/', authMiddleware, requireFeature('connections.manage'), async (req: Request, res: Response) => {
   try {
     const data = createSchema.parse(req.body);
     const { encrypted: passEnc, salt: passSalt } = encrypt(data.password);
@@ -110,7 +111,7 @@ const updateSchema = z.object({
   groupName: z.string().optional(),
 });
 
-router.put('/:id', authMiddleware, requireRole('admin'), async (req: Request, res: Response) => {
+router.put('/:id', authMiddleware, requireFeature('connections.manage'), async (req: Request, res: Response) => {
   try {
     const conn = await connRepo().findOne({ where: { id: req.params.id } });
     if (!conn) return res.status(404).json({ error: 'Conexão não encontrada' });
@@ -167,7 +168,7 @@ router.post('/:id/databases', authMiddleware, async (req: Request, res: Response
 });
 
 // POST /api/connections/:id/select-databases — mark which databases to monitor
-router.post('/:id/select-databases', authMiddleware, requireRole('admin'), async (req: Request, res: Response) => {
+router.post('/:id/select-databases', authMiddleware, requireFeature('connections.manage'), async (req: Request, res: Response) => {
   try {
     const conn = await connRepo().findOne({ where: { id: req.params.id } });
     if (!conn) return res.status(404).json({ error: 'Conexão não encontrada' });
@@ -216,7 +217,7 @@ router.post('/:id/select-databases', authMiddleware, requireRole('admin'), async
 });
 
 // POST /api/connections/:id/bulk-credentials — Update credentials for this connection AND all connections with same host:port
-router.post('/:id/bulk-credentials', authMiddleware, requireRole('admin'), async (req: Request, res: Response) => {
+router.post('/:id/bulk-credentials', authMiddleware, requireFeature('connections.manage'), async (req: Request, res: Response) => {
   try {
     const conn = await connRepo().findOne({ where: { id: req.params.id } });
     if (!conn) return res.status(404).json({ error: 'Conexão não encontrada' });
@@ -246,7 +247,7 @@ router.post('/:id/bulk-credentials', authMiddleware, requireRole('admin'), async
 });
 
 // DELETE /api/connections/:id
-router.delete('/:id', authMiddleware, requireRole('admin'), async (req: Request, res: Response) => {
+router.delete('/:id', authMiddleware, requireFeature('connections.manage'), async (req: Request, res: Response) => {
   const result = await connRepo().delete(req.params.id);
   if (result.affected === 0) return res.status(404).json({ error: 'Não encontrada' });
   return res.json({ data: { deleted: true } });

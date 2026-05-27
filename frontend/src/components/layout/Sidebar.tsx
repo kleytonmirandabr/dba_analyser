@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
-import { Database, LayoutDashboard, Plug, Activity, HeartPulse, Bell, TrendingUp, Terminal, GitCompareArrows, Play, Shield, Settings, Wifi, Stethoscope, Brain, FileText, GitBranch, HardDrive, History, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { Database, LayoutDashboard, Plug, Activity, HeartPulse, Bell, TrendingUp, Terminal, GitCompareArrows, Play, Shield, Settings, Wifi, Stethoscope, Brain, FileText, GitBranch, HardDrive, History, PanelLeftClose, PanelLeftOpen, Building2, Users, Key } from 'lucide-react'
 
 export default function Sidebar() {
   const { t } = useTranslation()
@@ -28,6 +28,10 @@ export default function Sidebar() {
     { to: '/compare', icon: GitCompareArrows, label: t('nav.compare') },
     { to: '/schema-versions', icon: History, label: t('nav.versioning') },
     { to: '/audit', icon: Shield, label: t('nav.audit') },
+    { to: '/clients', icon: Building2, label: 'Clientes' },
+    { to: '/users', icon: Users, label: 'Usuários' },
+    { to: '/profiles', icon: Shield, label: 'Perfis' },
+    { to: '/features', icon: Key, label: 'Funcionalidades' },
     { to: '/settings', icon: Settings, label: t('nav.settings') },
   ]
 
