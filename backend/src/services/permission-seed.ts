@@ -8,7 +8,7 @@ import { FEATURES } from './feature-registry';
 const ALL_FEATURES = FEATURES.map(f => f.code);
 const VIEW_FEATURES = FEATURES.filter(f => f.code.endsWith('.view')).map(f => f.code);
 const DBA_FEATURES = FEATURES.filter(f => !f.code.startsWith('admin.')).map(f => f.code);
-const OPERATOR_FEATURES = [...VIEW_FEATURES, 'query.execute', 'query.export', 'query.history', 'alerts.test', 'monitor.view'];
+const OPERATOR_FEATURES = [...new Set([...VIEW_FEATURES, 'query.execute', 'query.export', 'query.history', 'alerts.test', 'monitor.view'])];
 
 export async function seedPermissions() {
   const clientRepo = AppDataSource.getRepository(Client);
@@ -54,12 +54,11 @@ export async function seedPermissions() {
       console.log(`[Seed] Profile "${p.name}" created`);
     }
 
-    // Sync features
-    const existing = await pfRepo.find({ where: { profileId: profile.id } });
-    const existingCodes = existing.map(e => e.featureCode);
-    const toAdd = p.features.filter(f => !existingCodes.includes(f));
-    if (toAdd.length > 0) {
-      await pfRepo.save(toAdd.map(code => pfRepo.create({ profileId: profile!.id, featureCode: code })));
+    // Sync features - delete and re-insert to keep in sync
+    await pfRepo.delete({ profileId: profile.id });
+    const uniqueFeatures = [...new Set(p.features)];
+    if (uniqueFeatures.length > 0) {
+      await pfRepo.save(uniqueFeatures.map(code => pfRepo.create({ profileId: profile!.id, featureCode: code })));
     }
   }
 

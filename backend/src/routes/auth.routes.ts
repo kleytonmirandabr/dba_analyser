@@ -86,8 +86,34 @@ router.post('/login', async (req: Request, res: Response) => {
       await userRepo().save(user);
     }
 
+    // Load user features from profile
+    let features: string[] = [];
+    let clientTimezone = 'UTC';
+    let clientLanguage = 'pt-BR';
+    if (user.profileId) {
+      const { ProfileFeature } = await import('../entities/profile-feature.entity');
+      const pfs = await AppDataSource.getRepository(ProfileFeature).find({ where: { profileId: user.profileId } });
+      features = pfs.map(pf => pf.featureCode);
+    }
+    if (user.clientId) {
+      const { Client } = await import('../entities/client.entity');
+      const client = await AppDataSource.getRepository(Client).findOne({ where: { id: user.clientId } });
+      if (client) {
+        clientTimezone = client.timezone;
+        clientLanguage = client.language;
+      }
+    }
+
     const token = jwt.sign(
-      { userId: user.id, username: user.username, role: user.role, name: user.name, iat: Math.floor(Date.now() / 1000) },
+      {
+        userId: user.id, username: user.username, role: user.role, name: user.name,
+        clientId: user.clientId || null,
+        profileId: user.profileId || null,
+        features,
+        timezone: user.preferredTimezone || clientTimezone,
+        language: user.preferredLanguage || clientLanguage,
+        iat: Math.floor(Date.now() / 1000),
+      },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES }
     );
@@ -98,7 +124,7 @@ router.post('/login', async (req: Request, res: Response) => {
       details: JSON.stringify({ ip, username: user.username }),
     });
 
-    return res.json({ data: { token, user: { id: user.id, name: user.name, username: user.username, role: user.role } } });
+    return res.json({ data: { token, user: { id: user.id, name: user.name, username: user.username, role: user.role, clientId: user.clientId, profileId: user.profileId, features, timezone: user.preferredTimezone || clientTimezone, language: user.preferredLanguage || clientLanguage } } });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
