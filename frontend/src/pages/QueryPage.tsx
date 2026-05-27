@@ -183,7 +183,7 @@ ${xmlRows.join('\n')}
 }
 
 function ToolbarSep() {
-  return <div className="w-px h-5 bg-gray-700 mx-0.5" />
+  return <div className="w-px h-5 bg-gray-300 dark:bg-gray-700 mx-0.5" />
 }
 
 export default function QueryPage() {
@@ -284,7 +284,7 @@ export default function QueryPage() {
         />
         {connMode && <span className={`text-[10px] px-2 py-0.5 rounded border ${connMode === 'readonly' ? 'bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800' : 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800'}`}>{connMode}</span>}
         
-        <div className="w-px h-6 bg-gray-700 mx-1" />
+        <div className="w-px h-6 bg-gray-300 dark:bg-gray-700 mx-1" />
 
         {/* Execute / Stop button */}
         {loading ? (
@@ -301,7 +301,7 @@ export default function QueryPage() {
           </button>
         )}
 
-        <div className="w-px h-6 bg-gray-700 mx-1" />
+        <div className="w-px h-6 bg-gray-300 dark:bg-gray-700 mx-1" />
 
         {/* Editor action buttons */}
         <div className="flex items-center gap-0.5 px-1 py-1 bg-gray-100/50 dark:bg-gray-800/50 rounded-lg border border-border/50">
@@ -343,21 +343,21 @@ export default function QueryPage() {
         {/* Results */}
         <div className="flex-1 overflow-auto bg-background">
           {error && (
-            <div className={`m-4 p-4 rounded-lg flex items-start gap-3 ${
+            <div className={`m-4 p-4 rounded-xl flex items-start gap-3 ${
               (error as string).includes('WHERE') || (error as string).includes('bloqueada')
-                ? 'bg-amber-900/20 border border-amber-700'
-                : 'bg-red-900/20 border border-red-800'
+                ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700'
+                : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
             }`}>
               <AlertCircle className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
                 (error as string).includes('WHERE') || (error as string).includes('bloqueada')
-                  ? 'text-amber-400' : 'text-red-400'
+                  ? 'text-amber-500 dark:text-amber-400' : 'text-red-500 dark:text-red-400'
               }`} />
               <div>
                 <p className={`text-sm font-medium ${
                   (error as string).includes('WHERE') || (error as string).includes('bloqueada')
-                    ? 'text-amber-300' : 'text-red-400'
+                    ? 'text-amber-700 dark:text-amber-300' : 'text-red-700 dark:text-red-400'
                 }`}>{(error as string).includes('WHERE') ? t('query.securityProtection') : t('query.executionError')}</p>
-                <pre className="text-xs text-text-secondary whitespace-pre-wrap mt-1">{error}</pre>
+                <pre className="text-xs text-text-secondary whitespace-pre-wrap mt-1 text-red-600 dark:text-red-300/80">{error}</pre>
                 {(error as string).includes('WHERE') && (
                   <p className="text-xs text-text-secondary mt-2 border-t border-border pt-2">
                     💡 <strong>Dica:</strong> Adicione uma cláusula WHERE para limitar as linhas afetadas. 
@@ -370,11 +370,11 @@ export default function QueryPage() {
           {result?.rows && result.rows.length > 0 && (
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
-                <thead className="sticky top-0 bg-surface z-10">
+                <thead className="sticky top-0 bg-gray-50 dark:bg-gray-900 z-10">
                   <tr>
-                    <th className="py-2 px-2 text-gray-600 font-medium border-b border-border border-r border-border/50 w-10 text-[10px]">#</th>
+                    <th className="py-2 px-2 text-text-tertiary font-medium border-b border-border border-r border-border/30 w-10 text-[10px]">#</th>
                     {Object.keys(result.rows[0]).map(col => (
-                    <th key={col} className="text-left py-2 px-3 text-text-secondary font-medium border-b border-border whitespace-nowrap">{col}</th>
+                    <th key={col} className="text-left py-2 px-3 text-text-secondary font-semibold border-b border-border whitespace-nowrap text-[11px]">{col}</th>
                   ))}</tr>
                 </thead>
                 <tbody>
