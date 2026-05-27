@@ -115,6 +115,19 @@ const sqlSnippets = [
   { label: 'cte', detail: 'WITH CTE', apply: 'WITH cte AS (\n  SELECT *\n  FROM table_name\n  WHERE condition\n)\nSELECT * FROM cte;' },
   { label: 'pag', detail: 'Pagination', apply: 'SELECT *\nFROM table_name\nORDER BY id\nOFFSET 0 ROWS\nFETCH NEXT 50 ROWS ONLY;' },
   { label: 'tran', detail: 'BEGIN TRANSACTION', apply: 'BEGIN TRANSACTION;\n\n-- statements here\n\nCOMMIT;\n-- ROLLBACK;' },
+  { label: 'proc', detail: 'CREATE PROCEDURE', apply: 'CREATE PROCEDURE sp_name\n  @param1 INT,\n  @param2 VARCHAR(100)\nAS\nBEGIN\n  SET NOCOUNT ON;\n  \nEND;' },
+  { label: 'func', detail: 'CREATE FUNCTION', apply: 'CREATE FUNCTION fn_name (@param INT)\nRETURNS TABLE\nAS\nRETURN (\n  SELECT * FROM table_name WHERE id = @param\n);' },
+  { label: 'trg', detail: 'CREATE TRIGGER', apply: 'CREATE TRIGGER trg_name\nON table_name\nAFTER INSERT, UPDATE\nAS\nBEGIN\n  SET NOCOUNT ON;\n  \nEND;' },
+  { label: 'vw', detail: 'CREATE VIEW', apply: 'CREATE OR ALTER VIEW vw_name\nAS\nSELECT *\nFROM table_name\nWHERE condition;' },
+  { label: 'temp', detail: 'Temp Table', apply: 'SELECT *\nINTO #temp_table\nFROM table_name\nWHERE condition;\n\n-- DROP TABLE #temp_table;' },
+  { label: 'cur', detail: 'CURSOR', apply: 'DECLARE @val VARCHAR(100);\nDECLARE cur CURSOR FOR\n  SELECT column FROM table_name;\nOPEN cur;\nFETCH NEXT FROM cur INTO @val;\nWHILE @@FETCH_STATUS = 0\nBEGIN\n  PRINT @val;\n  FETCH NEXT FROM cur INTO @val;\nEND;\nCLOSE cur;\nDEALLOCATE cur;' },
+  { label: 'merge', detail: 'MERGE', apply: 'MERGE INTO target_table AS t\nUSING source_table AS s\nON t.id = s.id\nWHEN MATCHED THEN\n  UPDATE SET t.col = s.col\nWHEN NOT MATCHED THEN\n  INSERT (col) VALUES (s.col);' },
+  { label: 'pivot', detail: 'PIVOT', apply: 'SELECT *\nFROM (\n  SELECT category, value FROM table_name\n) src\nPIVOT (\n  SUM(value) FOR category IN ([A], [B], [C])\n) pvt;' },
+  { label: 'rn', detail: 'ROW_NUMBER()', apply: 'ROW_NUMBER() OVER (PARTITION BY col ORDER BY id) AS rn' },
+  { label: 'iif', detail: 'IIF conditional', apply: 'IIF(condition, true_value, false_value)' },
+  { label: 'coal', detail: 'COALESCE', apply: 'COALESCE(col1, col2, default_value)' },
+  { label: 'datediff', detail: 'DATEDIFF', apply: 'DATEDIFF(DAY, start_date, end_date)' },
+  { label: 'dateadd', detail: 'DATEADD', apply: 'DATEADD(HOUR, -6, GETDATE())' },
 ]
 
 function buildCompletionSource(completions?: { tables: TableCompletion[] }) {

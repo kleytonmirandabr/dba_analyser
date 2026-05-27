@@ -97,7 +97,8 @@ export default function QueryPage() {
   const [abortController, setAbortController] = useState<AbortController | null>(null)
 
   // Results
-  const [resultView, setResultView] = useState<'grid' | 'json'>('grid')
+  const [resultView, setResultView] = useState<'grid' | 'json' | 'compare'>('grid')
+  const [prevResult, setPrevResult] = useState<any>(null)
   const [page, setPage] = useState(0)
   const [colWidths, setColWidths] = useState<Record<string, number>>({})
 
@@ -281,6 +282,7 @@ export default function QueryPage() {
   const runQuery = async (sql: string) => {
     if (!activeTab.connectionId || !sql.trim()) return
     const ctrl = new AbortController(); setAbortController(ctrl)
+    if (activeTab.result) setPrevResult(activeTab.result)
     updateTab({ loading: true, error: '', result: null, elapsed: 0 })
     const start = Date.now()
     const timer = setInterval(() => updateTab({ elapsed: Math.floor((Date.now() - start) / 1000) }), 1000)
@@ -496,6 +498,7 @@ export default function QueryPage() {
                 <div className="flex bg-gray-200/50 dark:bg-gray-800 rounded p-0.5">
                   <button onClick={() => setResultView('grid')} className={`px-2 py-0.5 text-[10px] rounded ${resultView === 'grid' ? 'bg-white dark:bg-surface shadow font-medium text-text-primary' : 'text-text-tertiary'}`}>Grid</button>
                   <button onClick={() => setResultView('json')} className={`px-2 py-0.5 text-[10px] rounded ${resultView === 'json' ? 'bg-white dark:bg-surface shadow font-medium text-text-primary' : 'text-text-tertiary'}`}>JSON</button>
+                  {prevResult && <button onClick={() => setResultView('compare')} className={`px-2 py-0.5 text-[10px] rounded ${resultView === 'compare' ? 'bg-white dark:bg-surface shadow font-medium text-text-primary' : 'text-text-tertiary'}`}>Diff</button>}
                 </div>
                 {totalPages > 1 && (
                   <div className="flex items-center gap-1 ml-auto">
@@ -552,6 +555,28 @@ export default function QueryPage() {
 
               {allRows.length > 0 && resultView === 'json' && (
                 <pre className="p-3 text-[11px] font-mono text-text-secondary whitespace-pre overflow-auto">{JSON.stringify(pagedRows, null, 2)}</pre>
+              )}
+
+              {allRows.length > 0 && resultView === 'compare' && prevResult?.rows && (
+                <div className="p-3 text-[11px]">
+                  <div className="flex gap-4 mb-2 text-text-secondary">
+                    <span>📊 Anterior: {prevResult.rows.length} rows ({prevResult.durationMs}ms)</span>
+                    <span>📊 Atual: {allRows.length} rows ({activeTab.result?.durationMs}ms)</span>
+                    <span className={`font-medium ${allRows.length > prevResult.rows.length ? 'text-green-600' : allRows.length < prevResult.rows.length ? 'text-red-600' : 'text-text-tertiary'}`}>
+                      {allRows.length === prevResult.rows.length ? '= Mesmo total' : allRows.length > prevResult.rows.length ? `+${allRows.length - prevResult.rows.length} linhas` : `-${prevResult.rows.length - allRows.length} linhas`}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 max-h-[400px] overflow-auto">
+                    <div className="border border-border rounded p-2 bg-red-50/30 dark:bg-red-900/10">
+                      <p className="text-[9px] font-bold text-text-tertiary uppercase mb-1">Anterior</p>
+                      <pre className="text-[10px] font-mono whitespace-pre overflow-auto">{JSON.stringify(prevResult.rows.slice(0, 20), null, 1)}</pre>
+                    </div>
+                    <div className="border border-border rounded p-2 bg-green-50/30 dark:bg-green-900/10">
+                      <p className="text-[9px] font-bold text-text-tertiary uppercase mb-1">Atual</p>
+                      <pre className="text-[10px] font-mono whitespace-pre overflow-auto">{JSON.stringify(allRows.slice(0, 20), null, 1)}</pre>
+                    </div>
+                  </div>
+                </div>
               )}
 
               {activeTab.result && allRows.length === 0 && (
