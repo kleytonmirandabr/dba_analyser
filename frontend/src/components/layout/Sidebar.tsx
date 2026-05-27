@@ -1,64 +1,73 @@
-import { NavLink } from 'react-router-dom'
+import { useLocation, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
-import { Database, LayoutDashboard, Plug, Activity, HeartPulse, Bell, TrendingUp, Terminal, GitCompareArrows, Play, Shield, Settings, Wifi, Stethoscope, Brain, FileText, GitBranch, HardDrive, History, PanelLeftClose, PanelLeftOpen, Building2, Users, Key } from 'lucide-react'
+import { Database, LayoutDashboard, Plug, Activity, HeartPulse, Bell, TrendingUp, Terminal, GitCompareArrows, Play, Shield, Settings, Wifi, Stethoscope, Brain, FileText, GitBranch, HardDrive, History, PanelLeftClose, PanelLeftOpen, Building2, Users, Key, User } from 'lucide-react'
+import { useAuthStore } from '../../stores/auth.store'
 
 export default function Sidebar() {
+  const location = useLocation()
   const { t } = useTranslation()
+  const { hasFeature, user } = useAuthStore()
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('dba-sidebar-collapsed') === 'true')
 
   const toggle = () => { const next = !collapsed; setCollapsed(next); localStorage.setItem('dba-sidebar-collapsed', String(next)) }
 
   const navItems = [
-    { to: '/', icon: LayoutDashboard, label: t('nav.dashboard') },
-    { to: '/connections', icon: Plug, label: t('nav.connections') },
-    { to: '/vpn', icon: Wifi, label: t('nav.vpn') },
-    { to: '/er-diagram', icon: GitBranch, label: t('nav.erDiagram') },
-    { to: '/query', icon: Terminal, label: t('nav.query') },
-    { to: '/monitor', icon: Activity, label: t('nav.monitor') },
-    { to: '/diagnostics', icon: Stethoscope, label: t('nav.diagnostics') },
-    { to: '/health', icon: HeartPulse, label: t('nav.health') },
-    { to: '/alerts', icon: Bell, label: t('nav.alerts') },
-    { to: '/availability', icon: HeartPulse, label: 'Disponibilidade' },
-    { to: '/growth', icon: TrendingUp, label: t('nav.growth') },
-    { to: '/backup', icon: HardDrive, label: t('nav.backup') },
-    { to: '/advisor', icon: Brain, label: t('nav.advisor') },
-    { to: '/reports', icon: FileText, label: t('nav.reports') },
-    { to: '/executions', icon: Play, label: t('nav.executions') },
-    { to: '/compare', icon: GitCompareArrows, label: t('nav.compare') },
-    { to: '/schema-versions', icon: History, label: t('nav.versioning') },
-    { to: '/audit', icon: Shield, label: t('nav.audit') },
-    { to: '/clients', icon: Building2, label: 'Clientes' },
-    { to: '/users', icon: Users, label: 'Usuários' },
-    { to: '/profiles', icon: Shield, label: 'Perfis' },
-    { to: '/features', icon: Key, label: 'Funcionalidades' },
-    { to: '/settings', icon: Settings, label: t('nav.settings') },
+    { to: '/', icon: LayoutDashboard, label: t('nav.dashboard'), feature: 'dashboard.view' },
+    { to: '/connections', icon: Plug, label: t('nav.connections'), feature: 'connections.view' },
+    { to: '/vpn', icon: Wifi, label: t('nav.vpn'), feature: 'vpn.view' },
+    { to: '/er-diagram', icon: GitBranch, label: t('nav.erDiagram'), feature: 'erdiagram.view' },
+    { to: '/query', icon: Terminal, label: t('nav.query'), feature: 'query.execute' },
+    { to: '/monitor', icon: Activity, label: t('nav.monitor'), feature: 'monitor.view' },
+    { to: '/diagnostics', icon: Stethoscope, label: t('nav.diagnostics'), feature: 'diagnostics.view' },
+    { to: '/health', icon: HeartPulse, label: t('nav.health'), feature: 'health.view' },
+    { to: '/alerts', icon: Bell, label: t('nav.alerts'), feature: 'alerts.view' },
+    { to: '/availability', icon: HeartPulse, label: 'Disponibilidade', feature: 'availability.view' },
+    { to: '/heartbeat', icon: Activity, label: 'Heartbeat', feature: 'monitor.view' },
+    { to: '/notifications', icon: Bell, label: 'Notificações', feature: 'alerts.manage' },
+    { to: '/growth', icon: TrendingUp, label: t('nav.growth'), feature: 'growth.view' },
+    { to: '/backup', icon: HardDrive, label: t('nav.backup'), feature: 'backup.view' },
+    { to: '/advisor', icon: Brain, label: t('nav.advisor'), feature: 'dashboard.view' },
+    { to: '/reports', icon: FileText, label: t('nav.reports'), feature: 'reports.view' },
+    { to: '/executions', icon: Play, label: t('nav.executions'), feature: 'query.execute' },
+    { to: '/compare', icon: GitCompareArrows, label: t('nav.compare'), feature: 'comparator.view' },
+    { to: '/schema-versions', icon: History, label: t('nav.versioning'), feature: 'comparator.view' },
+    { to: '/audit', icon: Shield, label: t('nav.audit'), feature: 'admin.audit' },
+    { to: '/clients', icon: Building2, label: 'Clientes', feature: 'admin.clients' },
+    { to: '/users', icon: Users, label: 'Usuários', feature: 'admin.users' },
+    { to: '/profiles', icon: Shield, label: 'Perfis', feature: 'admin.profiles' },
+    { to: '/features', icon: Key, label: 'Funcionalidades', feature: 'admin.profiles' },
+    { to: '/my-account', icon: User, label: 'Minha Conta', feature: null },
+    { to: '/settings', icon: Settings, label: t('nav.settings'), feature: 'admin.settings' },
   ]
+
+  // Filter by feature permission
+  const visibleItems = navItems.filter(item => !item.feature || hasFeature(item.feature))
 
   return (
     <aside className={`${collapsed ? 'w-16' : 'w-56'} bg-surface border-r border-border flex flex-col transition-all duration-200 flex-shrink-0`}>
       <div className={`h-14 flex items-center ${collapsed ? 'justify-center px-2' : 'gap-2.5 px-4'} border-b border-border`}>
-        <Database className="w-6 h-6 text-blue-500 flex-shrink-0" />
-        {!collapsed && <span className="text-sm font-bold text-text-primary">DBA Analyser</span>}
+        <Database className="w-5 h-5 text-blue-500 flex-shrink-0" />
+        {!collapsed && <span className="font-semibold text-sm whitespace-nowrap">DBA Analyser</span>}
       </div>
-      <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
-        {navItems.map(item => (
-          <NavLink key={item.to} to={item.to} end={item.to === '/'} title={collapsed ? item.label : undefined}
-            className={({ isActive }) => `flex items-center ${collapsed ? 'justify-center' : 'gap-2.5 px-3'} py-2 rounded-lg text-sm transition ${
-              isActive
-                ? 'bg-blue-600/10 text-blue-600 dark:text-blue-400 font-medium'
-                : 'text-text-secondary hover:bg-surface-hover hover:text-gray-900 dark:hover:text-gray-200'
-            }`}>
-            <item.icon className="w-4 h-4 flex-shrink-0" />
-            {!collapsed && <span>{item.label}</span>}
-          </NavLink>
-        ))}
+
+      <nav className="flex-1 py-2 overflow-y-auto">
+        {visibleItems.map(item => {
+          const active = item.to === '/' ? location.pathname === '/' : location.pathname.startsWith(item.to)
+          return (
+            <Link key={item.to} to={item.to} title={collapsed ? item.label : undefined}
+              className={`flex items-center gap-2.5 px-4 py-2 mx-1 rounded-lg text-sm transition-colors ${active ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 font-medium' : 'text-text-secondary hover:text-text-primary hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
+              <item.icon className="w-4 h-4 flex-shrink-0" />
+              {!collapsed && <span className="truncate">{item.label}</span>}
+            </Link>
+          )
+        })}
       </nav>
-      <div className="p-2 border-t border-border flex flex-col items-center gap-2">
+
+      <div className="border-t border-border p-2">
         <button onClick={toggle} className="p-2 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-gray-100 dark:hover:bg-gray-800 transition w-full flex items-center justify-center" title={collapsed ? 'Expandir menu' : 'Recolher menu'}>
           {collapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
         </button>
-        {!collapsed && <p className="text-[10px] text-gray-500 dark:text-gray-600 text-center">DBA Analyser v1.9.0</p>}
       </div>
     </aside>
   )

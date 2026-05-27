@@ -196,4 +196,25 @@ setInterval(() => {
   });
 }, 3600000);
 
+// PUT /api/auth/me - Update personal preferences
+router.put('/me', async (req: Request, res: Response) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) return res.status(401).json({ error: 'Token não fornecido' });
+  try {
+    const payload = jwt.verify(authHeader.slice(7), JWT_SECRET) as any;
+    const user = await userRepo().findOne({ where: { id: payload.userId } });
+    if (!user) return res.status(401).json({ error: 'Usuário não encontrado' });
+    const { name, email, phone, preferredLanguage, preferredTimezone, avatar } = req.body;
+    if (name) user.name = name;
+    if (email !== undefined) user.email = email;
+    if (phone !== undefined) user.phone = phone;
+    if (preferredLanguage !== undefined) user.preferredLanguage = preferredLanguage;
+    if (preferredTimezone !== undefined) user.preferredTimezone = preferredTimezone;
+    if (avatar !== undefined) user.avatar = avatar;
+    user.updatedById = user.id;
+    await userRepo().save(user);
+    return res.json({ data: { id: user.id, name: user.name, email: user.email, phone: user.phone, preferredLanguage: user.preferredLanguage, preferredTimezone: user.preferredTimezone, avatar: user.avatar } });
+  } catch { return res.status(401).json({ error: 'Token inválido' }); }
+});
+
 export default router;

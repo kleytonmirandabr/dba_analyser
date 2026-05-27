@@ -18,6 +18,7 @@ import { Profile } from '../entities/profile.entity';
 import { ProfileFeature } from '../entities/profile-feature.entity';
 import { UserActivityLog } from '../entities/user-activity-log.entity';
 import { AuditLogV2 } from '../entities/audit-log-v2.entity';
+import { NotificationChannel } from '../entities/notification-channel.entity';
 import { AuditSubscriber } from '../subscribers/audit.subscriber';
 
 export const AppDataSource = new DataSource({
@@ -28,7 +29,7 @@ export const AppDataSource = new DataSource({
   entities: [User, Connection, ExecutionRequest, AuditLog, Alert, AlertHistory, TableSnapshot,
     QueryAdvice,
     ReportSchedule, TableGrowthRule, HealthSnapshot, BackupJob, SchemaSnapshot,
-    Client, Feature, Profile, ProfileFeature, UserActivityLog, AuditLogV2],
+    Client, Feature, Profile, ProfileFeature, UserActivityLog, AuditLogV2, NotificationChannel],
   subscribers: [AuditSubscriber],
   migrations: ['dist/migrations/*.js'],
 });
