@@ -41,8 +41,8 @@ export default function HealthPage() {
           value={selectedConn}
           onChange={setSelectedConn}
           placeholder="Select connection..."
-          options={connections.map(c => ({ value: c.id, label: `${c.name} ${c.databaseName ? '(' + c.databaseName + ')' : ''}` }))}
-          className="min-w-[200px]"
+          options={connections.filter(c => c.databaseName).map(c => ({ value: c.id, label: `${c.name} / ${c.databaseName}` }))}
+          className="min-w-[350px]"
         />
       </div>
 

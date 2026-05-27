@@ -54,24 +54,28 @@ export default function AlertWidget({ id, name, severity, currentStatus, connect
   const okDbs = details?.filter(d => d.status === 'ok') || []
   const totalDbs = details?.length || 1
 
-  // Find first triggered time from timeline to calculate persistence
-  const firstTriggered = useMemo(() => {
-    // Find earliest consecutive triggered from the end of timeline
+  // Calculate how long the problem has been active
+  const problemDuration = useMemo(() => {
+    if (currentStatus !== 'triggered' && currentStatus !== 'error') return ''
+    // Use lastCheckedAt as reference, count consecutive triggered from end of timeline
+    let consecutiveHours = 0
     const reversed = [...timeline].reverse()
-    let firstTime = ''
     for (const t of reversed) {
-      if (t.triggered > 0) firstTime = t.time
+      if (t.triggered > 0 || t.error > 0) consecutiveHours++
       else break
     }
-    return firstTime
-  }, [timeline])
+    if (consecutiveHours === 0) return ''
+    // Each timeline entry is ~1 hour, so estimate
+    const mins = consecutiveHours * 60
+    return formatDuration(mins)
+  }, [timeline, currentStatus])
 
   const severityColors = severity === 'critical' ? 'border-red-500/40 bg-red-50 dark:bg-red-950/30' :
     severity === 'warning' ? 'border-amber-500/40 bg-amber-50 dark:bg-amber-950/30' :
     'border-blue-500/40 bg-blue-50 dark:bg-blue-950/30'
 
   return (
-    <div className={`h-full flex flex-col border rounded-xl overflow-hidden shadow-sm ${severityColors}`}>
+    <div className={`h-full flex flex-col border rounded-xl overflow-hidden shadow-sm min-h-0 ${severityColors}`}>
       {/* Header */}
       <div className="drag-handle cursor-grab active:cursor-grabbing flex items-center justify-between px-3 py-2 border-b border-inherit bg-white/50 dark:bg-gray-900/60">
         <div className="flex items-center gap-2 min-w-0">
@@ -173,12 +177,12 @@ export default function AlertWidget({ id, name, severity, currentStatus, connect
       <div className="px-3 py-1.5 border-t border-inherit flex items-center justify-between text-[9px] text-text-tertiary bg-white/30 dark:bg-gray-900/30">
         <div className="flex items-center gap-2">
           <span>{connectionName}</span>
-          {currentStatus === 'triggered' && firstTriggered && (
+          {(currentStatus === 'triggered' || currentStatus === 'error') && problemDuration && (
             <>
               <span>•</span>
               <span className="text-amber-600 dark:text-amber-400 font-medium">
                 <Clock className="w-2.5 h-2.5 inline mr-0.5" />
-                Problema há {timeSince(firstTriggered)}
+                Problema há {problemDuration}
               </span>
             </>
           )}
