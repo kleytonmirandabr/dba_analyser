@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import api from '../../lib/api'
+import SearchableSelect from '../ui/SearchableSelect'
 
 interface Connection { id: string; name: string; host: string; port: number; databaseName: string; username: string; dbType: string; environment: string; mode: string; groupName?: string; }
 
