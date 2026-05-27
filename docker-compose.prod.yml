@@ -1,9 +1,8 @@
-version: '3.8'
-
 services:
   # ─── VPN Container (OpenVPN Client) ─────────────────────
   vpn:
     image: dperson/openvpn-client
+    container_name: dba_analyser-vpn
     cap_add:
       - NET_ADMIN
     devices:
@@ -16,22 +15,24 @@ services:
       - "3030:3030"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "ping", "-c", "1", "-W", "3", "8.8.8.8"]
+      test: ["CMD-SHELL", "ip addr show tun0 2>/dev/null || exit 0"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 15s
 
-  # ─── Backend ─────────────────────────────────────────────
+  # ─── Backend (Node.js + Express + TypeScript) ────────────
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    container_name: dba_analyser-backend
     network_mode: "service:vpn"
     volumes:
       - vpn-data:/vpn:ro
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      - DATABASE_URL=postgresql://dba_app:${DB_PASSWORD}@postgres:5432/dba_analyser
+      - DATABASE_URL=postgresql://dba_app:${DB_PASSWORD:-dba_secret}@postgres:5432/dba_analyser
       - DBA_MASTER_KEY=${DBA_MASTER_KEY}
       - JWT_SECRET=${JWT_SECRET}
       - NODE_ENV=production
@@ -43,24 +44,27 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  # ─── Frontend ────────────────────────────────────────────
+  # ─── Frontend (React + Nginx) ────────────────────────────
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    container_name: dba_analyser-frontend
     ports:
       - "80:80"
+      - "443:443"
     depends_on:
       - backend
     restart: unless-stopped
 
-  # ─── PostgreSQL (DB interno) ─────────────────────────────
+  # ─── PostgreSQL (DB interno do sistema) ──────────────────
   postgres:
     image: postgres:16-alpine
+    container_name: dba_analyser-postgres
     environment:
       POSTGRES_DB: dba_analyser
       POSTGRES_USER: dba_app
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-dba_secret}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
