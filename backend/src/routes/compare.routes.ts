@@ -17,23 +17,96 @@ interface FullSchemaDiff {
   tables: TableDiff[]; triggers: ObjectDiff[]; procedures: ObjectDiff[]; functions: ObjectDiff[]; views: ObjectDiff[];
 }
 
+/**
+ * Normalizes SQL definitions for comparison.
+ * Removes noise that differs between SQL Server instances but is semantically identical.
+ */
 function normalizeSql(sql: string | null | undefined): string {
   if (!sql) return '';
   let s = sql;
-  // Remove block comments /* ... */
+
+  // 1. Remove SET ANSI_NULLS / QUOTED_IDENTIFIER / NOCOUNT headers
+  s = s.replace(/SET\s+ANSI_NULLS\s+(ON|OFF)\s*(GO)?/gi, '');
+  s = s.replace(/SET\s+QUOTED_IDENTIFIER\s+(ON|OFF)\s*(GO)?/gi, '');
+  s = s.replace(/SET\s+NOCOUNT\s+(ON|OFF)/gi, '');
+
+  // 2. Remove block comments
   s = s.replace(/\/\*[\s\S]*?\*\//g, '');
-  // Remove line comments -- ...
+
+  // 3. Remove line comments
   s = s.replace(/--[^\r\n]*/g, '');
-  // Normalize line endings
+
+  // 4. Normalize line endings
   s = s.replace(/\r\n/g, '\n');
-  // Collapse all whitespace (spaces, tabs, newlines) to single space
+  s = s.replace(/\r/g, '\n');
+
+  // 5. Collapse whitespace
   s = s.replace(/\s+/g, ' ');
-  // Remove square brackets [dbo].[name] -> dbo.name
+
+  // 6. Remove square brackets
   s = s.replace(/\[([^\]]+)\]/g, '$1');
-  // Remove trailing semicolons
-  s = s.replace(/;\s*$/, '');
-  // Trim and lowercase
+
+  // 7. Remove dbo. prefix (default schema)
+  s = s.replace(/\bdbo\./gi, '');
+
+  // 8. Normalize CREATE PROC -> CREATE PROCEDURE
+  s = s.replace(/\bCREATE\s+PROC\b/gi, 'CREATE PROCEDURE');
+  s = s.replace(/\bALTER\s+PROC\b/gi, 'ALTER PROCEDURE');
+
+  // 9. Remove trailing semicolons and GO
+  s = s.replace(/;\s*$/g, '');
+  s = s.replace(/\bGO\b/gi, '');
+
+  // 10. Remove N prefix from strings
+  s = s.replace(/\bN'/gi, "'");
+
+  // 11. Normalize whitespace around parens and commas
+  s = s.replace(/\s*\(\s*/g, '(');
+  s = s.replace(/\s*\)\s*/g, ')');
+  s = s.replace(/\s*,\s*/g, ',');
+
+  // 12. Trim and lowercase
   return s.trim().toLowerCase();
+}
+
+/**
+ * Normalizes SQL Server default values for comparison.
+ * SQL Server wraps defaults in extra parens: ((0)), (getdate()), ((''))
+ */
+function normalizeDefault(value: string | null | undefined): string {
+  if (!value) return '';
+  let s = value.trim();
+
+  // Remove outer parentheses layers: ((0)) -> (0) -> 0
+  while (s.startsWith('(') && s.endsWith(')')) {
+    const inner = s.slice(1, -1);
+    let depth = 0; let balanced = true;
+    for (const ch of inner) {
+      if (ch === '(') depth++;
+      else if (ch === ')') { depth--; if (depth < 0) { balanced = false; break; } }
+    }
+    if (balanced && depth === 0) s = inner;
+    else break;
+  }
+
+  // Remove wrapping quotes from simple string defaults
+  if (s.startsWith("'") && s.endsWith("'") && s.indexOf("'", 1) === s.length - 1) {
+    s = s.slice(1, -1);
+  }
+
+  // Normalize
+  s = s.toLowerCase().trim();
+  s = s.replace(/^n'/, "'");
+
+  return s;
+}
+
+/**
+ * Normalizes column data type for comparison.
+ */
+function normalizeType(type: string | null | undefined): string {
+  if (!type) return '';
+  return type.trim().toLowerCase().replace(/\s+/g, ' ').replace(/\s*\(\s*/g, '(').replace(/\s*\)\s*/g, ')').trim();
 }
 
 function compareObjects<T>(source: T[], target: T[], getName: (o: T) => string, getDef: (o: T) => string): ObjectDiff[] {
@@ -126,11 +199,11 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
       for (const [name, srcCol] of srcColMap) {
         if (!tgtColMap.has(name)) { columnsOnlyInSource.push(name); continue; }
         const tgtCol = tgtColMap.get(name)!;
-        if ((srcCol.type || '').toLowerCase() !== (tgtCol.type || '').toLowerCase()) columnDifferences.push({ column: name, field: 'type', sourceValue: srcCol.type, targetValue: tgtCol.type });
-        if (srcCol.nullable !== tgtCol.nullable) columnDifferences.push({ column: name, field: 'nullable', sourceValue: String(srcCol.nullable), targetValue: String(tgtCol.nullable) });
-        if ((srcCol.defaultValue || '') !== (tgtCol.defaultValue || '')) columnDifferences.push({ column: name, field: 'default', sourceValue: srcCol.defaultValue || 'NULL', targetValue: tgtCol.defaultValue || 'NULL' });
-        if (srcCol.isPrimaryKey !== tgtCol.isPrimaryKey) columnDifferences.push({ column: name, field: 'primaryKey', sourceValue: String(srcCol.isPrimaryKey), targetValue: String(tgtCol.isPrimaryKey) });
-        if (srcCol.isForeignKey !== tgtCol.isForeignKey) columnDifferences.push({ column: name, field: 'foreignKey', sourceValue: String(srcCol.isForeignKey), targetValue: String(tgtCol.isForeignKey) });
+        if (normalizeType(srcCol.type) !== normalizeType(tgtCol.type)) columnDifferences.push({ column: name, field: 'type', sourceValue: srcCol.type, targetValue: tgtCol.type });
+        if (Number(srcCol.nullable) !== Number(tgtCol.nullable)) columnDifferences.push({ column: name, field: 'nullable', sourceValue: String(srcCol.nullable), targetValue: String(tgtCol.nullable) });
+        if (normalizeDefault(srcCol.defaultValue) !== normalizeDefault(tgtCol.defaultValue)) columnDifferences.push({ column: name, field: 'default', sourceValue: srcCol.defaultValue || 'NULL', targetValue: tgtCol.defaultValue || 'NULL' });
+        if (Number(srcCol.isPrimaryKey || 0) !== Number(tgtCol.isPrimaryKey || 0)) columnDifferences.push({ column: name, field: 'primaryKey', sourceValue: String(srcCol.isPrimaryKey), targetValue: String(tgtCol.isPrimaryKey) });
+        if (Number(srcCol.isForeignKey || 0) !== Number(tgtCol.isForeignKey || 0)) columnDifferences.push({ column: name, field: 'foreignKey', sourceValue: String(srcCol.isForeignKey), targetValue: String(tgtCol.isForeignKey) });
       }
       for (const [name] of tgtColMap) { if (!srcColMap.has(name)) columnsOnlyInTarget.push(name); }
 
