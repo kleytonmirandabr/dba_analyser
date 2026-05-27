@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import SearchableSelect from '../components/ui/SearchableSelect'
 import { useTranslation } from 'react-i18next'
-import { Plug, Plus, Trash2, Pencil, CheckCircle2, XCircle, Loader2, Database, Server, Search, ChevronDown, ChevronRight, FolderOpen, Key } from 'lucide-react'
+import { Plug, Plus, Trash2, Pencil, CheckCircle2, XCircle, Loader2, Database, Server, Search, ChevronDown, ChevronRight, FolderOpen, Key, Eye, EyeOff } from 'lucide-react'
 import api from '../lib/api'
 
 interface Connection {
@@ -300,6 +300,7 @@ function ConnectionForm({ onClose, onSaved, connection }: { onClose: () => void;
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -353,7 +354,12 @@ function ConnectionForm({ onClose, onSaved, connection }: { onClose: () => void;
             </div>
             <div>
               <label className={labelCls}>Senha</label>
-              <input type="password" className={inputCls} value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required />
+              <div className="relative">
+                <input type={showPassword ? "text" : "password"} className={inputCls + " pr-9"} value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-primary transition">
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3">
