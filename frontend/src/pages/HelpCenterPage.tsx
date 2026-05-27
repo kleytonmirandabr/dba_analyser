@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState, useMemo } from 'react';
 import { HelpCircle, Search, ChevronDown, ChevronRight, ExternalLink, BookOpen, Terminal, Bell, Shield, Activity, Database, TrendingUp, Wifi, FileText, Heart } from 'lucide-react';
 
@@ -106,6 +107,7 @@ const HELP_DATA: HelpSection[] = [
 ];
 
 export default function HelpCenterPage() {
+  const { t } = useTranslation()
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<string[]>(['getting-started']);
 
@@ -142,7 +144,7 @@ export default function HelpCenterPage() {
         <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <input
           className="w-full pl-12 pr-4 py-3 border border-border rounded-xl bg-background text-base shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          placeholder="Buscar por tela, funcionalidade ou assunto..."
+          placeholder={t('helpCenter.searchPlaceholder')}
           value={search}
           onChange={e => setSearch(e.target.value)}
           autoFocus
@@ -151,7 +153,7 @@ export default function HelpCenterPage() {
 
       {/* Results */}
       {search && filtered.length === 0 && (
-        <p className="text-center text-muted-foreground py-12">Nenhum resultado para "{search}"</p>
+        <p className="text-center text-muted-foreground py-12">{t('helpCenter.noResults')} "{search}"</p>
       )}
 
       <div className="space-y-3">

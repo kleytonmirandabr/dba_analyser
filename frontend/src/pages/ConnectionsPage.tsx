@@ -260,7 +260,7 @@ export default function ConnectionsPage() {
       {bulkCredConn && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white dark:bg-surface rounded-xl shadow-2xl w-96 p-6 border border-border">
-            <h3 className="text-sm font-bold text-text-primary mb-1">🔑 Atualizar Credenciais em Lote</h3>
+            <h3 className="text-sm font-bold text-text-primary mb-1">🔑 {t('connections.bulkCredentials')}</h3>
             <p className="text-xs text-text-secondary mb-4">Atualiza o usuário/senha de TODAS as conexões em <b>{bulkCredConn.host}:{bulkCredConn.port}</b></p>
             <div className="space-y-3">
               <div>
@@ -275,10 +275,10 @@ export default function ConnectionsPage() {
               </div>
               {bulkResult && <p className={`text-xs ${bulkResult.startsWith('✅') ? 'text-green-600' : 'text-red-500'}`}>{bulkResult}</p>}
               <div className="flex gap-2 pt-2">
-                <button onClick={() => setBulkCredConn(null)} className="flex-1 px-3 py-2 text-sm bg-gray-100 dark:bg-surface-elevated text-text-secondary rounded-lg">Cancelar</button>
+                <button onClick={() => setBulkCredConn(null)} className="flex-1 px-3 py-2 text-sm bg-gray-100 dark:bg-surface-elevated text-text-secondary rounded-lg">{t('common.cancel')}</button>
                 <button onClick={bulkUpdateCredentials} disabled={bulkLoading || !bulkCred.username || !bulkCred.password}
                   className="flex-1 px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium rounded-lg transition">
-                  {bulkLoading ? 'Atualizando...' : 'Atualizar Todas'}
+                  {bulkLoading ? t('common.updating') : t('connections.updateAll')}
                 </button>
               </div>
             </div>

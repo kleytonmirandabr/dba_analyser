@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState, useEffect, useMemo } from 'react';
 import { Shield, Plus, Pencil, Trash2, Check, Minus } from 'lucide-react';
 import api from '../lib/api';
@@ -7,6 +8,7 @@ interface Feature { id: string; code: string; name: string; description: string;
 interface GroupedFeatures { [module: string]: Feature[]; }
 
 export default function ProfilesPage() {
+  const { t } = useTranslation()
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [features, setFeatures] = useState<Feature[]>([]);
   const [grouped, setGrouped] = useState<GroupedFeatures>({});
@@ -46,7 +48,7 @@ export default function ProfilesPage() {
   }
 
   async function remove(id: string) {
-    if (!confirm('Deseja excluir este perfil?')) return;
+    if (!confirm(t('profiles.confirmDelete'))) return;
     await api.delete(`/api/profiles/${id}`);
     load();
   }
@@ -114,7 +116,7 @@ export default function ProfilesPage() {
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
           <div className="bg-background border border-border rounded-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-bold mb-4">{editing ? 'Editar Perfil' : 'Novo Perfil'}</h2>
+            <h2 className="text-lg font-bold mb-4">{editing ? t('profiles.editProfile') : t('profiles.newProfile')}</h2>
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Nome *</label>
@@ -160,8 +162,8 @@ export default function ProfilesPage() {
             <div className="flex justify-between items-center mt-4">
               <span className="text-sm text-muted-foreground">{form.features.length} funcionalidades selecionadas</span>
               <div className="flex gap-2">
-                <button onClick={() => setShowForm(false)} className="px-4 py-2 border border-border rounded-lg">Cancelar</button>
-                <button onClick={save} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Salvar</button>
+                <button onClick={() => setShowForm(false)} className="px-4 py-2 border border-border rounded-lg">{t('common.cancel')}</button>
+                <button onClick={save} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">{t('common.save')}</button>
               </div>
             </div>
           </div>

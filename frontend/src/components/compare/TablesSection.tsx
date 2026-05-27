@@ -19,7 +19,7 @@ export default function TablesSection({ tables }: { tables: TableDiff[] }) {
     switch (s) {
       case 'only_source': return { text: t('compare.onlySource'), cls: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800' }
       case 'only_target': return { text: t('compare.onlyTarget'), cls: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800' }
-      case 'different': return { text: 'Diferente', cls: 'bg-yellow-900/30 text-yellow-400 border-yellow-800' }
+      case 'different': return { text: t('compare.different'), cls: 'bg-yellow-900/30 text-yellow-400 border-yellow-800' }
       default: return { text: s, cls: 'bg-surface-elevated text-text-secondary border-border' }
     }
   }
@@ -44,13 +44,13 @@ export default function TablesSection({ tables }: { tables: TableDiff[] }) {
                 {table.columnsOnlyInSource.map(c => (
                   <div key={c} className="flex items-center gap-2 text-xs">
                     <Plus className="w-3 h-3 text-green-400" />
-                    <span className="text-green-400">Coluna <code className="font-mono">{c}</code> só no source</span>
+                    <span className="text-green-400">{t('compare.columnOnlySource', { name: c })}</span>
                   </div>
                 ))}
                 {table.columnsOnlyInTarget.map(c => (
                   <div key={c} className="flex items-center gap-2 text-xs">
                     <Minus className="w-3 h-3 text-red-400" />
-                    <span className="text-red-400">Coluna <code className="font-mono">{c}</code> só no target</span>
+                    <span className="text-red-400">{t('compare.columnOnlyTarget', { name: c })}</span>
                   </div>
                 ))}
                 {table.columnDifferences.map((d, i) => (
@@ -64,13 +64,13 @@ export default function TablesSection({ tables }: { tables: TableDiff[] }) {
                 {table.indexesOnlyInSource.map(idx => (
                   <div key={idx} className="flex items-center gap-2 text-xs">
                     <Plus className="w-3 h-3 text-green-400" />
-                    <span className="text-green-400">Índice <code className="font-mono">{idx}</code> só no source</span>
+                    <span className="text-green-400">{t('compare.indexOnlySource', { name: idx })}</span>
                   </div>
                 ))}
                 {table.indexesOnlyInTarget.map(idx => (
                   <div key={idx} className="flex items-center gap-2 text-xs">
                     <Minus className="w-3 h-3 text-red-400" />
-                    <span className="text-red-400">Índice <code className="font-mono">{idx}</code> só no target</span>
+                    <span className="text-red-400">{t('compare.indexOnlyTarget', { name: idx })}</span>
                   </div>
                 ))}
               </div>

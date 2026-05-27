@@ -1,8 +1,10 @@
+import { useTranslation } from 'react-i18next'
 import { useState, useMemo } from 'react'
 import { Filter } from 'lucide-react'
 import { computeAlignedDiff, computeWordHighlights } from './DiffAlgorithm'
 
 export default function UnifiedDiffView({ source, target }: { source: string; target: string }) {
+  const { t } = useTranslation()
   const srcLines = source.split('\n')
   const tgtLines = target.split('\n')
   const [showOnlyDiffs, setShowOnlyDiffs] = useState(true)
@@ -49,10 +51,10 @@ export default function UnifiedDiffView({ source, target }: { source: string; ta
   return (
     <div>
       <div className="flex items-center justify-between px-3 py-2 bg-surface-elevated border-b border-border rounded-t-lg">
-        <span className="text-[11px] text-text-tertiary font-medium">{totalDiffs} diferença{totalDiffs !== 1 ? 's' : ''}</span>
+        <span className="text-[11px] text-text-tertiary font-medium">{totalDiffs} {totalDiffs === 1 ? t('compare.difference') : t('compare.differences2')}</span>
         <button onClick={() => setShowOnlyDiffs(!showOnlyDiffs)}
           className={`flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-medium rounded-md border transition ${showOnlyDiffs ? 'bg-purple-600/20 border-purple-500 text-purple-300' : 'border-border text-text-tertiary hover:text-text-secondary'}`}>
-          <Filter className="w-3 h-3" /> Só diferenças
+          <Filter className="w-3 h-3" /> {t('compare.onlyDifferences')}
         </button>
       </div>
       <div className="overflow-auto font-mono text-[11px] leading-[18px] max-h-[500px] rounded-b-lg border border-t-0 border-border">

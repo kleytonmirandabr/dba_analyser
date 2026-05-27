@@ -163,7 +163,7 @@ export default function QueryPage() {
       }))
       setTree(prev => prev.map(n => n.id === `conn:${connId}` ? { ...n, children: schemas, loaded: true } : n))
     } catch (err: any) {
-      const msg = err.response?.data?.error || 'Erro ao conectar'
+      const msg = err.response?.data?.error || t('common.errorConnecting')
       const errorNode: TreeNode = { id: `${connId}:error`, label: '⚠ ' + (msg.includes('decriptar') ? 'Credenciais inválidas - re-salve a conexão' : msg), type: 'column' as NodeType, connId }
       setTree(prev => prev.map(n => n.id === `conn:${connId}` ? { ...n, children: [errorNode], loaded: true } : n))
     }
@@ -400,14 +400,14 @@ export default function QueryPage() {
             <div className="px-2 py-1.5 border-b border-border">
               <div className="relative">
                 <Search className="absolute left-2 top-1.5 w-3 h-3 text-text-tertiary" />
-                <input value={treeSearch} onChange={e => setTreeSearch(e.target.value)} placeholder="Filtrar..."
+                <input value={treeSearch} onChange={e => setTreeSearch(e.target.value)} placeholder={t('query.filter')}
                   className="w-full pl-7 pr-2 py-1 text-[11px] bg-gray-50 dark:bg-gray-800 border border-border rounded text-text-primary placeholder-text-tertiary" />
               </div>
             </div>
             {/* Tree */}
             <div className="flex-1 overflow-y-auto py-1 px-1">
               {tree.length === 0 ? (
-                <div className="text-center py-8 text-xs text-text-tertiary">Carregando conexões...</div>
+                <div className="text-center py-8 text-xs text-text-tertiary">{t('query.loadingConnections')}</div>
               ) : tree.map(node => renderNode(node))}
             </div>
             {/* Saved queries */}
@@ -489,7 +489,7 @@ export default function QueryPage() {
           <ToolbarBtn icon={ArrowUp} label="Mover linha ↑ (Alt+↑)" onClick={() => editorCmds?.moveUp()} disabled={!editorCmds} />
           <ToolbarBtn icon={ArrowDown} label="Mover linha ↓ (Alt+↓)" onClick={() => editorCmds?.moveDown()} disabled={!editorCmds} />
           <div className="w-px h-4 bg-gray-300 dark:bg-gray-700" />
-          <ToolbarBtn icon={Search} label="Buscar (Ctrl+F)" onClick={() => editorCmds?.search()} disabled={!editorCmds} />
+          <ToolbarBtn icon={Search} label={t('query.searchCtrlF')} onClick={() => editorCmds?.search()} disabled={!editorCmds} />
           <ToolbarBtn icon={CaseUpper} label="UPPER (Ctrl+Shift+U)" onClick={() => editorCmds?.uppercase()} disabled={!editorCmds} />
           <ToolbarBtn icon={CaseLower} label="lower (Ctrl+Shift+L)" onClick={() => editorCmds?.lowercase()} disabled={!editorCmds} />
 
@@ -515,7 +515,7 @@ export default function QueryPage() {
         )}
         {showSaveDialog && (
           <div className="absolute top-28 right-16 z-50 bg-white dark:bg-surface border border-border rounded-xl shadow-2xl p-3 w-56">
-            <h4 className="text-[11px] font-bold mb-2">⭐ Salvar Query</h4>
+            <h4 className="text-[11px] font-bold mb-2">⭐ {t('query.saveQuery')}</h4>
             <input value={saveName} onChange={e => setSaveName(e.target.value)} placeholder="Nome..." className="w-full px-2 py-1 text-[11px] bg-gray-50 dark:bg-gray-800 border border-border rounded text-text-primary mb-2" autoFocus />
             <div className="flex gap-1.5"><button onClick={() => setShowSaveDialog(false)} className="flex-1 px-2 py-1 text-[10px] bg-gray-100 dark:bg-gray-800 rounded">Cancelar</button><button onClick={saveQuery} className="flex-1 px-2 py-1 text-[10px] bg-blue-600 text-white rounded">Salvar</button></div>
           </div>

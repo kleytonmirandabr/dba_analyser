@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState, useRef, useEffect } from 'react'
 import { ChevronDown, Search, X } from 'lucide-react'
 
@@ -16,7 +17,9 @@ interface SearchableSelectProps {
   disabled?: boolean
 }
 
-export default function SearchableSelect({ options, value, onChange, placeholder = 'Selecionar...', searchable = true, className = '', disabled = false }: SearchableSelectProps) {
+export default function SearchableSelect({ options, value, onChange, placeholder, searchable = true, className = '', disabled = false }: SearchableSelectProps) {
+  const { t } = useTranslation()
+  const effectivePlaceholder = placeholder || t('common.selectOption')
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const ref = useRef<HTMLDivElement>(null)
@@ -73,7 +76,7 @@ export default function SearchableSelect({ options, value, onChange, placeholder
                   type="text"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  placeholder="Buscar..."
+                  placeholder={t('common.searchPlaceholder')}
                   className="w-full pl-8 pr-8 py-1.5 text-sm bg-gray-50 dark:bg-gray-900 border border-border rounded-md text-text-primary placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
                 {search && (
@@ -86,7 +89,7 @@ export default function SearchableSelect({ options, value, onChange, placeholder
           )}
           <div className="max-h-60 overflow-y-auto">
             {filtered.length === 0 ? (
-              <p className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 text-center">Nenhum resultado</p>
+              <p className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 text-center">{t('common.noResults')}</p>
             ) : (
               filtered.map(option => (
                 <button

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState, useEffect } from 'react'
 import { Activity, RefreshCw, Clock, Server, TrendingUp, AlertTriangle, CheckCircle, Timer } from 'lucide-react'
 import api from '../lib/api'
@@ -39,6 +40,7 @@ function formatHours(hours: number): string {
 }
 
 export default function AvailabilityPage() {
+  const { t } = useTranslation()
   const [data, setData] = useState<ConnAvailability[]>([])
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState(24) // hours
@@ -71,7 +73,7 @@ export default function AvailabilityPage() {
           <h1 className="text-2xl font-bold text-text-primary flex items-center gap-2">
             <Activity className="w-6 h-6 text-green-500" /> Disponibilidade
           </h1>
-          <p className="text-xs text-text-tertiary mt-0.5">Monitoramento de uptime por banco de dados</p>
+          <p className="text-xs text-text-tertiary mt-0.5">{t('availability.subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
           <select value={period} onChange={e => setPeriod(Number(e.target.value))} className="text-xs px-3 py-1.5 bg-surface-elevated border border-border rounded-lg text-text-primary">
@@ -80,7 +82,7 @@ export default function AvailabilityPage() {
             <option value={12}>Últimas 12h</option>
             <option value={24}>Últimas 24h</option>
             <option value={72}>Últimos 3 dias</option>
-            <option value={168}>Última semana</option>
+            <option value={168}>{t('availability.lastWeek')}</option>
             <option value={720}>Último mês</option>
           </select>
           <button onClick={() => setAutoRefresh(!autoRefresh)} className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] rounded-lg border transition ${autoRefresh ? 'border-green-300 dark:border-green-800 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'border-border text-text-tertiary'}`}>
@@ -113,11 +115,11 @@ export default function AvailabilityPage() {
 
       {/* Availability table */}
       {loading ? (
-        <div className="text-center py-16 text-text-tertiary"><RefreshCw className="w-5 h-5 animate-spin inline mr-2" /> Carregando...</div>
+        <div className="text-center py-16 text-text-tertiary"><RefreshCw className="w-5 h-5 animate-spin inline mr-2" /> {t('common.loading')}</div>
       ) : data.length === 0 ? (
         <div className="text-center py-16 bg-surface border border-border rounded-xl">
           <Activity className="w-10 h-10 text-text-tertiary mx-auto mb-3" />
-          <p className="text-text-secondary">Nenhum dado de disponibilidade</p>
+          <p className="text-text-secondary">{t('availability.noData')}</p>
           <p className="text-xs text-text-tertiary mt-1">Configure alertas do tipo "Deve retornar linhas" para monitorar bancos</p>
         </div>
       ) : (

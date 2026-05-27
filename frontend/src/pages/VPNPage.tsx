@@ -117,7 +117,7 @@ export default function VPNPage() {
         await api.post('/api/vpn/connect')
         startConnecting()
       } catch (err: any) {
-        setMessage({ type: 'error', text: err.response?.data?.error || 'Erro ao conectar' })
+        setMessage({ type: 'error', text: err.response?.data?.error || t('vpn.errorConnect') })
       }
       loadStatus()
     } catch (err: any) {
@@ -132,7 +132,7 @@ export default function VPNPage() {
       await api.post('/api/vpn/connect')
       startConnecting()
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.response?.data?.error || 'Erro ao conectar' })
+      setMessage({ type: 'error', text: err.response?.data?.error || t('vpn.errorConnect') })
     }
   }
 
@@ -163,7 +163,7 @@ export default function VPNPage() {
       }, 30000))
     } catch (err: any) {
       stopConnecting()
-      setMessage({ type: 'error', text: err.response?.data?.error || 'Erro ao reiniciar container VPN' })
+      setMessage({ type: 'error', text: err.response?.data?.error || t('vpn.errorRestart') })
     }
   }
 
@@ -174,7 +174,7 @@ export default function VPNPage() {
       setMessage({ type: 'success', text: t('vpn.configRemoved') })
       loadStatus()
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.response?.data?.error || 'Erro ao remover' })
+      setMessage({ type: 'error', text: err.response?.data?.error || t('vpn.errorRemove') })
     }
   }
 
@@ -329,7 +329,7 @@ export default function VPNPage() {
             <button onClick={handleUpload} disabled={uploading || !ovpnContent}
               className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-lg transition flex items-center justify-center gap-2">
               {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-              {uploading ? 'Enviando...' : 'Salvar e Conectar'}
+              {uploading ? t('common.sending') : t('vpn.saveAndConnect')}
             </button>
             {status.configUploaded && (
               <button onClick={handleRemove} className="px-4 py-2.5 bg-red-600/10 hover:bg-red-600/20 text-red-400 text-sm font-medium rounded-lg transition flex items-center gap-2 border border-red-800">

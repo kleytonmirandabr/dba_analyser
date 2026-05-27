@@ -76,7 +76,7 @@ export default function ComparePage() {
         <button onClick={compare} disabled={loading || !sourceId || !targetId}
           className="px-5 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 text-white text-sm font-medium rounded-lg transition flex items-center gap-2">
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <GitCompareArrows className="w-4 h-4" />}
-          Comparar
+          {t('compare.compare')}
         </button>
       </div>
 
@@ -103,7 +103,7 @@ export default function ComparePage() {
 
           {diff.summary.total === 0 ? (
             <div className="p-8 bg-green-900/10 border border-green-800/30 rounded-xl text-center">
-              <p className="text-green-400 text-lg font-semibold">✅ Schemas idênticos</p>
+              <p className="text-green-400 text-lg font-semibold">✅ {t('compare.schemasIdentical')}</p>
               <p className="text-sm text-text-tertiary mt-1">{t('compare.noDifferences')}</p>
             </div>
           ) : (

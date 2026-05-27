@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState, useEffect } from 'react'
 import { ExternalLink, Shield, ShieldOff, Loader2, RefreshCw, Search, Globe } from 'lucide-react'
 import api from '../lib/api'
@@ -9,6 +10,7 @@ interface Ingress {
 }
 
 export default function K8sIngressPage() {
+  const { t } = useTranslation()
   const [clusters, setClusters] = useState<any[]>([])
   const [selectedCluster, setSelectedCluster] = useState('')
   const [ingresses, setIngresses] = useState<Ingress[]>([])
@@ -44,7 +46,7 @@ export default function K8sIngressPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-text-primary">Ingress</h1>
+          <h1 className="text-2xl font-bold text-text-primary">{t('k8s.ingress.title')}</h1>
           <p className="text-sm text-text-secondary mt-1">Regras de entrada HTTP/S do cluster</p>
         </div>
         <div className="flex items-center gap-3">
@@ -63,7 +65,7 @@ export default function K8sIngressPage() {
       {/* Search */}
       <div className="relative max-w-sm mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar ingress ou host..."
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('k8s.ingress.searchPlaceholder')}
           className="w-full pl-10 pr-3 py-2 bg-surface-elevated border border-border rounded-lg text-sm text-text-primary" />
       </div>
 
@@ -74,7 +76,7 @@ export default function K8sIngressPage() {
       ) : filtered.length === 0 ? (
         <div className="p-8 bg-surface border border-border rounded-xl text-center">
           <ExternalLink className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-          <p className="text-text-secondary">Nenhum ingress encontrado</p>
+          <p className="text-text-secondary">{t('k8s.ingress.noIngressFound')}</p>
         </div>
       ) : (
         <div className="space-y-4">

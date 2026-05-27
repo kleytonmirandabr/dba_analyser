@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { User, Save, Lock, Eye, EyeOff, CheckCircle2, Globe, Languages, Shield, QrCode, Search, ChevronDown, Phone } from 'lucide-react';
 import api from '../lib/api';
@@ -103,7 +104,7 @@ function TimezoneSelect({ value, onChange }: { value: string; onChange: (v: stri
           <div className="p-2 border-b border-border">
             <div className="relative">
               <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input className="w-full pl-8 pr-3 py-1.5 border border-border rounded bg-background text-sm" placeholder="Buscar timezone..." value={search} onChange={e => setSearch(e.target.value)} autoFocus />
+              <input className="w-full pl-8 pr-3 py-1.5 border border-border rounded bg-background text-sm" placeholder={t('myAccount.searchTimezone')} value={search} onChange={e => setSearch(e.target.value)} autoFocus />
             </div>
           </div>
           <div className="max-h-48 overflow-y-auto">
@@ -114,7 +115,7 @@ function TimezoneSelect({ value, onChange }: { value: string; onChange: (v: stri
                 <span className="text-xs text-muted-foreground font-mono">{tz.offset}</span>
               </button>
             ))}
-            {filtered.length === 0 && <p className="px-3 py-4 text-sm text-muted-foreground text-center">Nenhum resultado</p>}
+            {filtered.length === 0 && <p className="px-3 py-4 text-sm text-muted-foreground text-center">{t('common.noResults')}</p>}
           </div>
         </div>
       )}
@@ -194,14 +195,14 @@ function LanguageSelect({ value, onChange }: { value: string; onChange: (v: stri
       </button>
       {open && (
         <div className="absolute z-50 top-full mt-1 w-full bg-background border border-border rounded-lg shadow-lg overflow-hidden">
-          <div className="p-2 border-b border-border"><div className="relative"><Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" /><input className="w-full pl-8 pr-3 py-1.5 border border-border rounded bg-background text-sm" placeholder="Buscar idioma..." value={search} onChange={e => setSearch(e.target.value)} autoFocus /></div></div>
+          <div className="p-2 border-b border-border"><div className="relative"><Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" /><input className="w-full pl-8 pr-3 py-1.5 border border-border rounded bg-background text-sm" placeholder={t('myAccount.searchLanguage')} value={search} onChange={e => setSearch(e.target.value)} autoFocus /></div></div>
           <div className="max-h-48 overflow-y-auto">
             {filtered.map(l => (
               <button key={l.value} type="button" onClick={() => { onChange(l.value); setOpen(false); setSearch(''); }} className={`w-full text-left px-3 py-2 text-sm hover:bg-muted/50 flex items-center gap-2 ${value === l.value ? 'bg-blue-50 dark:bg-blue-950/30' : ''}`}>
                 <span>{l.flag}</span><span>{l.label}</span>
               </button>
             ))}
-            {filtered.length === 0 && <p className="px-3 py-4 text-sm text-muted-foreground text-center">Nenhum resultado</p>}
+            {filtered.length === 0 && <p className="px-3 py-4 text-sm text-muted-foreground text-center">{t('common.noResults')}</p>}
           </div>
         </div>
       )}
@@ -210,6 +211,7 @@ function LanguageSelect({ value, onChange }: { value: string; onChange: (v: stri
 }
 
 export default function MyAccountPage() {
+  const { t } = useTranslation()
   const { user, loadUser } = useAuthStore();
   const [form, setForm] = useState({ name: '', email: '', phone: '', preferredLanguage: '', preferredTimezone: '' });
   const [pwdForm, setPwdForm] = useState({ currentPassword: '', newPassword: '', confirm: '' });
@@ -260,7 +262,7 @@ export default function MyAccountPage() {
       if (form.preferredLanguage) localStorage.setItem('dba-language', form.preferredLanguage);
       setSaved(true); setTimeout(() => setSaved(false), 3000);
       loadUser();
-    } catch (e: any) { alert(e.response?.data?.error || 'Erro ao salvar'); }
+    } catch (e: any) { alert(e.response?.data?.error || t('common.errorSaving')); }
     setSaving(false);
   }
 
@@ -308,7 +310,7 @@ export default function MyAccountPage() {
         </div>
         <div className="flex justify-end mt-4">
           <button onClick={saveProfile} disabled={saving} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
-            {saved ? <><CheckCircle2 className="w-4 h-4" /> Salvo!</> : <><Save className="w-4 h-4" /> Salvar</>}
+            {saved ? <><CheckCircle2 className="w-4 h-4" /> {t('myAccount.saved')}</> : <><Save className="w-4 h-4" /> {t('common.save')}</>}
           </button>
         </div>
       </div>
@@ -321,10 +323,10 @@ export default function MyAccountPage() {
             <p className="text-sm text-green-600 dark:text-green-400 mb-3">✅ 2FA está ativado</p>
             <div className="flex gap-2 items-end">
               <div className="flex-1">
-                <label className="text-xs text-muted-foreground">Código para desativar</label>
+                <label className="text-xs text-muted-foreground">{t('myAccount.codeToDisable')}</label>
                 <input className="w-full border border-border rounded px-3 py-2 bg-background" value={tfaToken} onChange={e => setTfaToken(e.target.value)} placeholder="000000" maxLength={6} />
               </div>
-              <button onClick={disable2FA} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm">Desativar</button>
+              <button onClick={disable2FA} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm">{t('myAccount.disable2FA')}</button>
             </div>
           </div>
         ) : twoFA.secret ? (
@@ -336,10 +338,10 @@ export default function MyAccountPage() {
             <p className="text-xs text-muted-foreground mb-3">Ou insira manualmente: <code className="bg-muted px-1 py-0.5 rounded text-xs">{twoFA.secret}</code></p>
             <div className="flex gap-2 items-end">
               <div className="flex-1">
-                <label className="text-xs text-muted-foreground">Digite o código do app</label>
+                <label className="text-xs text-muted-foreground">{t('myAccount.enterCode')}</label>
                 <input className="w-full border border-border rounded px-3 py-2 bg-background" value={tfaToken} onChange={e => setTfaToken(e.target.value)} placeholder="000000" maxLength={6} />
               </div>
-              <button onClick={enable2FA} className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm">Ativar</button>
+              <button onClick={enable2FA} className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm">{t('myAccount.enable2FA')}</button>
             </div>
           </div>
         ) : (
@@ -367,7 +369,7 @@ export default function MyAccountPage() {
             <input type={showPwd ? 'text' : 'password'} className="w-full border border-border rounded px-3 py-2 bg-background" value={pwdForm.newPassword} onChange={e => setPwdForm({...pwdForm, newPassword: e.target.value})} />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Confirmar Nova Senha</label>
+            <label className="text-xs font-medium text-muted-foreground">{t('myAccount.confirmNewPassword')}</label>
             <input type={showPwd ? 'text' : 'password'} className="w-full border border-border rounded px-3 py-2 bg-background" value={pwdForm.confirm} onChange={e => setPwdForm({...pwdForm, confirm: e.target.value})} />
           </div>
           {pwdMsg && <p className={`text-sm ${pwdMsg.type === 'ok' ? 'text-green-600' : 'text-red-600'}`}>{pwdMsg.text}</p>}

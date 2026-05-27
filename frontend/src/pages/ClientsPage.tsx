@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState, useEffect } from 'react';
 import { Building2, Plus, Pencil, Trash2, Globe, Languages } from 'lucide-react';
 import api from '../lib/api';
@@ -34,6 +35,7 @@ interface Client {
 }
 
 export default function ClientsPage() {
+  const { t } = useTranslation()
   const [clients, setClients] = useState<Client[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Client | null>(null);

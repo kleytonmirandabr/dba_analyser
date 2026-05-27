@@ -1,8 +1,10 @@
+import { useTranslation } from 'react-i18next'
 import { useState, useEffect } from 'react'
 import { Server, Plus, Trash2, CheckCircle2, XCircle, Loader2, Upload, Shield, ShieldCheck, Eye, EyeOff, AlertTriangle, Lock, KeyRound, Clock, RotateCcw, Info, Copy, Download, ExternalLink, ShieldAlert, EyeIcon } from 'lucide-react'
 import api from '../lib/api'
 
 export default function K8sClustersPage() {
+  const { t } = useTranslation()
   const [clusters, setClusters] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -108,14 +110,12 @@ export default function K8sClustersPage() {
           <div className="w-16 h-16 rounded-2xl bg-surface-elevated mx-auto mb-4 flex items-center justify-center">
             <Server className="w-8 h-8 text-text-tertiary" />
           </div>
-          <h3 className="text-base font-semibold text-text-primary mb-1">Nenhum cluster configurado</h3>
+          <h3 className="text-base font-semibold text-text-primary mb-1">{t('k8s.clusters.noClusters')}</h3>
           <p className="text-sm text-text-secondary mb-5 max-w-sm mx-auto">
             Adicione seu cluster AKS para começar o monitoramento read-only
           </p>
           <button onClick={() => setShowForm(true)}
-            className="px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-xl transition">
-            Adicionar primeiro cluster
-          </button>
+            className="px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-xl transition">{t('k8s.clusters.addFirst')}</button>
         </div>
       ) : (
         <div className="space-y-4">

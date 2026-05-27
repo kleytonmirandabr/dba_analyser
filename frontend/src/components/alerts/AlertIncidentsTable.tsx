@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState, useEffect } from 'react'
 import { ChevronDown, ChevronRight, Play, Edit, Trash2, Pause, CheckCircle, AlertTriangle, XCircle, Clock } from 'lucide-react'
 import api from '../../lib/api'
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export default function AlertIncidentsTable({ alerts, dashboard, onEdit, onTest, onToggle, onDelete }: Props) {
+  const { t } = useTranslation()
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [histories, setHistories] = useState<Record<string, any[]>>({})
 
@@ -64,9 +66,9 @@ export default function AlertIncidentsTable({ alerts, dashboard, onEdit, onTest,
           <span className="text-[10px] text-text-tertiary ml-2">{alert.connection?.name || '—'} / {alert.connection?.databaseName || '—'}</span>
           <div className="flex items-center gap-1 ml-3" onClick={e => e.stopPropagation()}>
             <button onClick={() => onTest(alert.id)} className="p-1 text-text-tertiary hover:text-green-500 rounded" title="Testar"><Play className="w-3.5 h-3.5" /></button>
-            <button onClick={() => onEdit(alert)} className="p-1 text-text-tertiary hover:text-blue-500 rounded" title="Editar"><Edit className="w-3.5 h-3.5" /></button>
+            <button onClick={() => onEdit(alert)} className="p-1 text-text-tertiary hover:text-blue-500 rounded" title={t('common.edit')}><Edit className="w-3.5 h-3.5" /></button>
             <button onClick={() => onToggle(alert)} className={`p-1 rounded ${alert.enabled ? 'text-amber-500' : 'text-gray-400'}`} title={alert.enabled ? 'Pausar' : 'Ativar'}><Pause className="w-3.5 h-3.5" /></button>
-            <button onClick={() => onDelete(alert.id)} className="p-1 text-text-tertiary hover:text-red-500 rounded" title="Excluir"><Trash2 className="w-3.5 h-3.5" /></button>
+            <button onClick={() => onDelete(alert.id)} className="p-1 text-text-tertiary hover:text-red-500 rounded" title={t('common.delete')}><Trash2 className="w-3.5 h-3.5" /></button>
           </div>
         </div>
 
@@ -75,7 +77,7 @@ export default function AlertIncidentsTable({ alerts, dashboard, onEdit, onTest,
           <div className="border-t border-border/50">
             {hist.length === 0 ? (
               <div className="px-4 py-3 text-xs text-text-tertiary flex items-center gap-1.5">
-                <CheckCircle className="w-3.5 h-3.5 text-green-500" /> Nenhum incidente recente — tudo OK
+                <CheckCircle className="w-3.5 h-3.5 text-green-500" /> {t('alerts.noRecentIncidents')}
               </div>
             ) : (
               <table className="w-full text-xs">
@@ -153,7 +155,7 @@ export default function AlertIncidentsTable({ alerts, dashboard, onEdit, onTest,
       )}
 
       {alerts.length === 0 && (
-        <div className="text-center py-12 text-text-secondary text-sm">Nenhum alerta configurado.</div>
+        <div className="text-center py-12 text-text-secondary text-sm">{t('alerts.noAlertsConfigured')}</div>
       )}
     </div>
   )

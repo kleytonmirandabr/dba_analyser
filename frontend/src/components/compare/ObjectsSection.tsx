@@ -47,13 +47,9 @@ export default function ObjectsSection({ objects, type }: { objects: ObjectDiff[
                     <div className="flex items-center justify-end mb-3">
                       <div className="flex bg-surface-elevated rounded-lg p-0.5 border border-border">
                         <button onClick={() => setViewMode(prev => ({ ...prev, [obj.name]: 'sidebyside' }))}
-                          className={`px-3 py-1 text-[10px] font-medium rounded-md transition ${mode === 'sidebyside' ? 'bg-purple-600 text-white shadow-sm' : 'text-text-tertiary hover:text-text-secondary'}`}>
-                          Lado a Lado
-                        </button>
+                          className={`px-3 py-1 text-[10px] font-medium rounded-md transition ${mode === 'sidebyside' ? 'bg-purple-600 text-white shadow-sm' : 'text-text-tertiary hover:text-text-secondary'}`}>{t('compare.sideBySide')}</button>
                         <button onClick={() => setViewMode(prev => ({ ...prev, [obj.name]: 'unified' }))}
-                          className={`px-3 py-1 text-[10px] font-medium rounded-md transition ${mode === 'unified' ? 'bg-purple-600 text-white shadow-sm' : 'text-text-tertiary hover:text-text-secondary'}`}>
-                          Unificado
-                        </button>
+                          className={`px-3 py-1 text-[10px] font-medium rounded-md transition ${mode === 'unified' ? 'bg-purple-600 text-white shadow-sm' : 'text-text-tertiary hover:text-text-secondary'}`}>{t('compare.unified')}</button>
                       </div>
                     </div>
 
@@ -66,7 +62,7 @@ export default function ObjectsSection({ objects, type }: { objects: ObjectDiff[
                 ) : (
                   <div>
                     <p className="text-[10px] text-text-tertiary mb-1.5 uppercase font-medium">
-                      {obj.status === 'only_source' ? 'Definição (existe apenas no source)' : 'Definição (existe apenas no target)'}
+                      {obj.status === 'only_source' ? t('compare.definitionOnlySource') : t('compare.definitionOnlyTarget')}
                     </p>
                     <div className={`font-mono text-[11px] rounded border ${obj.status === 'only_source' ? 'bg-green-900/10 border-green-900/20' : 'bg-red-900/10 border-red-900/20'} max-h-60 overflow-auto`}>
                       {(obj.sourceDefinition || obj.targetDefinition || t('compare.noDefinition')).split('\n').map((line, i) => (

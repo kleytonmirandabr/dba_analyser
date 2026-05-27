@@ -30,7 +30,7 @@ export default function ConnectionForm({ onClose, onSaved, connection }: { onClo
       }
       onSaved()
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Erro ao salvar')
+      setError(err.response?.data?.error || t('common.errorSaving'))
     }
     setSaving(false)
   }
@@ -124,7 +124,7 @@ export default function ConnectionForm({ onClose, onSaved, connection }: { onClo
             </label>
           )}
           <div className="flex gap-3 pt-3">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 text-sm text-text-secondary hover:bg-surface-elevated rounded-lg transition">Cancelar</button>
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 text-sm text-text-secondary hover:bg-surface-elevated rounded-lg transition">{t('common.cancel')}</button>
             <button type="submit" disabled={saving} className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white text-sm font-medium rounded-lg transition flex items-center justify-center gap-2">
               {saving && <Loader2 className="w-4 h-4 animate-spin" />} Salvar
             </button>

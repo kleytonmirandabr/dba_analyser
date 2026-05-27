@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState, useEffect } from 'react';
 import { Key, Search } from 'lucide-react';
 import api from '../lib/api';
@@ -5,6 +6,7 @@ import api from '../lib/api';
 interface Feature { code: string; name: string; description: string; module: string; }
 
 export default function FeaturesPage() {
+  const { t } = useTranslation()
   const [grouped, setGrouped] = useState<Record<string, Feature[]>>({});
   const [search, setSearch] = useState('');
 

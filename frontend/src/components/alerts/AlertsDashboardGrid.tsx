@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useMemo, useRef, useState, useEffect } from 'react'
 import { GridLayout } from 'react-grid-layout'
 import type { Layout } from 'react-grid-layout'
@@ -27,6 +28,7 @@ const PRESETS: { value: LayoutPreset; label: string; icon: any }[] = [
 ]
 
 export default function AlertsDashboardGrid({ data, filter }: Props) {
+  const { t } = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(1200)
   const [editMode, setEditMode] = useState(false)
@@ -68,7 +70,7 @@ export default function AlertsDashboardGrid({ data, filter }: Props) {
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
               editMode ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-surface-elevated text-text-secondary border border-border hover:border-blue-500/50'
             }`}>
-            {editMode ? <><Pencil className="w-3.5 h-3.5" /> Salvar Layout</> : <><Lock className="w-3.5 h-3.5" /> Editar Layout</>}
+            {editMode ? <><Pencil className="w-3.5 h-3.5" /> {t('alerts.saveLayout')}</> : <><Lock className="w-3.5 h-3.5" /> {t('alerts.editLayout')}</>}
           </button>
           {editMode && (
             <div className="flex items-center gap-1 ml-2">
@@ -92,7 +94,7 @@ export default function AlertsDashboardGrid({ data, filter }: Props) {
       {/* Grid */}
       {filtered.length === 0 ? (
         <div className="text-center py-16 bg-surface border border-border rounded-xl">
-          <p className="text-text-secondary text-sm">Nenhum alerta encontrado.</p>
+          <p className="text-text-secondary text-sm">{t('alerts.noAlertsFound')}</p>
         </div>
       ) : (
         <GridLayout

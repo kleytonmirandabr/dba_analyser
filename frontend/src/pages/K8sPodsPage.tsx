@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState, useEffect } from 'react'
 import { Box, CheckCircle2, XCircle, Loader2, AlertTriangle, RefreshCw, Search, Filter } from 'lucide-react'
 import api from '../lib/api'
@@ -9,6 +10,7 @@ interface Pod {
 }
 
 export default function K8sPodsPage() {
+  const { t } = useTranslation()
   const [clusters, setClusters] = useState<any[]>([])
   const [selectedCluster, setSelectedCluster] = useState('')
   const [pods, setPods] = useState<Pod[]>([])
@@ -74,8 +76,8 @@ export default function K8sPodsPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-text-primary">Pods</h1>
-          <p className="text-sm text-text-secondary mt-1">Todos os pods nos namespaces monitorados</p>
+          <h1 className="text-2xl font-bold text-text-primary">{t('k8s.pods.title')}</h1>
+          <p className="text-sm text-text-secondary mt-1">{t('k8s.pods.subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
           {clusters.length > 1 && (
@@ -94,19 +96,19 @@ export default function K8sPodsPage() {
       <div className="grid grid-cols-5 gap-3 mb-5">
         <div className="bg-surface border border-border rounded-lg p-3 text-center">
           <p className="text-lg font-bold text-text-primary">{stats.total}</p>
-          <p className="text-[10px] text-text-tertiary">Total</p>
+          <p className="text-[10px] text-text-tertiary">{t('k8s.pods.total')}</p>
         </div>
         <div className="bg-surface border border-border rounded-lg p-3 text-center">
           <p className="text-lg font-bold text-green-400">{stats.running}</p>
-          <p className="text-[10px] text-text-tertiary">Running</p>
+          <p className="text-[10px] text-text-tertiary">{t('k8s.pods.running')}</p>
         </div>
         <div className="bg-surface border border-border rounded-lg p-3 text-center">
           <p className="text-lg font-bold text-amber-400">{stats.pending}</p>
-          <p className="text-[10px] text-text-tertiary">Pending</p>
+          <p className="text-[10px] text-text-tertiary">{t('k8s.pods.pending')}</p>
         </div>
         <div className="bg-surface border border-border rounded-lg p-3 text-center">
           <p className="text-lg font-bold text-red-400">{stats.failed}</p>
-          <p className="text-[10px] text-text-tertiary">Failed</p>
+          <p className="text-[10px] text-text-tertiary">{t('k8s.pods.failed')}</p>
         </div>
         <div className="bg-surface border border-border rounded-lg p-3 text-center">
           <p className="text-lg font-bold text-orange-400">{stats.highRestarts}</p>
@@ -118,16 +120,16 @@ export default function K8sPodsPage() {
       <div className="flex items-center gap-3 mb-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar pod ou namespace..."
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('k8s.pods.searchPlaceholder')}
             className="w-full pl-10 pr-3 py-2 bg-surface-elevated border border-border rounded-lg text-sm text-text-primary" />
         </div>
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
           className="px-3 py-2 bg-surface-elevated border border-border rounded-lg text-sm text-text-primary">
-          <option value="all">Todos status</option>
-          <option value="running">Running</option>
-          <option value="pending">Pending</option>
-          <option value="failed">Failed</option>
-          <option value="succeeded">Succeeded</option>
+          <option value="all">{t('k8s.pods.allStatus')}</option>
+          <option value="running">{t('k8s.pods.running')}</option>
+          <option value="pending">{t('k8s.pods.pending')}</option>
+          <option value="failed">{t('k8s.pods.failed')}</option>
+          <option value="succeeded">{t('k8s.pods.succeeded')}</option>
         </select>
       </div>
 
@@ -138,7 +140,7 @@ export default function K8sPodsPage() {
       ) : filtered.length === 0 ? (
         <div className="p-8 bg-surface border border-border rounded-xl text-center">
           <Box className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-          <p className="text-text-secondary">Nenhum pod encontrado</p>
+          <p className="text-text-secondary">{t('k8s.pods.noPodsFound')}</p>
         </div>
       ) : (
         <div className="space-y-2">

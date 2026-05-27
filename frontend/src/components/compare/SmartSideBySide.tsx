@@ -1,8 +1,10 @@
+import { useTranslation } from 'react-i18next'
 import { useState, useMemo, useRef, useCallback } from 'react'
 import { ArrowDown, ArrowUp, Filter, Maximize2, Minimize2 } from 'lucide-react'
 import { computeAlignedDiff, computeWordHighlights } from './DiffAlgorithm'
 
 export default function SmartSideBySide({ source, target }: { source: string; target: string }) {
+  const { t } = useTranslation()
   const srcLines = source.split('\n')
   const tgtLines = target.split('\n')
   const [showOnlyDiffs, setShowOnlyDiffs] = useState(false)
@@ -69,15 +71,15 @@ export default function SmartSideBySide({ source, target }: { source: string; ta
       <div className="flex items-center justify-between px-3 py-2 bg-surface-elevated border-b border-border rounded-t-lg sticky top-0 z-10">
         <div className="flex items-center gap-3">
           <span className="text-[11px] text-text-tertiary font-medium">
-            {totalDiffs} {totalDiffs === 1 ? 'diferença' : 'diferenças'} encontrada{totalDiffs !== 1 ? 's' : ''}
+            {totalDiffs} {totalDiffs === 1 ? t('compare.difference') : t('compare.differences2')} {t('compare.differencesFound')}
           </span>
           {totalDiffs > 0 && (
             <div className="flex items-center gap-1">
-              <button onClick={() => jumpToDiff('prev')} className="p-1 hover:bg-surface rounded text-text-tertiary hover:text-text-primary transition" title="Diferença anterior">
+              <button onClick={() => jumpToDiff('prev')} className="p-1 hover:bg-surface rounded text-text-tertiary hover:text-text-primary transition" title={t('compare.previousDiff')}>
                 <ArrowUp className="w-3.5 h-3.5" />
               </button>
               <span className="text-[10px] text-text-tertiary min-w-[3rem] text-center">{currentDiffIdx + 1}/{totalDiffs}</span>
-              <button onClick={() => jumpToDiff('next')} className="p-1 hover:bg-surface rounded text-text-tertiary hover:text-text-primary transition" title="Próxima diferença">
+              <button onClick={() => jumpToDiff('next')} className="p-1 hover:bg-surface rounded text-text-tertiary hover:text-text-primary transition" title={t('compare.nextDiff')}>
                 <ArrowDown className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -86,10 +88,10 @@ export default function SmartSideBySide({ source, target }: { source: string; ta
         <div className="flex items-center gap-2">
           <button onClick={() => setShowOnlyDiffs(!showOnlyDiffs)}
             className={`flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-medium rounded-md border transition ${showOnlyDiffs ? 'bg-purple-600/20 border-purple-500 text-purple-300' : 'border-border text-text-tertiary hover:text-text-secondary hover:border-gray-600'}`}>
-            <Filter className="w-3 h-3" /> Só diferenças
+            <Filter className="w-3 h-3" /> {t('compare.onlyDifferences')}
           </button>
           <button onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-1.5 hover:bg-surface rounded text-text-tertiary hover:text-text-primary transition border border-border" title={isFullscreen ? "Sair fullscreen" : "Fullscreen"}>
+            className="p-1.5 hover:bg-surface rounded text-text-tertiary hover:text-text-primary transition border border-border" title={isFullscreen ? t('compare.exitFullscreen') : t('compare.fullscreen')}>
             {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
           </button>
         </div>
@@ -100,15 +102,15 @@ export default function SmartSideBySide({ source, target }: { source: string; ta
         <div className="px-3 py-1.5 border-r border-border">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-green-500" />
-            <span className="text-[10px] font-semibold text-green-400 uppercase">Source</span>
-            <span className="text-[10px] text-text-tertiary ml-auto">{srcLines.length} linhas</span>
+            <span className="text-[10px] font-semibold text-green-400 uppercase">{t('compare.source')}</span>
+            <span className="text-[10px] text-text-tertiary ml-auto">{srcLines.length} {t('compare.lines')}</span>
           </div>
         </div>
         <div className="px-3 py-1.5">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-blue-500" />
-            <span className="text-[10px] font-semibold text-blue-400 uppercase">Target</span>
-            <span className="text-[10px] text-text-tertiary ml-auto">{tgtLines.length} linhas</span>
+            <span className="text-[10px] font-semibold text-blue-400 uppercase">{t('compare.target')}</span>
+            <span className="text-[10px] text-text-tertiary ml-auto">{tgtLines.length} {t('compare.lines')}</span>
           </div>
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState, useEffect } from 'react';
 import { Clock, RefreshCw, TrendingDown, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import api from '../lib/api';
@@ -11,6 +12,7 @@ interface MTTRData {
 }
 
 export default function MTTRPage() {
+  const { t } = useTranslation()
   const [data, setData] = useState<MTTRData | null>(null);
   const [hours, setHours] = useState(168);
   const [loading, setLoading] = useState(false);
@@ -86,7 +88,7 @@ export default function MTTRPage() {
                   <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{fmtDuration(a.avgMin)}</span>
                 </div>
               ))}
-              {data.byAlert.length === 0 && <p className="text-sm text-muted-foreground">Nenhum incidente resolvido no período</p>}
+              {data.byAlert.length === 0 && <p className="text-sm text-muted-foreground">{t('mttr.noIncidentsResolved')}</p>}
             </div>
           </div>
 
@@ -104,7 +106,7 @@ export default function MTTRPage() {
                   <span className="font-mono bg-muted px-1.5 py-0.5 rounded whitespace-nowrap">{fmtDuration(i.durationMin)}</span>
                 </div>
               ))}
-              {data.recentIncidents.length === 0 && <p className="text-sm text-muted-foreground">Nenhum incidente resolvido</p>}
+              {data.recentIncidents.length === 0 && <p className="text-sm text-muted-foreground">{t('mttr.noIncidents')}</p>}
             </div>
           </div>
         </div>

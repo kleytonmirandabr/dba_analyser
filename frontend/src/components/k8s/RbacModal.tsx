@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import { Copy, Check } from 'lucide-react'
 
@@ -48,7 +49,7 @@ kubectl config view --flatten > kubeconfig-readonly.yaml
             <Info className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
             <div>
               <p className="font-semibold text-blue-300 mb-1">O que esse RBAC faz:</p>
-              <p>Cria um ServiceAccount com <strong>apenas</strong> verbos get/list/watch. O DBA Analyser <strong>não pode</strong> criar, editar, escalar ou deletar nenhum recurso no seu cluster. O arquivo completo está em <code>demandas/k8s-readonly-rbac.yaml</code>.</p>
+              <p>{t('k8s.clusters.rbacDesc')} {t('k8s.clusters.rbacFile')} <code>demandas/k8s-readonly-rbac.yaml</code>.</p>
             </div>
           </div>
         </div>

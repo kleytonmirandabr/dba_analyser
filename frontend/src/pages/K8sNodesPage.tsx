@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState, useEffect } from 'react'
 import { Cpu, MemoryStick, Server, CheckCircle2, XCircle, Loader2, RefreshCw, HardDrive } from 'lucide-react'
 import api from '../lib/api'
@@ -12,6 +13,7 @@ interface Node {
 }
 
 export default function K8sNodesPage() {
+  const { t } = useTranslation()
   const [clusters, setClusters] = useState<any[]>([])
   const [selectedCluster, setSelectedCluster] = useState('')
   const [nodes, setNodes] = useState<Node[]>([])
@@ -71,7 +73,7 @@ export default function K8sNodesPage() {
       ) : nodes.length === 0 ? (
         <div className="p-8 bg-surface border border-border rounded-xl text-center">
           <Server className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-          <p className="text-text-secondary">Nenhum node encontrado</p>
+          <p className="text-text-secondary">{t('k8s.nodes.noNodesFound')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

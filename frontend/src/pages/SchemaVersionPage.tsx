@@ -13,12 +13,12 @@ interface Snapshot {
 }
 
 function DiffBadge({ diff }: { diff: DiffData | null }) {
-  if (!diff) return <span className="text-xs text-text-tertiary">Snapshot inicial</span>
+  if (!diff) return <span className="text-xs text-text-tertiary">{t('versioning.initialSnapshot')}</span>
   const parts: string[] = []
   if (diff.added.length) parts.push(`+${diff.added.length}`)
   if (diff.removed.length) parts.push(`-${diff.removed.length}`)
   if (diff.modified.length) parts.push(`~${diff.modified.length}`)
-  if (!parts.length) return <span className="text-xs text-text-tertiary">Sem alterações</span>
+  if (!parts.length) return <span className="text-xs text-text-tertiary">{t('versioning.noChanges')}</span>
   return (
     <div className="flex items-center gap-1.5">
       {diff.added.length > 0 && <span className="px-1.5 py-0.5 text-xs rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">+{diff.added.length}</span>}
@@ -75,7 +75,7 @@ export default function SchemaVersionPage() {
       setLabel('')
       loadSnapshots()
     } catch (err: any) {
-      showToast(err.response?.data?.error || 'Erro ao capturar', 'error')
+      showToast(err.response?.data?.error || t('versioning.captureError'), 'error')
     }
     setCapturing(false)
   }
@@ -90,7 +90,7 @@ export default function SchemaVersionPage() {
   }
 
   const deleteSnapshot = async (id: string) => {
-    if (!confirm('Excluir este snapshot?')) return
+    if (!confirm(t('versioning.deleteConfirm'))) return
     try {
       await api.delete(`/api/schema-versions/${selectedConn}/${id}`)
       showToast(t('versioning.snapshotDeleted'), 'success')
@@ -107,7 +107,7 @@ export default function SchemaVersionPage() {
       const { data } = await api.get(`/api/schema-versions/${selectedConn}/diff/${compareFrom}/${compareTo}`)
       setCompareResult(data.data.diff)
     } catch (err: any) {
-      showToast(err.response?.data?.error || 'Erro ao comparar', 'error')
+      showToast(err.response?.data?.error || t('versioning.compareError'), 'error')
     }
   }
 
@@ -266,7 +266,7 @@ export default function SchemaVersionPage() {
                 className="w-full px-3 py-2 bg-surface-elevated border border-border rounded-lg text-sm text-text-primary" />
             </div>
             <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setShowCapture(false)} className="px-4 py-2 text-sm text-text-secondary hover:text-gray-900 dark:hover:text-text-primary transition">Cancelar</button>
+              <button onClick={() => setShowCapture(false)} className="px-4 py-2 text-sm text-text-secondary hover:text-gray-900 dark:hover:text-text-primary transition">{t('common.cancel')}</button>
               <button onClick={captureSnapshot} disabled={capturing}
                 className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg disabled:opacity-50 transition">
                 {capturing && <Loader2 className="w-4 h-4 animate-spin" />} Capturar

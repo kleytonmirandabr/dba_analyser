@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState, useEffect } from 'react'
 import { Globe, ExternalLink, Loader2, RefreshCw, Search, Network } from 'lucide-react'
 import api from '../lib/api'
@@ -9,6 +10,7 @@ interface Service {
 }
 
 export default function K8sServicesPage() {
+  const { t } = useTranslation()
   const [clusters, setClusters] = useState<any[]>([])
   const [selectedCluster, setSelectedCluster] = useState('')
   const [services, setServices] = useState<Service[]>([])
@@ -75,7 +77,7 @@ export default function K8sServicesPage() {
       <div className="flex items-center gap-3 mb-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar service..."
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('k8s.services.searchPlaceholder')}
             className="w-full pl-10 pr-3 py-2 bg-surface-elevated border border-border rounded-lg text-sm text-text-primary" />
         </div>
         <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}
@@ -95,7 +97,7 @@ export default function K8sServicesPage() {
       ) : filtered.length === 0 ? (
         <div className="p-8 bg-surface border border-border rounded-xl text-center">
           <Globe className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-          <p className="text-text-secondary">Nenhum service encontrado</p>
+          <p className="text-text-secondary">{t('k8s.services.noServicesFound')}</p>
         </div>
       ) : (
         <div className="bg-surface border border-border rounded-xl overflow-hidden">

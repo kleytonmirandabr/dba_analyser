@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Search, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -33,6 +34,7 @@ const SEARCH_ITEMS: SearchItem[] = [
 ];
 
 export default function GlobalSearch() {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -67,7 +69,7 @@ export default function GlobalSearch() {
       <div className="w-full max-w-lg bg-background border border-border rounded-xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
           <Search className="w-5 h-5 text-muted-foreground" />
-          <input ref={inputRef} className="flex-1 bg-transparent outline-none text-base" placeholder="Buscar telas, funcionalidades..." value={query} onChange={e => setQuery(e.target.value)}
+          <input ref={inputRef} className="flex-1 bg-transparent outline-none text-base" placeholder={t('helpCenter.searchPlaceholder')} value={query} onChange={e => setQuery(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && results.length > 0) go(results[0].path); }} />
           <kbd className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">ESC</kbd>
         </div>
@@ -79,7 +81,7 @@ export default function GlobalSearch() {
               <span className="text-xs text-muted-foreground">{item.path}</span>
             </button>
           ))}
-          {results.length === 0 && <p className="px-4 py-6 text-sm text-muted-foreground text-center">Nenhum resultado</p>}
+          {results.length === 0 && <p className="px-4 py-6 text-sm text-muted-foreground text-center">{t('common.noResults')}</p>}
         </div>
       </div>
     </div>

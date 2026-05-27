@@ -104,9 +104,9 @@ export default function GrowthPage() {
       ])
       setData(growthRes.data.data || [])
       setAnomalies(anomalyRes.data.data || [])
-      setToast({ message: `Snapshot concluído com sucesso às ${new Date().toLocaleTimeString()}!`, type: 'success' })
+      setToast({ message: t('growth.snapshotSuccess', { time: new Date().toLocaleTimeString() }), type: 'success' })
     } catch (err: any) {
-      setToast({ message: 'Erro ao realizar snapshot: ' + (err?.message || 'desconhecido'), type: 'error' })
+      setToast({ message: t('growth.snapshotError') + ': ' + (err?.message || t('growth.unknown')), type: 'error' })
     }
     setSnapshotting(false)
     setLastSnapshotTime(new Date().toLocaleTimeString())
@@ -153,10 +153,10 @@ export default function GrowthPage() {
   const totalRows = data.reduce((sum, t) => sum + t.currentRows, 0)
 
   const columns: { key: SortCol; label: string; align?: string }[] = [
-    { key: 'table', label: 'Tabela' },
+    { key: 'table', label: t('growth.tableName') },
     { key: 'rows', label: 'Rows Atual', align: 'right' },
-    { key: 'size', label: 'Tamanho', align: 'right' },
-    { key: 'delta', label: 'Delta (hoje)', align: 'right' },
+    { key: 'size', label: t('growth.sizeMB'), align: 'right' },
+    { key: 'delta', label: t('growth.deltaToday'), align: 'right' },
     { key: 'avg', label: t('growth.avgPerDay'), align: 'right' },
   ]
 
@@ -165,7 +165,7 @@ export default function GrowthPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-text-primary flex items-center gap-2">
-          <TrendingUp className="w-6 h-6 text-blue-400" /> Crescimento de Tabelas
+          <TrendingUp className="w-6 h-6 text-blue-400" /> {t('growth.tableGrowth')}
         </h1>
         <div className="flex items-center gap-3">
           <SearchableSelect
@@ -184,7 +184,7 @@ export default function GrowthPage() {
             <button onClick={triggerSnapshot} disabled={snapshotting}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-sm text-white font-medium rounded-lg transition shadow-lg shadow-blue-900/20">
               {snapshotting ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-              {snapshotting ? 'Capturando...' : 'Snapshot Agora'}
+              {snapshotting ? t('growth.capturing') : t('growth.snapshotNow')}
             </button>
           </div>
         </div>
@@ -217,7 +217,7 @@ export default function GrowthPage() {
       {!loading && data.length > 0 && (
         <div className="grid grid-cols-4 gap-3 mb-4">
           <div className="bg-gray-100/50 dark:bg-gray-900/50 border border-border/50 rounded-xl p-3">
-            <p className="text-[10px] text-text-tertiary uppercase tracking-wider">Total Tabelas</p>
+            <p className="text-[10px] text-text-tertiary uppercase tracking-wider">{t('growth.totalTables')}</p>
             <p className="text-xl font-bold text-text-primary mt-0.5">{data.length}</p>
           </div>
           <div className="bg-gray-100/50 dark:bg-gray-900/50 border border-border/50 rounded-xl p-3">
@@ -229,7 +229,7 @@ export default function GrowthPage() {
             <p className="text-xl font-bold text-green-400 mt-0.5">{data.filter(t => t.dailyDelta > 0).length}</p>
           </div>
           <div className="bg-gray-100/50 dark:bg-gray-900/50 border border-border/50 rounded-xl p-3">
-            <p className="text-[10px] text-text-tertiary uppercase tracking-wider">Anomalias</p>
+            <p className="text-[10px] text-text-tertiary uppercase tracking-wider">{t('growth.anomalies')}</p>
             <p className={`text-xl font-bold mt-0.5 ${anomalies.length > 0 ? 'text-red-400' : 'text-text-tertiary'}`}>{anomalies.length}</p>
           </div>
         </div>
@@ -260,7 +260,7 @@ export default function GrowthPage() {
           <div>
             <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Primeiro snapshot coletado!</p>
             <p className="text-xs text-text-secondary mt-1">
-              Os dados de <strong>Delta</strong>, <strong>Média/dia</strong> e <strong>Tendência</strong> aparecerão a partir do próximo snapshot.
+              {t('growth.deltaInfo')}
               O sistema coleta automaticamente à meia-noite (UTC).
             </p>
           </div>
@@ -339,7 +339,7 @@ export default function GrowthPage() {
                         <button
                           onClick={(e) => { e.stopPropagation(); setActiveFilter(f => f === col.key ? null : col.key) }}
                           className={`p-0.5 rounded hover:bg-surface-active transition ${filterInputs[col.key] ? 'text-blue-400' : 'text-gray-600 hover:text-text-secondary'}`}
-                          title={`Filtrar por ${col.label}`}
+                          title={t('growth.filterBy', { column: col.label })}
                         >
                           <Filter className="w-3 h-3" />
                         </button>
@@ -348,11 +348,11 @@ export default function GrowthPage() {
                       {activeFilter === col.key && (
                         <div ref={filterRef} className="absolute top-full left-0 mt-1 z-50 bg-surface-elevated border border-border rounded-xl shadow-2xl p-3 min-w-[220px] animate-in fade-in slide-in-from-top-1 duration-150"
                           onClick={e => e.stopPropagation()}>
-                          <p className="text-[10px] text-text-secondary uppercase tracking-wider mb-2">Filtrar: {col.label}</p>
+                          <p className="text-[10px] text-text-secondary uppercase tracking-wider mb-2">{t('growth.filterBy', { column: col.label })}</p>
                           <input
                             autoFocus
                             type="text"
-                            placeholder="Digite para filtrar..."
+                            placeholder={t('growth.filterPlaceholder')}
                             value={filterInputs[col.key] || ''}
                             onChange={e => setFilterInputs(f => ({...f, [col.key]: e.target.value}))}
                             onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') setActiveFilter(null) }}
@@ -371,8 +371,8 @@ export default function GrowthPage() {
                       )}
                     </th>
                   ))}
-                  <th className="py-3 px-4 text-center font-medium">Tendência</th>
-                  <th className="py-3 px-4 text-center font-medium">Ações</th>
+                  <th className="py-3 px-4 text-center font-medium">{t('growth.trend')}</th>
+                  <th className="py-3 px-4 text-center font-medium">{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800/50">

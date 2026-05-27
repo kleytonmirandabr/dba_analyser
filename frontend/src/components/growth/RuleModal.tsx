@@ -47,9 +47,9 @@ export default function RuleModal({ table, connectionId, onClose }: { table: Gro
           </div>
         </div>
         <div className="flex gap-2 p-5 border-t border-border">
-          <button onClick={onClose} className="flex-1 px-4 py-2 text-sm bg-surface-elevated hover:bg-surface-active text-text-secondary rounded-lg transition">Cancelar</button>
+          <button onClick={onClose} className="flex-1 px-4 py-2 text-sm bg-surface-elevated hover:bg-surface-active text-text-secondary rounded-lg transition">{t('common.cancel')}</button>
           <button onClick={save} disabled={saving} className="flex-1 px-4 py-2 text-sm bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg transition disabled:opacity-50">
-            {saving ? 'Salvando...' : 'Salvar'}
+            {saving ? t('common.saving') : t('common.save')}
           </button>
         </div>
       </div>

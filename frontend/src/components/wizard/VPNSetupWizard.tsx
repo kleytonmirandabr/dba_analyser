@@ -52,7 +52,7 @@ export default function VPNSetupWizard({ onComplete }: Props) {
         {step === 1 && (
           <div className="text-center">
             <Wifi className="w-12 h-12 text-blue-500 mx-auto mb-4" />
-            <h2 className="text-lg font-bold text-white mb-2">Configurar VPN</h2>
+            <h2 className="text-lg font-bold text-white mb-2">{t('vpn.configureVpn')}</h2>
             <p className="text-sm text-gray-400 mb-6">
               Faça upload do arquivo .ovpn para conectar aos bancos de dados da rede interna.
             </p>
@@ -89,7 +89,7 @@ export default function VPNSetupWizard({ onComplete }: Props) {
             <button onClick={handleUpload} disabled={uploading}
               className="mt-4 w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white text-sm font-medium rounded-lg transition flex items-center justify-center gap-2">
               {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-              {uploading ? 'Enviando...' : 'Enviar e Conectar'}
+              {uploading ? t('common.sending') : t('vpn.saveAndConnect')}
             </button>
           </div>
         )}

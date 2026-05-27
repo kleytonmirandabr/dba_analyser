@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState, useEffect } from 'react';
 import { Bell, Plus, Pencil, Trash2, Send, TestTube2 } from 'lucide-react';
 import api from '../lib/api';
@@ -11,6 +12,7 @@ const TYPE_LABELS: Record<string, string> = { telegram: 'Telegram', email: 'Emai
 const TYPE_COLORS: Record<string, string> = { telegram: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', email: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400', webhook: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300', slack: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' };
 
 export default function NotificationsPage() {
+  const { t } = useTranslation()
   const [channels, setChannels] = useState<Channel[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Channel | null>(null);
@@ -27,7 +29,7 @@ export default function NotificationsPage() {
   }
 
   async function remove(id: string) {
-    if (!confirm('Excluir canal?')) return;
+    if (!confirm(t('notifications.confirmDelete'))) return;
     await api.delete(`/api/notifications/${id}`); load();
   }
 
@@ -102,14 +104,14 @@ export default function NotificationsPage() {
             {c.type === 'email' && <p className="text-xs text-muted-foreground">{c.config?.to?.join(', ')}</p>}
           </div>
         ))}
-        {channels.length === 0 && <p className="col-span-3 text-center py-12 text-muted-foreground">Nenhum canal de notificação configurado</p>}
+        {channels.length === 0 && <p className="col-span-3 text-center py-12 text-muted-foreground">{t('notifications.noChannels')}</p>}
       </div>
 
       {/* Form modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
           <div className="bg-background border border-border rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-bold mb-4">{editing ? 'Editar Canal' : 'Novo Canal'}</h2>
+            <h2 className="text-lg font-bold mb-4">{editing ? t('notifications.editChannel') : t('notifications.newChannel')}</h2>
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2"><label className="text-xs font-medium text-muted-foreground">Nome *</label>
                 <input className="w-full border border-border rounded px-3 py-2 bg-background" value={form.name || ''} onChange={e => setForm({...form, name: e.target.value})} /></div>
@@ -127,8 +129,8 @@ export default function NotificationsPage() {
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-4">
-              <button onClick={() => setShowForm(false)} className="px-4 py-2 border border-border rounded-lg">Cancelar</button>
-              <button onClick={save} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Salvar</button>
+              <button onClick={() => setShowForm(false)} className="px-4 py-2 border border-border rounded-lg">{t('common.cancel')}</button>
+              <button onClick={save} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">{t('common.save')}</button>
             </div>
           </div>
         </div>

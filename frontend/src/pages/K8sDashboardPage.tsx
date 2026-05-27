@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState, useEffect } from 'react'
 import { Cloud, Server, Box, Rocket, Globe, Cpu, MemoryStick, Loader2, AlertCircle } from 'lucide-react'
 import api from '../lib/api'
@@ -13,6 +14,7 @@ interface Overview {
 }
 
 export default function K8sDashboardPage() {
+  const { t } = useTranslation()
   const [clusters, setClusters] = useState<any[]>([])
   const [selectedCluster, setSelectedCluster] = useState<string>('')
   const [overview, setOverview] = useState<Overview | null>(null)
@@ -40,9 +42,9 @@ export default function K8sDashboardPage() {
   if (clusters.length === 0) return (
     <div className="text-center py-20">
       <Cloud className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-      <h2 className="text-lg font-bold text-text-primary mb-2">Nenhum cluster configurado</h2>
+      <h2 className="text-lg font-bold text-text-primary mb-2">{t('k8s.dashboard.noClusters')}</h2>
       <p className="text-sm text-text-secondary mb-4">Adicione um cluster AKS para começar a monitorar</p>
-      <a href="/k8s/clusters" className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition">Adicionar Cluster</a>
+      <a href="/k8s/clusters" className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition">{t('k8s.dashboard.addCluster')}</a>
     </div>
   )
 

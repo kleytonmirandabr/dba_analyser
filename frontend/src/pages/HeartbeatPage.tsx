@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState, useEffect, useRef } from 'react';
 import { Activity, RefreshCw, Circle, AlertTriangle, XCircle, Clock, Zap } from 'lucide-react';
 import api from '../lib/api';
@@ -9,6 +10,7 @@ interface HeartbeatResult {
 }
 
 export default function HeartbeatPage() {
+  const { t } = useTranslation()
   const [results, setResults] = useState<HeartbeatResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);

@@ -43,7 +43,7 @@ export default function ClusterForm({ onClose, onSaved }: { onClose: () => void;
       onSaved()
     } catch (err: any) {
       if (err.response?.data?.details) setValidationErrors(err.response.data.details)
-      else setError(err.response?.data?.error || 'Erro ao salvar')
+      else setError(err.response?.data?.error || t('common.errorSaving'))
     }
     setSaving(false)
   }
@@ -114,14 +114,14 @@ export default function ClusterForm({ onClose, onSaved }: { onClose: () => void;
                         <ShieldCheck className="w-6 h-6 text-emerald-400" />
                       </div>
                       <p className="text-sm font-medium text-emerald-400">Kubeconfig carregado</p>
-                      <p className="text-[10px] text-text-tertiary">{fileName} — será criptografado ao salvar</p>
+                      <p className="text-[10px] text-text-tertiary">{fileName} — {t('k8s.clusters.willBeEncrypted')}</p>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center gap-2">
                       <div className="w-12 h-12 rounded-xl bg-surface-elevated flex items-center justify-center">
                         <Upload className="w-6 h-6 text-text-tertiary" />
                       </div>
-                      <p className="text-sm text-text-secondary">Arraste ou clique para selecionar</p>
+                      <p className="text-sm text-text-secondary">{t('common.dragOrClick')}</p>
                       <p className="text-[10px] text-text-tertiary">Máx 1MB • .yaml, .yml, .config</p>
                     </div>
                   )}
@@ -189,7 +189,7 @@ export default function ClusterForm({ onClose, onSaved }: { onClose: () => void;
 
             {/* Security footer */}
             <div className="rounded-xl bg-gray-900/40 border border-gray-800/50 p-4">
-              <p className="text-[10px] font-semibold text-text-secondary uppercase tracking-wider mb-2">Proteções ao salvar</p>
+              <p className="text-[10px] font-semibold text-text-secondary uppercase tracking-wider mb-2">{t('k8s.clusters.protections')}</p>
               <div className="grid grid-cols-2 gap-2">
                 <span className="flex items-center gap-1.5 text-[10px] text-emerald-400/70"><Shield className="w-3 h-3 text-emerald-500" /> AES-256-GCM</span>
                 <span className="flex items-center gap-1.5 text-[10px] text-emerald-400/70"><KeyRound className="w-3 h-3 text-emerald-500" /> PBKDF2 100k</span>
@@ -201,13 +201,11 @@ export default function ClusterForm({ onClose, onSaved }: { onClose: () => void;
             {/* Actions */}
             <div className="flex gap-3 pt-1">
               <button type="button" onClick={onClose}
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-text-secondary hover:bg-surface-elevated rounded-xl border border-border transition">
-                Cancelar
-              </button>
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-text-secondary hover:bg-surface-elevated rounded-xl border border-border transition">{t('common.cancel')}</button>
               <button type="submit" disabled={saving}
                 className="flex-1 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:from-purple-800 disabled:to-indigo-800 text-white text-sm font-semibold rounded-xl shadow-lg shadow-purple-900/30 transition flex items-center justify-center gap-2">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
-                {saving ? 'Criptografando...' : 'Salvar com Criptografia'}
+                {saving ? t('k8s.clusters.encrypting') : t('k8s.clusters.encryptAndSave')}
               </button>
             </div>
           </form>

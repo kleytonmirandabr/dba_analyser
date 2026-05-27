@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState, useEffect } from 'react'
 import { Rocket, CheckCircle2, XCircle, Loader2, AlertTriangle, RefreshCw } from 'lucide-react'
 import api from '../lib/api'
@@ -9,6 +10,7 @@ interface Deployment {
 }
 
 export default function K8sDeploymentsPage() {
+  const { t } = useTranslation()
   const [clusters, setClusters] = useState<any[]>([])
   const [selectedCluster, setSelectedCluster] = useState('')
   const [deployments, setDeployments] = useState<Deployment[]>([])
@@ -84,7 +86,7 @@ export default function K8sDeploymentsPage() {
       ) : deployments.length === 0 ? (
         <div className="p-8 bg-surface border border-border rounded-xl text-center">
           <Rocket className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-          <p className="text-text-secondary">Nenhum deployment encontrado nos namespaces monitorados</p>
+          <p className="text-text-secondary">{t('k8s.deployments.noDeploymentsFound')}</p>
         </div>
       ) : (
         <div className="bg-surface border border-border rounded-xl overflow-hidden">

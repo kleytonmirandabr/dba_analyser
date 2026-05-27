@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState, useEffect } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LineChart, Line, Legend, PieChart, Pie, Cell } from 'recharts'
 import { TrendingUp, Database, Clock, AlertTriangle, RefreshCw, Calendar } from 'lucide-react'
@@ -6,6 +7,7 @@ import api from '../../lib/api'
 const COLORS = ['#10b981', '#f59e0b', '#ef4444', '#6366f1', '#8b5cf6', '#ec4899']
 
 export default function AlertsAnalytics() {
+  const { t } = useTranslation()
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [days, setDays] = useState(30)
@@ -21,7 +23,7 @@ export default function AlertsAnalytics() {
 
   useEffect(() => { load() }, [days])
 
-  if (loading) return <div className="flex items-center justify-center py-20 text-text-tertiary"><RefreshCw className="w-5 h-5 animate-spin mr-2" /> Carregando analytics...</div>
+  if (loading) return <div className="flex items-center justify-center py-20 text-text-tertiary"><RefreshCw className="w-5 h-5 animate-spin mr-2" /> {t('common.loading')}</div>
   if (!data) return <div className="text-center py-20 text-text-tertiary">Sem dados</div>
 
   const { byDay, byConnection, byAlert, heatmap, executionTrend, totalExecutions } = data

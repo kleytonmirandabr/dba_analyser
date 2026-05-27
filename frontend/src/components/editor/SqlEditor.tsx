@@ -327,7 +327,7 @@ export default function SqlEditor({ value, onChange, onExecute, onExecuteSelecte
         }),
 
         // Placeholder
-        phPlugin(placeholder || 'SELECT * FROM table LIMIT 100;\n-- Ctrl+Enter para executar | Ctrl+/ para comentar | Ctrl+F para buscar'),
+        phPlugin(placeholder || 'SELECT * FROM table LIMIT 100;\n-- Ctrl+Enter to execute | Ctrl+/ to comment | Ctrl+F to search'),
         EditorView.lineWrapping,
 
         // Theme + Syntax highlighting

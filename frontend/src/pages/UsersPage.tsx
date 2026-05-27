@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState, useEffect } from 'react';
 import { Users, Plus, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
 import api from '../lib/api';
@@ -14,6 +15,7 @@ interface Client { id: string; name: string; }
 interface Profile { id: string; name: string; }
 
 export default function UsersPage() {
+  const { t } = useTranslation()
   const [users, setUsers] = useState<UserItem[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -49,7 +51,7 @@ export default function UsersPage() {
   }
 
   async function remove(id: string) {
-    if (!confirm('Deseja excluir este usuário?')) return;
+    if (!confirm(t('users.confirmDelete'))) return;
     await api.delete(`/api/users/${id}`);
     load();
   }
@@ -102,7 +104,7 @@ export default function UsersPage() {
                 </td>
               </tr>
             ))}
-            {users.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Nenhum usuário cadastrado</td></tr>}
+            {users.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">{t('users.noUsers')}</td></tr>}
           </tbody>
         </table>
       </div>
@@ -110,7 +112,7 @@ export default function UsersPage() {
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
           <div className="bg-background border border-border rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-bold mb-4">{editing ? 'Editar Usuário' : 'Novo Usuário'}</h2>
+            <h2 className="text-lg font-bold mb-4">{editing ? t('users.editUser') : t('users.newUser')}</h2>
             <div className="space-y-3">
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Nome *</label>
@@ -157,8 +159,8 @@ export default function UsersPage() {
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-4">
-              <button onClick={() => setShowForm(false)} className="px-4 py-2 border border-border rounded-lg">Cancelar</button>
-              <button onClick={save} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Salvar</button>
+              <button onClick={() => setShowForm(false)} className="px-4 py-2 border border-border rounded-lg">{t('common.cancel')}</button>
+              <button onClick={save} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">{t('common.save')}</button>
             </div>
           </div>
         </div>
