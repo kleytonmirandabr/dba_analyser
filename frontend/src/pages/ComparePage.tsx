@@ -291,15 +291,21 @@ function computeLineDiff(src: string[], tgt: string[]): DiffLine[] {
 function ObjectsSection({ objects, type }: { objects: ObjectDiff[]; type: string }) {
   const { t } = useTranslation()
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [viewMode, setViewMode] = useState<Record<string, 'sidebyside' | 'diff'>>({})
 
   const toggle = (name: string) => {
     setExpanded(prev => { const n = new Set(prev); n.has(name) ? n.delete(name) : n.add(name); return n })
   }
 
+  const getViewMode = (name: string) => viewMode[name] || 'sidebyside'
+  const toggleView = (name: string) => {
+    setViewMode(prev => ({ ...prev, [name]: prev[name] === 'diff' ? 'sidebyside' : 'diff' }))
+  }
+
   const statusLabel = (s: string) => {
     switch (s) {
-      case 'only_source': return { text: t('compare.onlySource'), cls: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800' }
-      case 'only_target': return { text: t('compare.onlyTarget'), cls: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800' }
+      case 'only_source': return { text: t('compare.onlySource'), cls: 'bg-green-900/30 text-green-400 border-green-800' }
+      case 'only_target': return { text: t('compare.onlyTarget'), cls: 'bg-red-900/30 text-red-400 border-red-800' }
       case 'different': return { text: t('compare.differentCode'), cls: 'bg-yellow-900/30 text-yellow-400 border-yellow-800' }
       default: return { text: s, cls: '' }
     }
@@ -311,38 +317,62 @@ function ObjectsSection({ objects, type }: { objects: ObjectDiff[]; type: string
       {objects.map(obj => {
         const st = statusLabel(obj.status)
         const isExpanded = expanded.has(obj.name)
+        const mode = getViewMode(obj.name)
         return (
           <div key={obj.name} className="bg-surface border border-border rounded-lg overflow-hidden">
-            <button onClick={() => toggle(obj.name)} className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-100/50 dark:bg-gray-800/50 transition">
+            <button onClick={() => toggle(obj.name)} className="w-full flex items-center gap-3 p-3 text-left hover:bg-surface-elevated/50 transition">
               {isExpanded ? <ChevronDown className="w-4 h-4 text-text-tertiary" /> : <ChevronRight className="w-4 h-4 text-text-tertiary" />}
               <Code2 className="w-4 h-4 text-purple-400" />
               <span className="text-sm font-mono text-text-primary flex-1">{obj.name}</span>
               <span className={`text-[10px] px-2 py-0.5 rounded border ${st.cls}`}>{st.text}</span>
             </button>
             {isExpanded && (
-              <div className="px-4 pb-3 border-t border-border pt-3">
+              <div className="px-4 pb-4 border-t border-border pt-3">
                 {obj.status === 'different' ? (
-                  <div className="space-y-3">
-                    <p className="text-[10px] text-text-tertiary uppercase font-medium">Linhas diferentes (- source / + target)</p>
-                    <DiffView source={obj.sourceDefinition} target={obj.targetDefinition} />
-                    <details className="mt-2">
-                      <summary className="text-[10px] text-text-tertiary cursor-pointer hover:text-text-secondary">Ver código completo lado a lado</summary>
-                      <div className="grid grid-cols-2 gap-3 mt-2">
+                  <div>
+                    {/* View mode toggle */}
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-[10px] text-text-tertiary uppercase font-medium">Comparação de código</p>
+                      <div className="flex bg-surface-elevated rounded-lg p-0.5 border border-border">
+                        <button onClick={() => setViewMode(prev => ({ ...prev, [obj.name]: 'sidebyside' }))}
+                          className={`px-3 py-1 text-[10px] font-medium rounded-md transition ${mode === 'sidebyside' ? 'bg-purple-600 text-white shadow-sm' : 'text-text-tertiary hover:text-text-secondary'}`}>
+                          Lado a Lado
+                        </button>
+                        <button onClick={() => setViewMode(prev => ({ ...prev, [obj.name]: 'diff' }))}
+                          className={`px-3 py-1 text-[10px] font-medium rounded-md transition ${mode === 'diff' ? 'bg-purple-600 text-white shadow-sm' : 'text-text-tertiary hover:text-text-secondary'}`}>
+                          Diff Unificado
+                        </button>
+                      </div>
+                    </div>
+
+                    {mode === 'sidebyside' ? (
+                      <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <p className="text-[10px] text-green-400 font-medium mb-1 uppercase">Source</p>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <div className="w-2 h-2 rounded-full bg-green-500" />
+                            <p className="text-[10px] text-green-400 font-semibold uppercase">Source</p>
+                          </div>
                           <CodeWithLines code={obj.sourceDefinition || '(vazio)'} color="green" />
                         </div>
                         <div>
-                          <p className="text-[10px] text-red-400 font-medium mb-1 uppercase">Target</p>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <div className="w-2 h-2 rounded-full bg-red-500" />
+                            <p className="text-[10px] text-red-400 font-semibold uppercase">Target</p>
+                          </div>
                           <CodeWithLines code={obj.targetDefinition || '(vazio)'} color="red" />
                         </div>
                       </div>
-                    </details>
+                    ) : (
+                      <DiffView source={obj.sourceDefinition} target={obj.targetDefinition} />
+                    )}
                   </div>
                 ) : (
-                  <pre className="text-[11px] text-text-secondary font-mono bg-surface-elevated rounded p-2 max-h-40 overflow-auto whitespace-pre-wrap">
-                    {obj.sourceDefinition || obj.targetDefinition || t('compare.noDefinition')}
-                  </pre>
+                  <div>
+                    <p className="text-[10px] text-text-tertiary mb-1.5 uppercase font-medium">
+                      {obj.status === 'only_source' ? 'Definição (existe apenas no source)' : 'Definição (existe apenas no target)'}
+                    </p>
+                    <CodeWithLines code={obj.sourceDefinition || obj.targetDefinition || t('compare.noDefinition')} color={obj.status === 'only_source' ? 'green' : 'red'} />
+                  </div>
                 )}
               </div>
             )}
@@ -352,4 +382,3 @@ function ObjectsSection({ objects, type }: { objects: ObjectDiff[]; type: string
     </div>
   )
 }
-
