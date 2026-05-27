@@ -196,6 +196,17 @@ export default function SqlEditor({ value, onChange, onExecute, onExecuteSelecte
 
     const executeKeymap = keymap.of([
       {
+        key: 'Ctrl-e',
+        mac: 'Cmd-e',
+        run: (view) => {
+          const sel = view.state.selection.main
+          if (sel.from !== sel.to && onExecuteSelectedRef.current) {
+            onExecuteSelectedRef.current(view.state.sliceDoc(sel.from, sel.to))
+          } else { onExecuteRef.current?.() }
+          return true
+        },
+      },
+      {
         key: 'Ctrl-Enter',
         mac: 'Cmd-Enter',
         run: (view) => {

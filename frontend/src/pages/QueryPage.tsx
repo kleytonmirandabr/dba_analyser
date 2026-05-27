@@ -313,7 +313,7 @@ export default function QueryPage() {
   // Keyboard shortcuts
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
-      if (e.key === 'F5' || (e.ctrlKey && e.key === 'Enter')) { e.preventDefault(); execute() }
+      if (e.key === 'F5' || (e.ctrlKey && e.key === 'Enter') || (e.metaKey && e.key === 'e') || (e.ctrlKey && e.key === 'e')) { e.preventDefault(); execute() }
       if (e.ctrlKey && e.shiftKey && e.key === 'E') { e.preventDefault(); explainQuery() }
       if (e.ctrlKey && e.shiftKey && e.key === 'F') { e.preventDefault(); formatSql() }
       if (e.ctrlKey && e.key === 't') { e.preventDefault(); addTab() }
