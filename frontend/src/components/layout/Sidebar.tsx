@@ -9,7 +9,6 @@ export default function Sidebar() {
     { to: '/', icon: LayoutDashboard, label: t('nav.dashboard') },
     { to: '/connections', icon: Plug, label: t('nav.connections') },
     { to: '/vpn', icon: Wifi, label: t('nav.vpn') },
-    { to: '/explorer', icon: FolderTree, label: t('nav.explorer') },
     { to: '/er-diagram', icon: GitBranch, label: t('nav.erDiagram') },
     { to: '/query', icon: Terminal, label: t('nav.query') },
     { to: '/monitor', icon: Activity, label: t('nav.monitor') },
