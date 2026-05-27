@@ -121,8 +121,10 @@ export default function Header({ sidebarCollapsed, onToggleSidebar }: HeaderProp
         <div className="relative" ref={userRef}>
           <button onClick={() => setShowUser(!showUser)}
             className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer">
-            <span className="text-xs font-medium text-text-primary">{user?.role === 'admin' ? 'Administrador' : user?.name}</span>
-            <span className="text-[10px] text-muted-foreground">{user?.name?.split(' ')[0]}</span>
+            <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+              {user?.name?.charAt(0)?.toUpperCase()}
+            </div>
+            <span className="text-xs font-medium text-text-primary">{user?.name}</span>
           </button>
           {showUser && (
             <div className="absolute right-0 top-full mt-2 w-44 bg-background border border-border rounded-lg shadow-lg z-50 py-1">
