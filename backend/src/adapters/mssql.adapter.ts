@@ -109,27 +109,27 @@ export class MSSQLAdapter implements DatabaseAdapter {
       CASE WHEN tr.is_disabled = 1 THEN 0 ELSE 1 END as is_enabled
       FROM sys.triggers tr JOIN sys.tables t ON tr.parent_id = t.object_id
       JOIN sys.schemas s ON t.schema_id = s.schema_id
-      WHERE s.name = '${schema}'${tableFilter} ORDER BY tr.name`);
+      WHERE s.name = '${schema}' AND tr.is_disabled = 0${tableFilter} ORDER BY tr.name`);
   }
 
   async listProcedures(schema = 'dbo'): Promise<ProcedureInfo[]> {
     return this.query(`SELECT s.name as [schema], p.name, 'T-SQL' as language,
       OBJECT_DEFINITION(p.object_id) as definition, '' as parameters
       FROM sys.procedures p JOIN sys.schemas s ON p.schema_id = s.schema_id
-      WHERE s.name = '${schema}' ORDER BY p.name`);
+      WHERE s.name = '${schema}' AND OBJECT_DEFINITION(p.object_id) IS NOT NULL AND p.is_ms_shipped = 0 ORDER BY p.name`);
   }
 
   async listFunctions(schema = 'dbo'): Promise<FunctionInfo[]> {
     return this.query(`SELECT s.name as [schema], o.name, 'T-SQL' as language,
       o.type_desc as returnType, OBJECT_DEFINITION(o.object_id) as definition, '' as parameters
       FROM sys.objects o JOIN sys.schemas s ON o.schema_id = s.schema_id
-      WHERE o.type IN ('FN','IF','TF') AND s.name = '${schema}' ORDER BY o.name`);
+      WHERE o.type IN ('FN','IF','TF') AND s.name = '${schema}' AND OBJECT_DEFINITION(o.object_id) IS NOT NULL AND o.is_ms_shipped = 0 ORDER BY o.name`);
   }
 
   async listViews(schema = 'dbo'): Promise<ViewInfo[]> {
     return this.query(`SELECT s.name as [schema], v.name, OBJECT_DEFINITION(v.object_id) as definition
       FROM sys.views v JOIN sys.schemas s ON v.schema_id = s.schema_id
-      WHERE s.name = '${schema}' ORDER BY v.name`);
+      WHERE s.name = '${schema}' AND OBJECT_DEFINITION(v.object_id) IS NOT NULL AND v.is_ms_shipped = 0 ORDER BY v.name`);
   }
 
   async getActiveQueries(): Promise<ActiveQuery[]> {
