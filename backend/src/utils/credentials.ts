@@ -11,12 +11,27 @@ export interface ConnectionCredentials {
 }
 
 export function getConnCredentials(conn: Connection, timeoutMs?: number): ConnectionCredentials {
+  let username: string;
+  let password: string;
+  
+  try {
+    username = decrypt(conn.usernameEncrypted, conn.usernameSalt);
+  } catch (e) {
+    throw new Error(`Não foi possível decriptar as credenciais da conexão "${conn.name}". A DBA_MASTER_KEY pode ter sido alterada. Edite a conexão e salve novamente o usuário/senha.`);
+  }
+  
+  try {
+    password = decrypt(conn.passwordEncrypted, conn.passwordSalt);
+  } catch (e) {
+    throw new Error(`Não foi possível decriptar a senha da conexão "${conn.name}". A DBA_MASTER_KEY pode ter sido alterada. Edite a conexão e salve novamente o usuário/senha.`);
+  }
+
   return {
     host: conn.host,
     port: conn.port,
     database: conn.databaseName,
-    username: decrypt(conn.usernameEncrypted, conn.usernameSalt),
-    password: decrypt(conn.passwordEncrypted, conn.passwordSalt),
+    username,
+    password,
     timeoutMs: timeoutMs || conn.queryTimeoutMs || 30000,
   };
 }
