@@ -58,7 +58,7 @@ export default function Sidebar({ collapsed }: SidebarProps) {
       {/* Version at bottom */}
       <div className="border-t border-border px-4 py-2">
         {!collapsed ? (
-          <p className="text-[10px] text-muted-foreground text-center">v2.3.0</p>
+          <p className="text-[10px] text-muted-foreground text-center">v2.4.0</p>
         ) : (
           <p className="text-[10px] text-muted-foreground text-center">2.3</p>
         )}
